@@ -22,7 +22,7 @@ jobs:
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
-      NUGET_PACKAGES: ${{ runner.temp }}/nuget-packages
+      NUGET_PACKAGES: /tmp/salekhpos-nuget-packages
     defaults:
       run:
         shell: pwsh
