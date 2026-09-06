@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
+*.woff2 binary
+# Preserve the byte-identical requirement attachments, including original CRLF.
+docs/requirements/*.md -text

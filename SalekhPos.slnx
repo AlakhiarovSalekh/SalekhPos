@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/server/src/">
+    <Project Path="server/src/Api/SalekhPos.Api.csproj" />
+    <Project Path="server/src/SharedKernel/SalekhPos.SharedKernel.csproj" />
+    <Project Path="server/src/Modules/Access/SalekhPos.Access.csproj" />
+    <Project Path="server/src/Modules/Organizations/SalekhPos.Organizations.csproj" />
+  </Folder>
+  <Folder Name="/server/tests/">
+    <Project Path="server/tests/SalekhPos.IntegrationTests/SalekhPos.IntegrationTests.csproj" />
+    <Project Path="server/tests/SalekhPos.Tests/SalekhPos.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: nuget
+    directories:
+      - /server/src/Api
+      - /server/src/SharedKernel
+      - /server/src/Modules/Organizations
+      - /server/src/Modules/Access
+      - /server/tests/SalekhPos.Tests
+      - /server/tests/SalekhPos.IntegrationTests
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

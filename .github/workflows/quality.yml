@@ -1,0 +1,48 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Build, security and PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      NUGET_PACKAGES: ${{ runner.temp }}/nuget-packages
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out all history for secret scanning
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install exact repository SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          global-json-file: global.json
+      - name: Run the complete local CI gate
+        run: ./scripts/ci/run.ps1 -PostgresMode Docker -ReportDirectory (Join-Path $env:RUNNER_TEMP 'salekhpos-quality-reports')
+      - name: Retain redacted scans and test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quality-reports
+          path: ${{ runner.temp }}/salekhpos-quality-reports
+          if-no-files-found: warn
+          retention-days: 7
