@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+    <ProjectReference Include="../../Modules/Identity/SalekhPos.Identity.Api/SalekhPos.Identity.Api.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <ProjectReference Include="../../BuildingBlocks/SalekhPos.SharedKernel/SalekhPos.SharedKernel.csproj" />
-    <ProjectReference Include="../../Modules/Access/SalekhPos.Access.csproj" />
-    <ProjectReference Include="../../Modules/Identity/SalekhPos.Identity.csproj" />
+    <ProjectReference Include="../../Modules/Authorization/SalekhPos.Authorization.Infrastructure/SalekhPos.Authorization.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Identity/SalekhPos.Identity.Infrastructure/SalekhPos.Identity.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Api/SalekhPos.SystemAdministration.Api.csproj" />
     <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure/SalekhPos.SystemAdministration.Infrastructure.csproj" />
   </ItemGroup>

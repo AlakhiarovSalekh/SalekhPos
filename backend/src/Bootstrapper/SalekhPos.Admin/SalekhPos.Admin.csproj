@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/SalekhPos.SystemAdministration.Domain.csproj" />
-    <PackageReference Include="Npgsql" Version="10.0.3" />
-  </ItemGroup>
-</Project>

@@ -7,7 +7,7 @@ $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null
 $taskReportPath = Join-Path $ReportDirectory 'dependencies.json'
 # dotnet package list can exit zero even when it reports vulnerable packages.
-$taskOutput = & (Join-Path $taskRoot 'scripts/dotnet.ps1') list (Join-Path $taskRoot 'SalekhPos.slnx') package --vulnerable --include-transitive --format json --output-version 1 --no-restore
+$taskOutput = & (Join-Path $taskRoot 'scripts/dotnet.ps1') list (Join-Path $taskRoot 'SalekhPos.sln') package --vulnerable --include-transitive --format json --output-version 1 --no-restore
 if ($LASTEXITCODE -ne 0) { throw "Dependency audit command failed with exit code $LASTEXITCODE." }
 $taskJson = $taskOutput -join [Environment]::NewLine
 Set-Content -LiteralPath $taskReportPath -Value $taskJson -Encoding utf8NoBOM

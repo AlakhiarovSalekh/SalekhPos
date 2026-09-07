@@ -1,0 +1,10 @@
+name: Bug report
+description: Describe expected and actual behavior and reproducible steps.
+body:
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Describe expected and actual behavior and reproducible steps.
+    validations:
+      required: true

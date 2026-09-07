@@ -1,0 +1,10 @@
+.git
+**/bin
+**/obj
+**/node_modules
+.env
+.env.*
+**/*.key
+**/*.pfx
+**/*.p12
+artifacts

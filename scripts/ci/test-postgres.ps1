@@ -20,7 +20,7 @@ function Invoke-DockerCheck([string[]] $Arguments) {
 }
 
 $taskMigrations = @(& (Join-Path $PSScriptRoot 'get-migrations.ps1') -RepositoryRoot $taskRoot)
-$taskSqlTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/tests') -Filter '*.sql' | Sort-Object Name)
+$taskSqlTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'tests/integration/database') -Filter '*.sql' | Sort-Object Name)
 if ($taskMigrations.Count -eq 0 -or $taskSqlTests.Count -eq 0) { throw 'Migrations and SQL tests must both exist.' }
 $taskVersions = @{}
 foreach ($taskMigration in $taskMigrations) {
@@ -63,7 +63,8 @@ try {
     # Password is generated hex, passed on stdin, and never included in process arguments.
     "CREATE ROLE salekhpos_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD '$taskRuntimePassword';" | & docker @taskPsql
     if ($LASTEXITCODE -ne 0) { throw 'Restricted PostgreSQL runtime role provisioning failed.' }
-    Invoke-DockerCheck @('cp', (Join-Path $taskRoot 'infra/postgres'), "${taskContainerId}:/checks")
+    Invoke-DockerCheck @('exec', $taskContainerId, 'mkdir', '-p', '/checks/migrations')
+    Invoke-DockerCheck @('cp', (Join-Path $taskRoot 'tests/integration/database'), "${taskContainerId}:/checks/tests")
     foreach ($taskMigration in $taskMigrations) {
         $taskVersion = $taskMigration.Name.Substring(0, 3)
         Write-Output "Applying $($taskMigration.Name) and its regression checks."
@@ -85,7 +86,7 @@ try {
     $env:SALEKHPOS_TEST_RUNTIME_CONNECTION = $taskConnectionPrefix + "Username=salekhpos_runtime;Password=$taskRuntimePassword"
     & (Join-Path $PSScriptRoot 'test-bootstrap.ps1')
     New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null
-    & (Join-Path $taskRoot 'scripts/dotnet.ps1') test (Join-Path $taskRoot 'SalekhPos.slnx') --configuration Release --no-build --no-restore --logger trx --results-directory (Join-Path $ReportDirectory 'tests')
+    & (Join-Path $taskRoot 'scripts/dotnet.ps1') test (Join-Path $taskRoot 'SalekhPos.sln') --configuration Release --no-build --no-restore --logger trx --results-directory (Join-Path $ReportDirectory 'tests')
     if ($LASTEXITCODE -ne 0) { throw '.NET unit and live PostgreSQL integration tests failed.' }
     Write-Output "PASS: $($taskMigrations.Count) migrations, $($taskSqlTests.Count) SQL files, and the .NET solution tests completed."
 }

@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $taskDotnet = Join-Path $taskRoot 'scripts/dotnet.ps1'
-$taskSolution = Join-Path $taskRoot 'SalekhPos.slnx'
+$taskSolution = Join-Path $taskRoot 'SalekhPos.sln'
 $taskPreviousCi = $env:ContinuousIntegrationBuild
 $env:ContinuousIntegrationBuild = 'true'
 
@@ -19,6 +19,7 @@ function Invoke-DotnetCheck([string[]] $Arguments) {
 
 try {
     & (Join-Path $PSScriptRoot 'check-requirements.ps1')
+    & (Join-Path $PSScriptRoot 'check-structure.ps1') -RequireTracked
     & (Join-Path $PSScriptRoot 'check-architecture.ps1')
     & (Join-Path $PSScriptRoot 'check-secrets.ps1') -ReportDirectory $ReportDirectory
     Invoke-DotnetCheck @('restore', $taskSolution, '--locked-mode', '-p:NuGetAudit=true', '-p:NuGetAuditMode=all', '-p:NuGetAuditLevel=low')

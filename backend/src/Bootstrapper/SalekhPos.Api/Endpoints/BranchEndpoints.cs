@@ -1,6 +1,6 @@
 using System.Globalization;
-using SalekhPos.Access.Application;
-using SalekhPos.Access.Infrastructure;
+using SalekhPos.Authorization.Application;
+using SalekhPos.Authorization.Infrastructure;
 
 namespace SalekhPos.Api.Endpoints;
 

@@ -1,0 +1,13 @@
+name: e2e tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  availability:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require implemented capability
+        run: |
+          echo 'e2e tests is not implemented. See docs/development/progress.md.' >&2
+          exit 1

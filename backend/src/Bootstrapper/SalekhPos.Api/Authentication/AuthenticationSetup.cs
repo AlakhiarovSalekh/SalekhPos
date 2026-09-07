@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.JsonWebTokens;
-using SalekhPos.Access.Application;
-using SalekhPos.Identity.Application;
-using SalekhPos.Identity.Infrastructure;
+using SalekhPos.Authorization.Application;
+using SalekhPos.Identity.Application.Sessions;
+using SalekhPos.Identity.Infrastructure.Tokens;
 
 namespace SalekhPos.Api.Authentication;
 

@@ -45,7 +45,7 @@ SharedKernel has no external package or application dependency. A module may
 reference SharedKernel and projects within its own module; a cross-module contract
 requires an explicit architecture decision and corresponding guard update. Hosts
 compose modules. Production projects must never reference tests. Add every new
-project to `SalekhPos.slnx` and commit its `packages.lock.json`. For a deliberate
+project to `SalekhPos.sln` and commit its `packages.lock.json`. For a deliberate
 dependency update, restore to update lock files, review the dependency diff and
 advisories, then run the locked gate. Never bypass a failing security gate by
 silently suppressing its warnings.

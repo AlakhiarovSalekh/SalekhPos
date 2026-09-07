@@ -6,20 +6,7 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
   - package-ecosystem: nuget
-    directories:
-      - /backend/src/Bootstrapper/SalekhPos.Api
-      - /backend/src/BuildingBlocks/SalekhPos.SharedKernel
-      - /backend/src/Modules/Organizations
-      - /backend/src/Modules/Access
-      - /backend/src/Modules/Identity
-      - /backend/src/Bootstrapper/SalekhPos.Admin
-      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain
-      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Contracts
-      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application
-      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure
-      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Api
-      - /backend/tests/SalekhPos.Tests
-      - /backend/tests/SalekhPos.IntegrationTests
+    directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

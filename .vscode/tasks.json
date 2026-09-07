@@ -1,0 +1,1 @@
+{"version":"2.0.0","tasks":[{"label":"Build backend","type":"shell","command":"pwsh","args":["-NoProfile","-File","scripts/build-all.ps1"],"problemMatcher":"$msCompile","group":"build"},{"label":"Verify structure","type":"shell","command":"pwsh","args":["-NoProfile","-File","scripts/ci/check-structure.ps1"],"problemMatcher":[]}]}

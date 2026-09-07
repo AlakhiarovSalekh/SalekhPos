@@ -1,0 +1,6174 @@
+[
+  {
+    "path": ".github",
+    "directory": true
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE",
+    "directory": true
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/security_report.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/config.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows",
+    "directory": true
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/backend-ci.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/web-ci.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/desktop-ci.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/mobile-ci.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/unit-tests.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/integration-tests.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/contract-tests.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/e2e-tests.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/performance-tests.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/security-scan.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/dependency-scan.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/container-scan.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/database-migration-check.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/deploy-development.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/deploy-staging.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/deploy-production.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/workflows/release.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/CODEOWNERS",
+    "directory": false
+  },
+  {
+    "path": ".github/dependabot.yml",
+    "directory": false
+  },
+  {
+    "path": ".github/PULL_REQUEST_TEMPLATE.md",
+    "directory": false
+  },
+  {
+    "path": ".config",
+    "directory": true
+  },
+  {
+    "path": ".config/dotnet-tools.json",
+    "directory": false
+  },
+  {
+    "path": ".config/eslint",
+    "directory": true
+  },
+  {
+    "path": ".config/prettier",
+    "directory": true
+  },
+  {
+    "path": ".config/editor",
+    "directory": true
+  },
+  {
+    "path": ".devcontainer",
+    "directory": true
+  },
+  {
+    "path": ".devcontainer/devcontainer.json",
+    "directory": false
+  },
+  {
+    "path": ".devcontainer/Dockerfile",
+    "directory": false
+  },
+  {
+    "path": ".vscode",
+    "directory": true
+  },
+  {
+    "path": ".vscode/extensions.json",
+    "directory": false
+  },
+  {
+    "path": ".vscode/launch.json",
+    "directory": false
+  },
+  {
+    "path": ".vscode/settings.json",
+    "directory": false
+  },
+  {
+    "path": ".vscode/tasks.json",
+    "directory": false
+  },
+  {
+    "path": "apps",
+    "directory": true
+  },
+  {
+    "path": "apps/web",
+    "directory": true
+  },
+  {
+    "path": "apps/web/public",
+    "directory": true
+  },
+  {
+    "path": "apps/web/public/assets",
+    "directory": true
+  },
+  {
+    "path": "apps/web/public/icons",
+    "directory": true
+  },
+  {
+    "path": "apps/web/public/images",
+    "directory": true
+  },
+  {
+    "path": "apps/web/public/manifest",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/page.tsx",
+    "directory": false
+  },
+  {
+    "path": "apps/web/src/app/(public)/pricing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/features",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/contact",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/help",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/legal",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/legal/privacy",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/legal/terms",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(public)/legal/cookies",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/sign-in",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/sign-up",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/verify-email",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/forgot-password",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/reset-password",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/mfa",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/recovery",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(auth)/invitation",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/dashboard",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/organizations",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/stores",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/registers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/devices",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/sales",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/returns",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/products",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/categories",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/brands",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/pricing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/promotions",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/inventory",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/stock-counts",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/stock-adjustments",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/stock-transfers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/warehouses",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/suppliers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/purchasing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/customers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/loyalty",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/employees",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/roles",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/permissions",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/shifts",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/cash-management",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/payments",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/accounting",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/taxation",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/fiscalization",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/reports",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/analytics",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/notifications",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/integrations",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/subscriptions",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/billing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/audit-log",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/security",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/support",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/(dashboard)/settings",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/overview",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/tenants",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/organizations",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/stores",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/users",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/super-admins",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/subscriptions",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/billing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/payments",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/plans",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/entitlements",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/feature-flags",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/countries",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/system-health",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/services",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/jobs",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/incidents",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/integrations",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/security",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/audit",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/support",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/app/super-admin/configuration",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/ui",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/forms",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/tables",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/charts",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/filters",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/navigation",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/dialogs",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/feedback",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/layouts",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/components/domain",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/auth",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/organizations",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/stores",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/sales",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/products",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/inventory",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/purchasing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/customers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/employees",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/shifts",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/reporting",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/billing",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/features/settings",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/api",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/hooks",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/lib",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/providers",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/services",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/state",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/types",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/validation",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/constants",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/config",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/i18n",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/permissions",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/telemetry",
+    "directory": true
+  },
+  {
+    "path": "apps/web/src/middleware",
+    "directory": true
+  },
+  {
+    "path": "apps/web/tests",
+    "directory": true
+  },
+  {
+    "path": "apps/web/tests/unit",
+    "directory": true
+  },
+  {
+    "path": "apps/web/tests/integration",
+    "directory": true
+  },
+  {
+    "path": "apps/web/tests/e2e",
+    "directory": true
+  },
+  {
+    "path": "apps/web/package.json",
+    "directory": false
+  },
+  {
+    "path": "apps/web/next.config.ts",
+    "directory": false
+  },
+  {
+    "path": "apps/web/tsconfig.json",
+    "directory": false
+  },
+  {
+    "path": "apps/web/eslint.config.js",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/App.axaml",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/App.axaml.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Program.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Authentication",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Setup",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/POS",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Sales",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Returns",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Products",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Inventory",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/StockReceiving",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/StockCounts",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Customers",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Shifts",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/CashManagement",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Reports",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Devices",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Settings",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Offline",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Views/Sync",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/ViewModels",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Controls",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Converters",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Behaviors",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Navigation",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Themes",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Styles",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Assets",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/Localization",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop/DependencyInjection",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Authentication",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/DeviceRegistration",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/POS",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Sales",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Returns",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Inventory",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Customers",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Shifts",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/CashManagement",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Offline",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Sync",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Application/Hardware",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain/LocalSales",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain/LocalInventory",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain/Sync",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain/Devices",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Domain/Configuration",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Api",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Authentication",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase/Context",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase/Entities",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase/Configurations",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase/Migrations",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/LocalDatabase/Repositories",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Offline",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Offline/Outbox",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Offline/Inbox",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Offline/Queue",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Offline/Checkpoints",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync/Upload",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync/Download",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync/Retry",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync/ConflictResolution",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Sync/Versioning",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/IReceiptPrinter.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/IBarcodeScanner.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/ICashDrawer.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/IScale.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/IPaymentTerminal.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Abstractions/ICustomerDisplay.cs",
+    "directory": false
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Printers",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Printers/GenericEscPos",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Printers/Epson",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Printers/Star",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Printers/Bixolon",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/BarcodeScanners",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/CashDrawers",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/Scales",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/PaymentTerminals",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Hardware/CustomerDisplays",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Printing",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Storage",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Security",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Telemetry",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/src/SalekhPos.Desktop.Infrastructure/Configuration",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests/Unit",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests/Integration",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests/Hardware",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests/Offline",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/tests/Sync",
+    "directory": true
+  },
+  {
+    "path": "apps/desktop/SalekhPos.Desktop.sln",
+    "directory": false
+  },
+  {
+    "path": "apps/mobile",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/android",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/ios",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/app",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/authentication",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/dashboard",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/organizations",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/stores",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/sales",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/products",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/inventory",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/stock-receiving",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/stock-count",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/stock-transfer",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/barcode-scanner",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/customers",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/employees",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/approvals",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/reports",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/notifications",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/devices",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/screens/settings",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/components",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/features",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/navigation",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/services",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/api",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/state",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/hooks",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/storage",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/offline",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/sync",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/permissions",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/localization",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/notifications",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/security",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/telemetry",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/src/config",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/tests",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/tests/unit",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/tests/integration",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/tests/e2e",
+    "directory": true
+  },
+  {
+    "path": "apps/mobile/package.json",
+    "directory": false
+  },
+  {
+    "path": "apps/mobile/tsconfig.json",
+    "directory": false
+  },
+  {
+    "path": "apps/kiosk",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/app",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/screens",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/components",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/cart",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/catalog",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/payments",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/receipts",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/hardware",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/localization",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/security",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/src/config",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/public",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/tests",
+    "directory": true
+  },
+  {
+    "path": "apps/kiosk/package.json",
+    "directory": false
+  },
+  {
+    "path": "backend",
+    "directory": true
+  },
+  {
+    "path": "backend/src",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Endpoints",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Middleware",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Filters",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Authentication",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Authorization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/OpenApi",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Versioning",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/HealthChecks",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Configuration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/DependencyInjection",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/ExceptionHandling",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Api/Program.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/Consumers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/Jobs",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/Schedulers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/Dispatchers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/HealthChecks",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/DependencyInjection",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Worker/Program.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Migrations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Migrations/MigrationRunner",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Bootstrapper/SalekhPos.Migrations/Program.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain/Entity.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain/AggregateRoot.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain/ValueObject.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain/DomainEvent.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Domain/AuditableEntity.cs",
+    "directory": false
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Money",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Time",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Results",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Errors",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Exceptions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Identifiers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Primitives",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.SharedKernel/Abstractions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/CQRS",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Messaging",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Validation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Behaviors",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Transactions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Authorization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Idempotency",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Application/Abstractions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Persistence",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Messaging",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Outbox",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Inbox",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Caching",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Security",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Authentication",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Authorization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Storage",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Email",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Sms",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Push",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Observability",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Resilience",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/FeatureFlags",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Infrastructure/Configuration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Commands",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Queries",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/DTOs",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Errors",
+    "directory": true
+  },
+  {
+    "path": "backend/src/BuildingBlocks/SalekhPos.Contracts/Versioning",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Users",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Credentials",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Sessions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/MFA",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Passkeys",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Recovery",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/SecurityEvents",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/SignIn",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/SignOut",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/Registration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/VerifyEmail",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/PasswordReset",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/MFA",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/Sessions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Application/Recovery",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/Persistence",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/Authentication",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/Tokens",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/PasswordHashing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/EmailVerification",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Infrastructure/Repositories",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Api/Endpoints",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Identity/SalekhPos.Identity.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Domain/Tenants",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Domain/TenantStatus",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Domain/TenantContext",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Tenancy/SalekhPos.Tenancy.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Domain/Organizations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Domain/LegalProfiles",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Domain/BusinessProfiles",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Organizations/SalekhPos.Organizations.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain/Stores",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain/StoreSettings",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain/Registers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain/BusinessHours",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Stores/SalekhPos.Stores.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Roles",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Permissions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Policies",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Scopes",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Assignments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Authorization/SalekhPos.Authorization.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Domain/Employees",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Domain/Employment",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Domain/StoreAssignments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Employees/SalekhPos.Employees.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain/Devices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain/DeviceRegistration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain/DeviceTrust",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain/Versions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Devices/SalekhPos.Devices.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Products",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Variants",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Categories",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Brands",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/SKUs",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Barcodes",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Units",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Attributes",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Bundles",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/ProductImages",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Catalog/SalekhPos.Catalog.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain/Prices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain/PriceLists",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain/StorePricing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain/ScheduledPricing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Pricing/SalekhPos.Pricing.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain/Promotions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain/DiscountRules",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain/Conditions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain/Rewards",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Promotions/SalekhPos.Promotions.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Stock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/StockLedger",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/StockMovements",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/StockAdjustments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/StockReservations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/StockCounts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Transfers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Lots",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Batches",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/SerialNumbers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Expiration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application/ReceiveStock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application/AdjustStock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application/TransferStock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application/CountStock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Application/QueryStock",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Inventory/SalekhPos.Inventory.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain/Warehouses",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain/Locations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain/Receiving",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain/Dispatch",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Warehousing/SalekhPos.Warehousing.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Domain/Suppliers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Domain/Contacts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Domain/Addresses",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Suppliers/SalekhPos.Suppliers.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/PurchaseOrders",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/PurchaseOrderItems",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/Receiving",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/SupplierInvoices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/PurchaseReturns",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/Costs",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Purchasing/SalekhPos.Purchasing.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Carts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Sales",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/SaleItems",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Discounts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/AppliedTaxes",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Receipts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Invoices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/SuspendedSales",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/CreateSale",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/CompleteSale",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/SuspendSale",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/ResumeSale",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/VoidSale",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Application/Queries",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sales/SalekhPos.Sales.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/Payments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/PaymentMethods",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/Refunds",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/Settlements",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/Reconciliation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Payments/SalekhPos.Payments.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain/Returns",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain/ReturnItems",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain/ReturnReasons",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain/Restocking",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Returns/SalekhPos.Returns.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/CashDrawers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/CashMovements",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/CashIn",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/CashOut",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/Reconciliation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/CashManagement/SalekhPos.CashManagement.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/Shifts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/ShiftOpening",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/ShiftClosing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/Balances",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/Variances",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/ShiftManagement/SalekhPos.ShiftManagement.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/Customers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/ContactInformation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/Addresses",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/Preferences",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/Consent",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Customers/SalekhPos.Customers.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Accounts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Points",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Rewards",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Tiers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Expiration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Loyalty/SalekhPos.Loyalty.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain/Journals",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain/Entries",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain/Reconciliation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain/Exports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Accounting/SalekhPos.Accounting.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/TaxRates",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/TaxCategories",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/TaxProfiles",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/Exemptions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/Calculations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Taxation/SalekhPos.Taxation.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Domain/FiscalDocuments",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Domain/FiscalStatus",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Domain/Providers",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Fiscalization/SalekhPos.Fiscalization.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/SalesReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/InventoryReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/EmployeeReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/TaxReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/CashReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/PurchaseReports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Application/Exports",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Reporting/SalekhPos.Reporting.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application/KPIs",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application/SalesTrends",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application/StoreComparison",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application/InventoryTurnover",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Application/CustomerAnalytics",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Analytics/SalekhPos.Analytics.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain/Notifications",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain/Channels",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain/Templates",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain/Preferences",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Infrastructure/Email",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Infrastructure/Sms",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Infrastructure/Push",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Infrastructure/InApp",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Notifications/SalekhPos.Notifications.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Domain/AuditEvents",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Domain/AuditActors",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Domain/AuditTargets",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Domain/Retention",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Audit/SalekhPos.Audit.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain/Accounts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain/Invoices",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain/Charges",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain/Credits",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Billing/SalekhPos.Billing.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Plans",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Subscriptions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Entitlements",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Trials",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Renewals",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Cancellations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Usage",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Subscriptions/SalekhPos.Subscriptions.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Domain/IntegrationConnections",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Domain/Credentials",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Domain/Webhooks",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Integrations/SalekhPos.Integrations.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain/SyncSessions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain/Checkpoints",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain/Conflicts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain/SyncMessages",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Sync/SalekhPos.Sync.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain/Languages",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain/Locales",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain/Currencies",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain/Timezones",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Domain/CountrySettings",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Localization/SalekhPos.Localization.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/Features",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/Flags",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/Entitlements",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/Rollouts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Domain/Tickets",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Domain/Cases",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Domain/Diagnostics",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/Support/SalekhPos.Support.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/RootAuthority",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/SuperAdmins",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/PlatformSettings",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/TenantAdministration",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/SystemActions",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/Incidents",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/Events",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/RegisterSuperAdmin",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/RevokeSuperAdmin",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/ManageTenant",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/ManagePlatform",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/ManageFeatures",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/Diagnostics",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Api",
+    "directory": true
+  },
+  {
+    "path": "backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Contracts",
+    "directory": true
+  },
+  {
+    "path": "backend/tests",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Architecture",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Identity",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Tenancy",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Organizations",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Stores",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Authorization",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Employees",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Devices",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Catalog",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Pricing",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Promotions",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Inventory",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Warehousing",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Suppliers",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Purchasing",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Sales",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Payments",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Returns",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/CashManagement",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/ShiftManagement",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Customers",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Loyalty",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Accounting",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Taxation",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Fiscalization",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Reporting",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Analytics",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Notifications",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Audit",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Billing",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Subscriptions",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Integrations",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/Sync",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Unit/SystemAdministration",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Integration",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Contract",
+    "directory": true
+  },
+  {
+    "path": "backend/tests/Functional",
+    "directory": true
+  },
+  {
+    "path": "packages",
+    "directory": true
+  },
+  {
+    "path": "packages/api-client",
+    "directory": true
+  },
+  {
+    "path": "packages/api-client/src",
+    "directory": true
+  },
+  {
+    "path": "packages/api-client/generated",
+    "directory": true
+  },
+  {
+    "path": "packages/api-client/tests",
+    "directory": true
+  },
+  {
+    "path": "packages/api-client/package.json",
+    "directory": false
+  },
+  {
+    "path": "packages/contracts",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/api",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/events",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/sync",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/schemas",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/openapi",
+    "directory": true
+  },
+  {
+    "path": "packages/contracts/generated",
+    "directory": true
+  },
+  {
+    "path": "packages/ui",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/components",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/tokens",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/themes",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/typography",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/icons",
+    "directory": true
+  },
+  {
+    "path": "packages/ui/accessibility",
+    "directory": true
+  },
+  {
+    "path": "packages/localization",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/en",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/az",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/ka",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/tr",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/ru",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/locales/other",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/currencies",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/date-formats",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/number-formats",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/timezone-data",
+    "directory": true
+  },
+  {
+    "path": "packages/localization/country-config",
+    "directory": true
+  },
+  {
+    "path": "packages/validation",
+    "directory": true
+  },
+  {
+    "path": "packages/logging",
+    "directory": true
+  },
+  {
+    "path": "packages/telemetry",
+    "directory": true
+  },
+  {
+    "path": "packages/security",
+    "directory": true
+  },
+  {
+    "path": "packages/permissions",
+    "directory": true
+  },
+  {
+    "path": "packages/feature-flags",
+    "directory": true
+  },
+  {
+    "path": "packages/testing",
+    "directory": true
+  },
+  {
+    "path": "packages/config",
+    "directory": true
+  },
+  {
+    "path": "database",
+    "directory": true
+  },
+  {
+    "path": "database/schemas",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/identity",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/tenancy",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/organizations",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/stores",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/authorization",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/employees",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/devices",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/catalog",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/pricing",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/promotions",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/inventory",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/warehousing",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/suppliers",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/purchasing",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/sales",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/payments",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/returns",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/cash_management",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/shift_management",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/customers",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/loyalty",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/accounting",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/taxation",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/fiscalization",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/reporting",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/analytics",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/notifications",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/audit",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/billing",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/subscriptions",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/integrations",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/sync",
+    "directory": true
+  },
+  {
+    "path": "database/schemas/system_administration",
+    "directory": true
+  },
+  {
+    "path": "database/migrations",
+    "directory": true
+  },
+  {
+    "path": "database/seed",
+    "directory": true
+  },
+  {
+    "path": "database/seed/reference-data",
+    "directory": true
+  },
+  {
+    "path": "database/seed/development",
+    "directory": true
+  },
+  {
+    "path": "database/seed/testing",
+    "directory": true
+  },
+  {
+    "path": "database/views",
+    "directory": true
+  },
+  {
+    "path": "database/materialized-views",
+    "directory": true
+  },
+  {
+    "path": "database/functions",
+    "directory": true
+  },
+  {
+    "path": "database/indexes",
+    "directory": true
+  },
+  {
+    "path": "database/policies",
+    "directory": true
+  },
+  {
+    "path": "database/partitions",
+    "directory": true
+  },
+  {
+    "path": "database/scripts",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/setup",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/migration",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/maintenance",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/diagnostics",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/backup",
+    "directory": true
+  },
+  {
+    "path": "database/scripts/restore",
+    "directory": true
+  },
+  {
+    "path": "database/README.md",
+    "directory": false
+  },
+  {
+    "path": "sync",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/messages",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/commands",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/events",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/contracts",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/schemas",
+    "directory": true
+  },
+  {
+    "path": "sync/protocol/versioning",
+    "directory": true
+  },
+  {
+    "path": "sync/client",
+    "directory": true
+  },
+  {
+    "path": "sync/client/outbox",
+    "directory": true
+  },
+  {
+    "path": "sync/client/inbox",
+    "directory": true
+  },
+  {
+    "path": "sync/client/queue",
+    "directory": true
+  },
+  {
+    "path": "sync/client/upload",
+    "directory": true
+  },
+  {
+    "path": "sync/client/download",
+    "directory": true
+  },
+  {
+    "path": "sync/client/retries",
+    "directory": true
+  },
+  {
+    "path": "sync/client/checkpoints",
+    "directory": true
+  },
+  {
+    "path": "sync/client/deduplication",
+    "directory": true
+  },
+  {
+    "path": "sync/client/conflict-detection",
+    "directory": true
+  },
+  {
+    "path": "sync/client/conflict-resolution",
+    "directory": true
+  },
+  {
+    "path": "sync/client/diagnostics",
+    "directory": true
+  },
+  {
+    "path": "sync/server",
+    "directory": true
+  },
+  {
+    "path": "sync/server/ingestion",
+    "directory": true
+  },
+  {
+    "path": "sync/server/validation",
+    "directory": true
+  },
+  {
+    "path": "sync/server/deduplication",
+    "directory": true
+  },
+  {
+    "path": "sync/server/reconciliation",
+    "directory": true
+  },
+  {
+    "path": "sync/server/replication",
+    "directory": true
+  },
+  {
+    "path": "sync/server/checkpoints",
+    "directory": true
+  },
+  {
+    "path": "sync/server/conflicts",
+    "directory": true
+  },
+  {
+    "path": "sync/server/diagnostics",
+    "directory": true
+  },
+  {
+    "path": "sync/tests",
+    "directory": true
+  },
+  {
+    "path": "sync/tests/protocol",
+    "directory": true
+  },
+  {
+    "path": "sync/tests/offline",
+    "directory": true
+  },
+  {
+    "path": "sync/tests/conflicts",
+    "directory": true
+  },
+  {
+    "path": "sync/tests/retries",
+    "directory": true
+  },
+  {
+    "path": "sync/tests/compatibility",
+    "directory": true
+  },
+  {
+    "path": "integrations",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/abstraction",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/paddle",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/stripe",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/adyen",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/local-providers",
+    "directory": true
+  },
+  {
+    "path": "integrations/payments/tests",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting/abstraction",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting/quickbooks",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting/xero",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting/custom",
+    "directory": true
+  },
+  {
+    "path": "integrations/accounting/tests",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce/abstraction",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce/shopify",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce/woocommerce",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce/custom",
+    "directory": true
+  },
+  {
+    "path": "integrations/ecommerce/tests",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/abstraction",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries/GE",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries/AZ",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries/TR",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries/US",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/countries/others",
+    "directory": true
+  },
+  {
+    "path": "integrations/fiscalization/tests",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/printers",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/barcode-scanners",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/cash-drawers",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/scales",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/card-terminals",
+    "directory": true
+  },
+  {
+    "path": "integrations/hardware/customer-displays",
+    "directory": true
+  },
+  {
+    "path": "integrations/communications",
+    "directory": true
+  },
+  {
+    "path": "integrations/communications/email",
+    "directory": true
+  },
+  {
+    "path": "integrations/communications/sms",
+    "directory": true
+  },
+  {
+    "path": "integrations/communications/push",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/incoming",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/incoming/validation",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/incoming/signatures",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/incoming/replay-protection",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/incoming/handlers",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing/endpoints",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing/signatures",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing/deliveries",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing/retries",
+    "directory": true
+  },
+  {
+    "path": "integrations/webhooks/outgoing/logs",
+    "directory": true
+  },
+  {
+    "path": "country-packs",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/CountryDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/TaxDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/FiscalizationDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/ReceiptDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/InvoiceDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/ComplianceDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/core/ValidationDefinition",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/config",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/taxes",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/fiscalization",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/receipts",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/invoices",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/compliance",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/validation",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/integrations",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GE/translations",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/config",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/taxes",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/fiscalization",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/receipts",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/invoices",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/compliance",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/validation",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/integrations",
+    "directory": true
+  },
+  {
+    "path": "country-packs/AZ/translations",
+    "directory": true
+  },
+  {
+    "path": "country-packs/TR",
+    "directory": true
+  },
+  {
+    "path": "country-packs/US",
+    "directory": true
+  },
+  {
+    "path": "country-packs/GB",
+    "directory": true
+  },
+  {
+    "path": "country-packs/DE",
+    "directory": true
+  },
+  {
+    "path": "country-packs/other-countries",
+    "directory": true
+  },
+  {
+    "path": "services",
+    "directory": true
+  },
+  {
+    "path": "services/background-worker",
+    "directory": true
+  },
+  {
+    "path": "services/background-worker/scheduled",
+    "directory": true
+  },
+  {
+    "path": "services/background-worker/recurring",
+    "directory": true
+  },
+  {
+    "path": "services/background-worker/maintenance",
+    "directory": true
+  },
+  {
+    "path": "services/background-worker/recovery",
+    "directory": true
+  },
+  {
+    "path": "services/notification-worker",
+    "directory": true
+  },
+  {
+    "path": "services/report-worker",
+    "directory": true
+  },
+  {
+    "path": "services/analytics-worker",
+    "directory": true
+  },
+  {
+    "path": "services/sync-worker",
+    "directory": true
+  },
+  {
+    "path": "services/integration-worker",
+    "directory": true
+  },
+  {
+    "path": "services/import-export-worker",
+    "directory": true
+  },
+  {
+    "path": "services/audit-worker",
+    "directory": true
+  },
+  {
+    "path": "services/cleanup-worker",
+    "directory": true
+  },
+  {
+    "path": "infra",
+    "directory": true
+  },
+  {
+    "path": "infra/docker",
+    "directory": true
+  },
+  {
+    "path": "infra/docker/api.Dockerfile",
+    "directory": false
+  },
+  {
+    "path": "infra/docker/worker.Dockerfile",
+    "directory": false
+  },
+  {
+    "path": "infra/docker/web.Dockerfile",
+    "directory": false
+  },
+  {
+    "path": "infra/docker/migration.Dockerfile",
+    "directory": false
+  },
+  {
+    "path": "infra/docker/nginx",
+    "directory": true
+  },
+  {
+    "path": "infra/docker/local",
+    "directory": true
+  },
+  {
+    "path": "infra/compose",
+    "directory": true
+  },
+  {
+    "path": "infra/compose/docker-compose.yml",
+    "directory": false
+  },
+  {
+    "path": "infra/compose/docker-compose.dev.yml",
+    "directory": false
+  },
+  {
+    "path": "infra/compose/docker-compose.test.yml",
+    "directory": false
+  },
+  {
+    "path": "infra/compose/docker-compose.staging.yml",
+    "directory": false
+  },
+  {
+    "path": "infra/compose/docker-compose.observability.yml",
+    "directory": false
+  },
+  {
+    "path": "infra/terraform",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/network",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/compute",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/load-balancer",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/database",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/replicas",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/cache",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/messaging",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/object-storage",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/cdn",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/dns",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/certificates",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/secrets",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/observability",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/security",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/backups",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/modules/disaster-recovery",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/environments",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/environments/development",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/environments/staging",
+    "directory": true
+  },
+  {
+    "path": "infra/terraform/environments/production",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/api",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/workers",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/web",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/ingress",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/config",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/secrets",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/autoscaling",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/base/network-policies",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/overlays",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/overlays/development",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/overlays/staging",
+    "directory": true
+  },
+  {
+    "path": "infra/kubernetes/overlays/production",
+    "directory": true
+  },
+  {
+    "path": "infra/nginx",
+    "directory": true
+  },
+  {
+    "path": "infra/nginx/nginx.conf",
+    "directory": false
+  },
+  {
+    "path": "infra/nginx/security-headers.conf",
+    "directory": false
+  },
+  {
+    "path": "infra/nginx/rate-limits.conf",
+    "directory": false
+  },
+  {
+    "path": "infra/nginx/upstreams",
+    "directory": true
+  },
+  {
+    "path": "infra/database",
+    "directory": true
+  },
+  {
+    "path": "infra/redis",
+    "directory": true
+  },
+  {
+    "path": "infra/messaging",
+    "directory": true
+  },
+  {
+    "path": "infra/storage",
+    "directory": true
+  },
+  {
+    "path": "infra/networking",
+    "directory": true
+  },
+  {
+    "path": "infra/load-balancing",
+    "directory": true
+  },
+  {
+    "path": "infra/security",
+    "directory": true
+  },
+  {
+    "path": "infra/security/waf",
+    "directory": true
+  },
+  {
+    "path": "infra/security/firewall",
+    "directory": true
+  },
+  {
+    "path": "infra/security/network-policies",
+    "directory": true
+  },
+  {
+    "path": "infra/security/hardening",
+    "directory": true
+  },
+  {
+    "path": "infra/security/secrets",
+    "directory": true
+  },
+  {
+    "path": "observability",
+    "directory": true
+  },
+  {
+    "path": "observability/opentelemetry",
+    "directory": true
+  },
+  {
+    "path": "observability/prometheus",
+    "directory": true
+  },
+  {
+    "path": "observability/prometheus/config",
+    "directory": true
+  },
+  {
+    "path": "observability/prometheus/rules",
+    "directory": true
+  },
+  {
+    "path": "observability/grafana",
+    "directory": true
+  },
+  {
+    "path": "observability/grafana/dashboards",
+    "directory": true
+  },
+  {
+    "path": "observability/grafana/provisioning",
+    "directory": true
+  },
+  {
+    "path": "observability/loki",
+    "directory": true
+  },
+  {
+    "path": "observability/tempo",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/api",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/database",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/cache",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/workers",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/sync",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/integrations",
+    "directory": true
+  },
+  {
+    "path": "observability/alerts/security",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/platform",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/tenants",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/stores",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/api",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/database",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/queues",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/sync",
+    "directory": true
+  },
+  {
+    "path": "observability/dashboards/business",
+    "directory": true
+  },
+  {
+    "path": "observability/logs",
+    "directory": true
+  },
+  {
+    "path": "observability/traces",
+    "directory": true
+  },
+  {
+    "path": "observability/metrics",
+    "directory": true
+  },
+  {
+    "path": "observability/slo",
+    "directory": true
+  },
+  {
+    "path": "observability/slo/availability.yml",
+    "directory": false
+  },
+  {
+    "path": "observability/slo/api-latency.yml",
+    "directory": false
+  },
+  {
+    "path": "observability/slo/error-rate.yml",
+    "directory": false
+  },
+  {
+    "path": "observability/slo/sync-latency.yml",
+    "directory": false
+  },
+  {
+    "path": "observability/slo/background-jobs.yml",
+    "directory": false
+  },
+  {
+    "path": "observability/slo/database.yml",
+    "directory": false
+  },
+  {
+    "path": "security",
+    "directory": true
+  },
+  {
+    "path": "security/threat-model",
+    "directory": true
+  },
+  {
+    "path": "security/threat-model/assets.md",
+    "directory": false
+  },
+  {
+    "path": "security/threat-model/trust-boundaries.md",
+    "directory": false
+  },
+  {
+    "path": "security/threat-model/attack-surfaces.md",
+    "directory": false
+  },
+  {
+    "path": "security/threat-model/data-flows.md",
+    "directory": false
+  },
+  {
+    "path": "security/threat-model/STRIDE.md",
+    "directory": false
+  },
+  {
+    "path": "security/authentication",
+    "directory": true
+  },
+  {
+    "path": "security/authentication/password-policy.md",
+    "directory": false
+  },
+  {
+    "path": "security/authentication/mfa.md",
+    "directory": false
+  },
+  {
+    "path": "security/authentication/passkeys.md",
+    "directory": false
+  },
+  {
+    "path": "security/authentication/sessions.md",
+    "directory": false
+  },
+  {
+    "path": "security/authentication/recovery.md",
+    "directory": false
+  },
+  {
+    "path": "security/authorization",
+    "directory": true
+  },
+  {
+    "path": "security/authorization/roles.md",
+    "directory": false
+  },
+  {
+    "path": "security/authorization/permissions.md",
+    "directory": false
+  },
+  {
+    "path": "security/authorization/scopes.md",
+    "directory": false
+  },
+  {
+    "path": "security/authorization/policies.md",
+    "directory": false
+  },
+  {
+    "path": "security/authorization/super-admin.md",
+    "directory": false
+  },
+  {
+    "path": "security/tenancy",
+    "directory": true
+  },
+  {
+    "path": "security/tenancy/isolation-model.md",
+    "directory": false
+  },
+  {
+    "path": "security/encryption",
+    "directory": true
+  },
+  {
+    "path": "security/encryption/data-at-rest.md",
+    "directory": false
+  },
+  {
+    "path": "security/encryption/data-in-transit.md",
+    "directory": false
+  },
+  {
+    "path": "security/encryption/key-management.md",
+    "directory": false
+  },
+  {
+    "path": "security/secrets",
+    "directory": true
+  },
+  {
+    "path": "security/secrets/README.md",
+    "directory": false
+  },
+  {
+    "path": "security/incident-response",
+    "directory": true
+  },
+  {
+    "path": "security/incident-response/incident-plan.md",
+    "directory": false
+  },
+  {
+    "path": "security/incident-response/security-breach.md",
+    "directory": false
+  },
+  {
+    "path": "security/incident-response/credential-compromise.md",
+    "directory": false
+  },
+  {
+    "path": "security/vulnerability-management",
+    "directory": true
+  },
+  {
+    "path": "security/dependency-security",
+    "directory": true
+  },
+  {
+    "path": "security/secure-coding",
+    "directory": true
+  },
+  {
+    "path": "security/privacy",
+    "directory": true
+  },
+  {
+    "path": "security/compliance",
+    "directory": true
+  },
+  {
+    "path": "tests",
+    "directory": true
+  },
+  {
+    "path": "tests/unit",
+    "directory": true
+  },
+  {
+    "path": "tests/unit/backend",
+    "directory": true
+  },
+  {
+    "path": "tests/unit/web",
+    "directory": true
+  },
+  {
+    "path": "tests/unit/desktop",
+    "directory": true
+  },
+  {
+    "path": "tests/unit/mobile",
+    "directory": true
+  },
+  {
+    "path": "tests/integration",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/database",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/cache",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/messaging",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/object-storage",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/authentication",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/payments",
+    "directory": true
+  },
+  {
+    "path": "tests/integration/external-services",
+    "directory": true
+  },
+  {
+    "path": "tests/contract",
+    "directory": true
+  },
+  {
+    "path": "tests/contract/api",
+    "directory": true
+  },
+  {
+    "path": "tests/contract/events",
+    "directory": true
+  },
+  {
+    "path": "tests/contract/sync",
+    "directory": true
+  },
+  {
+    "path": "tests/contract/integrations",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/registration",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/owner",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/manager",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/cashier",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/inventory-clerk",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/warehouse-clerk",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/accountant",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/customer-workflows",
+    "directory": true
+  },
+  {
+    "path": "tests/e2e/super-admin",
+    "directory": true
+  },
+  {
+    "path": "tests/security",
+    "directory": true
+  },
+  {
+    "path": "tests/security/authentication",
+    "directory": true
+  },
+  {
+    "path": "tests/security/authorization",
+    "directory": true
+  },
+  {
+    "path": "tests/security/tenant-isolation",
+    "directory": true
+  },
+  {
+    "path": "tests/security/IDOR",
+    "directory": true
+  },
+  {
+    "path": "tests/security/injection",
+    "directory": true
+  },
+  {
+    "path": "tests/security/XSS",
+    "directory": true
+  },
+  {
+    "path": "tests/security/CSRF",
+    "directory": true
+  },
+  {
+    "path": "tests/security/SSRF",
+    "directory": true
+  },
+  {
+    "path": "tests/security/rate-limiting",
+    "directory": true
+  },
+  {
+    "path": "tests/security/secrets",
+    "directory": true
+  },
+  {
+    "path": "tests/security/abuse",
+    "directory": true
+  },
+  {
+    "path": "tests/performance",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/load",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/stress",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/spike",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/soak",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/concurrency",
+    "directory": true
+  },
+  {
+    "path": "tests/performance/scalability",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/database-failure",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/cache-failure",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/broker-failure",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/network-partition",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/service-restart",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/provider-timeout",
+    "directory": true
+  },
+  {
+    "path": "tests/resilience/partial-outage",
+    "directory": true
+  },
+  {
+    "path": "tests/chaos",
+    "directory": true
+  },
+  {
+    "path": "tests/migration",
+    "directory": true
+  },
+  {
+    "path": "tests/compatibility",
+    "directory": true
+  },
+  {
+    "path": "tests/offline",
+    "directory": true
+  },
+  {
+    "path": "tests/sync",
+    "directory": true
+  },
+  {
+    "path": "tests/fixtures",
+    "directory": true
+  },
+  {
+    "path": "tests/test-data",
+    "directory": true
+  },
+  {
+    "path": "tools",
+    "directory": true
+  },
+  {
+    "path": "tools/cli",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/SalekhPos.Cli",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/database",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/tenant",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/users",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/diagnostics",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/sync",
+    "directory": true
+  },
+  {
+    "path": "tools/cli/commands/maintenance",
+    "directory": true
+  },
+  {
+    "path": "tools/database",
+    "directory": true
+  },
+  {
+    "path": "tools/migration",
+    "directory": true
+  },
+  {
+    "path": "tools/codegen",
+    "directory": true
+  },
+  {
+    "path": "tools/openapi",
+    "directory": true
+  },
+  {
+    "path": "tools/localization",
+    "directory": true
+  },
+  {
+    "path": "tools/seed",
+    "directory": true
+  },
+  {
+    "path": "tools/diagnostics",
+    "directory": true
+  },
+  {
+    "path": "tools/load-testing",
+    "directory": true
+  },
+  {
+    "path": "tools/security",
+    "directory": true
+  },
+  {
+    "path": "tools/scripts",
+    "directory": true
+  },
+  {
+    "path": "tools/scripts/powershell",
+    "directory": true
+  },
+  {
+    "path": "tools/scripts/bash",
+    "directory": true
+  },
+  {
+    "path": "docs",
+    "directory": true
+  },
+  {
+    "path": "docs/architecture",
+    "directory": true
+  },
+  {
+    "path": "docs/architecture/overview.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/system-context.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/containers.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/components.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/module-boundaries.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/domain-model.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/data-flow.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/tenancy.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/organizations.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/stores.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/authorization.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/root-super-admin.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/offline-first.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/synchronization.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/hardware.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/events.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/api-versioning.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/database.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/caching.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/messaging.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/security.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/observability.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/scalability.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/resilience.md",
+    "directory": false
+  },
+  {
+    "path": "docs/architecture/disaster-recovery.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr",
+    "directory": true
+  },
+  {
+    "path": "docs/adr/0001-monorepo.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0002-modular-monolith.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0003-postgresql.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0004-multi-tenancy.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0005-module-owned-data.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0006-event-driven-communication.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0007-transactional-outbox.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0008-offline-first-pos.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0009-api-versioning.md",
+    "directory": false
+  },
+  {
+    "path": "docs/adr/0010-country-packs.md",
+    "directory": false
+  },
+  {
+    "path": "docs/api",
+    "directory": true
+  },
+  {
+    "path": "docs/database",
+    "directory": true
+  },
+  {
+    "path": "docs/development",
+    "directory": true
+  },
+  {
+    "path": "docs/development/setup-windows.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/setup-linux.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/setup-macos.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/backend.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/web.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/desktop.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/mobile.md",
+    "directory": false
+  },
+  {
+    "path": "docs/development/docker.md",
+    "directory": false
+  },
+  {
+    "path": "docs/deployment",
+    "directory": true
+  },
+  {
+    "path": "docs/deployment/development.md",
+    "directory": false
+  },
+  {
+    "path": "docs/deployment/staging.md",
+    "directory": false
+  },
+  {
+    "path": "docs/deployment/production.md",
+    "directory": false
+  },
+  {
+    "path": "docs/deployment/rollback.md",
+    "directory": false
+  },
+  {
+    "path": "docs/deployment/migrations.md",
+    "directory": false
+  },
+  {
+    "path": "docs/operations",
+    "directory": true
+  },
+  {
+    "path": "docs/security",
+    "directory": true
+  },
+  {
+    "path": "docs/compliance",
+    "directory": true
+  },
+  {
+    "path": "docs/testing",
+    "directory": true
+  },
+  {
+    "path": "docs/localization",
+    "directory": true
+  },
+  {
+    "path": "docs/countries",
+    "directory": true
+  },
+  {
+    "path": "docs/integrations",
+    "directory": true
+  },
+  {
+    "path": "docs/offline",
+    "directory": true
+  },
+  {
+    "path": "docs/sync",
+    "directory": true
+  },
+  {
+    "path": "docs/hardware",
+    "directory": true
+  },
+  {
+    "path": "docs/troubleshooting",
+    "directory": true
+  },
+  {
+    "path": "docs/runbooks",
+    "directory": true
+  },
+  {
+    "path": "docs/runbooks/api-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/database-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/cache-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/message-broker-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/sync-failure.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/payment-provider-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/fiscal-provider-outage.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/security-incident.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/compromised-account.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/rollback.md",
+    "directory": false
+  },
+  {
+    "path": "docs/runbooks/restore-from-backup.md",
+    "directory": false
+  },
+  {
+    "path": "configs",
+    "directory": true
+  },
+  {
+    "path": "configs/development",
+    "directory": true
+  },
+  {
+    "path": "configs/development/backend",
+    "directory": true
+  },
+  {
+    "path": "configs/development/web",
+    "directory": true
+  },
+  {
+    "path": "configs/development/desktop",
+    "directory": true
+  },
+  {
+    "path": "configs/development/mobile",
+    "directory": true
+  },
+  {
+    "path": "configs/development/infrastructure",
+    "directory": true
+  },
+  {
+    "path": "configs/testing",
+    "directory": true
+  },
+  {
+    "path": "configs/staging",
+    "directory": true
+  },
+  {
+    "path": "configs/production",
+    "directory": true
+  },
+  {
+    "path": "localization",
+    "directory": true
+  },
+  {
+    "path": "localization/languages",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/en",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/az",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/ka",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/tr",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/ru",
+    "directory": true
+  },
+  {
+    "path": "localization/languages/others",
+    "directory": true
+  },
+  {
+    "path": "localization/countries",
+    "directory": true
+  },
+  {
+    "path": "localization/currencies",
+    "directory": true
+  },
+  {
+    "path": "localization/timezones",
+    "directory": true
+  },
+  {
+    "path": "localization/date-formats",
+    "directory": true
+  },
+  {
+    "path": "localization/number-formats",
+    "directory": true
+  },
+  {
+    "path": "localization/tax-regimes",
+    "directory": true
+  },
+  {
+    "path": "localization/locale-formats",
+    "directory": true
+  },
+  {
+    "path": "deploy",
+    "directory": true
+  },
+  {
+    "path": "deploy/development",
+    "directory": true
+  },
+  {
+    "path": "deploy/staging",
+    "directory": true
+  },
+  {
+    "path": "deploy/production",
+    "directory": true
+  },
+  {
+    "path": "deploy/rollback",
+    "directory": true
+  },
+  {
+    "path": "deploy/migrations",
+    "directory": true
+  },
+  {
+    "path": "scripts",
+    "directory": true
+  },
+  {
+    "path": "scripts/setup.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/setup.sh",
+    "directory": false
+  },
+  {
+    "path": "scripts/dev-start.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/dev-stop.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/build-all.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/lint-all.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/test-all.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/test-unit.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/test-integration.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/test-e2e.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/database-start.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/database-reset.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/database-migrate.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/database-backup.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/database-restore.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/observability-start.ps1",
+    "directory": false
+  },
+  {
+    "path": "scripts/generate-api-client.ps1",
+    "directory": false
+  },
+  {
+    "path": "certificates",
+    "directory": true
+  },
+  {
+    "path": "certificates/development",
+    "directory": true
+  },
+  {
+    "path": "certificates/README.md",
+    "directory": false
+  },
+  {
+    "path": "samples",
+    "directory": true
+  },
+  {
+    "path": "samples/api",
+    "directory": true
+  },
+  {
+    "path": "samples/api/authentication",
+    "directory": true
+  },
+  {
+    "path": "samples/api/sales",
+    "directory": true
+  },
+  {
+    "path": "samples/api/products",
+    "directory": true
+  },
+  {
+    "path": "samples/api/inventory",
+    "directory": true
+  },
+  {
+    "path": "samples/webhooks",
+    "directory": true
+  },
+  {
+    "path": "samples/integrations",
+    "directory": true
+  },
+  {
+    "path": "samples/hardware",
+    "directory": true
+  },
+  {
+    "path": "samples/country-packs",
+    "directory": true
+  },
+  {
+    "path": "artifacts",
+    "directory": true
+  },
+  {
+    "path": "artifacts/.gitkeep",
+    "directory": false
+  },
+  {
+    "path": ".dockerignore",
+    "directory": false
+  },
+  {
+    "path": ".editorconfig",
+    "directory": false
+  },
+  {
+    "path": ".env.example",
+    "directory": false
+  },
+  {
+    "path": ".gitattributes",
+    "directory": false
+  },
+  {
+    "path": ".gitignore",
+    "directory": false
+  },
+  {
+    "path": ".npmrc",
+    "directory": false
+  },
+  {
+    "path": ".nvmrc",
+    "directory": false
+  },
+  {
+    "path": "Directory.Build.props",
+    "directory": false
+  },
+  {
+    "path": "Directory.Build.targets",
+    "directory": false
+  },
+  {
+    "path": "Directory.Packages.props",
+    "directory": false
+  },
+  {
+    "path": "global.json",
+    "directory": false
+  },
+  {
+    "path": "package.json",
+    "directory": false
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "directory": false
+  },
+  {
+    "path": "pnpm-workspace.yaml",
+    "directory": false
+  },
+  {
+    "path": "turbo.json",
+    "directory": false
+  },
+  {
+    "path": "docker-compose.yml",
+    "directory": false
+  },
+  {
+    "path": "SalekhPos.sln",
+    "directory": false
+  },
+  {
+    "path": "LICENSE",
+    "directory": false
+  },
+  {
+    "path": "SECURITY.md",
+    "directory": false
+  },
+  {
+    "path": "CONTRIBUTING.md",
+    "directory": false
+  },
+  {
+    "path": "CODE_OF_CONDUCT.md",
+    "directory": false
+  },
+  {
+    "path": "CHANGELOG.md",
+    "directory": false
+  },
+  {
+    "path": "ARCHITECTURE.md",
+    "directory": false
+  },
+  {
+    "path": "README.md",
+    "directory": false
+  }
+]

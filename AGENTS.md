@@ -5,8 +5,11 @@ Read `docs/requirements/master-architecture-charter.md` and the current
 charter is the current architectural source of truth. Older requirement sources
 are retained as historical evidence; explicit newer decisions take precedence.
 
-Implement complete, verified vertical slices. Do not materialize empty target
-folders or claim the entire POS is finished. Preserve versioned APIs and migration
+The user's newer explicit structure instruction supersedes incremental folder
+creation: preserve every path in `docs/requirements/final-complete-file-structure.md`.
+The manifest and `scripts/ci/check-structure.ps1` enforce this delivery contract.
+Git keep markers preserve reserved directories; they do not establish functionality.
+Implement complete, verified vertical slices. Do not claim the entire POS is finished. Preserve versioned APIs and migration
 history. Keep module ownership, tenant isolation, authorization, audit, offline
 compatibility and internationalization explicit in each slice.
 

@@ -10,7 +10,7 @@ $taskPreviousDevelopment = $env:SALEKHPOS_BOOTSTRAP_LOCAL_DEVELOPMENT
 try {
     $env:SALEKHPOS_BOOTSTRAP_LOCAL_DEVELOPMENT = 'true'
     $env:SALEKHPOS_BOOTSTRAP_CONNECTION = $env:SALEKHPOS_TEST_ADMIN_CONNECTION
-    $taskArguments = @('run', '--project', (Join-Path $taskRoot 'backend/src/Bootstrapper/SalekhPos.Admin'),
+    $taskArguments = @('run', '--project', (Join-Path $taskRoot 'tools/cli/SalekhPos.Cli'),
         '--configuration', $Configuration, '--no-build', '--no-restore', '--', 'bootstrap-root',
         '51000000-0000-0000-0000-000000000001', 'https://identity.example.test', 'platform-root',
         'Integration fixture original root')

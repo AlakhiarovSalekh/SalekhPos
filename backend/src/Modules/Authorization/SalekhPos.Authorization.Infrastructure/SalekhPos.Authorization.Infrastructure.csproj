@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SalekhPos.Authorization.Application/SalekhPos.Authorization.Application.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

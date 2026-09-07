@@ -1,0 +1,10 @@
+name: Feature request
+description: Describe the workflow, affected roles and acceptance criteria.
+body:
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Describe the workflow, affected roles and acceptance criteria.
+    validations:
+      required: true

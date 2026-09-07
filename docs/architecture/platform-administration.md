@@ -55,7 +55,7 @@ Provide SALEKHPOS_BOOTSTRAP_CONNECTION through the operator's secret environment
 using verified TLS. Then run from the repository root (PowerShell 7):
 
 ```powershell
-./scripts/dotnet.ps1 run --project backend/src/Bootstrapper/SalekhPos.Admin --configuration Release -- bootstrap-root <operation-uuid> <https-issuer> <verified-subject> <reason>
+./scripts/dotnet.ps1 run --project tools/cli/SalekhPos.Cli --configuration Release -- bootstrap-root <operation-uuid> <https-issuer> <verified-subject> <reason>
 ```
 
 Replace the angle-bracket arguments with reviewed values and quote the reason.

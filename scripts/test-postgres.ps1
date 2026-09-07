@@ -34,7 +34,7 @@ try {
     "CREATE ROLE salekhpos_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD '$taskRuntimePassword';" | & (Join-Path $PostgresBin 'psql.exe') @taskConnection
     if ($LASTEXITCODE -ne 0) { throw 'Runtime role provisioning failed.' }
     $taskMigrations = @(& (Join-Path $PSScriptRoot 'ci/get-migrations.ps1') -RepositoryRoot $taskRoot)
-    $taskTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/tests') -Filter '*.sql' | Sort-Object Name)
+    $taskTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'tests/integration/database') -Filter '*.sql' | Sort-Object Name)
     foreach ($taskMigration in $taskMigrations) {
         $taskVersion = $taskMigration.Name.Substring(0, 3)
         $taskMatchingTests = @($taskTests | Where-Object { $_.Name.StartsWith($taskVersion + '_') })
@@ -56,10 +56,10 @@ try {
         $taskPrefix = "Host=127.0.0.1;Port=$Port;Database=salekhpos_restored;Timeout=5;Command Timeout=15;SSL Mode=Disable;"
         $env:SALEKHPOS_TEST_ADMIN_CONNECTION = $taskPrefix + "Username=postgres;Password=$env:PGPASSWORD"
         $env:SALEKHPOS_TEST_RUNTIME_CONNECTION = $taskPrefix + "Username=salekhpos_runtime;Password=$taskRuntimePassword"
-        & (Join-Path $PSScriptRoot 'dotnet.ps1') build (Join-Path $taskRoot 'backend/src/Bootstrapper/SalekhPos.Admin') --configuration $Configuration --no-restore
+        & (Join-Path $PSScriptRoot 'dotnet.ps1') build (Join-Path $taskRoot 'tools/cli/SalekhPos.Cli') --configuration $Configuration --no-restore
         if ($LASTEXITCODE -ne 0) { throw 'Bootstrap tool build failed.' }
         & (Join-Path $PSScriptRoot 'ci/test-bootstrap.ps1') -Configuration $Configuration
-        & (Join-Path $PSScriptRoot 'dotnet.ps1') test SalekhPos.slnx --configuration $Configuration --no-restore
+        & (Join-Path $PSScriptRoot 'dotnet.ps1') test SalekhPos.sln --configuration $Configuration --no-restore
         if ($LASTEXITCODE -ne 0) { throw '.NET tests failed against disposable PostgreSQL.' }
     }
     Write-Output 'PASS: PostgreSQL migration and isolation checks completed.'

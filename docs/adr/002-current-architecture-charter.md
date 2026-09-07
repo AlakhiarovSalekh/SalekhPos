@@ -10,7 +10,7 @@ to implement the system using it. Its full, byte-identical source is preserved a
 Move the small existing backend into `backend/src/Bootstrapper/SalekhPos.Api`,
 `backend/src/BuildingBlocks/SalekhPos.SharedKernel`, `backend/src/Modules` and
 `backend/tests`. Preserve public namespaces, API routes, data and existing SQL
-migrations. Keep the modern `SalekhPos.slnx` solution format: a `.sln` conversion
+migrations. Keep the modern `SalekhPos.sln` solution format: a `.sln` conversion
 would add no functionality. Update all executable paths and verify the full suite.
 
 The alternative was retaining `server/` indefinitely. Aligning now is inexpensive

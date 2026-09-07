@@ -1,0 +1,9 @@
+name: dependency-scan
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verified-backend:
+    # This shared gate includes the named check and its database/security prerequisites.
+    uses: ./.github/workflows/ci.yml

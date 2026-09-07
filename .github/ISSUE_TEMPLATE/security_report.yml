@@ -1,0 +1,6 @@
+name: Security reporting guidance
+description: Instructions for private vulnerability reporting.
+body:
+  - type: markdown
+    attributes:
+      value: Please use the private security report link instead of opening a public issue. Never publish credentials or exploit details here.

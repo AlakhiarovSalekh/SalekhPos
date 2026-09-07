@@ -25,7 +25,7 @@ hardware integrations remain open.
 From the repository root, with PowerShell 7:
 
 ~~~powershell
-./scripts/dotnet.ps1 restore SalekhPos.slnx --configfile NuGet.Config --locked-mode
+./scripts/dotnet.ps1 restore SalekhPos.sln --configfile NuGet.Config --locked-mode
 ./scripts/ci/run.ps1 -PostgresMode Native
 ./scripts/dotnet.ps1 run --project backend/src/Bootstrapper/SalekhPos.Api --no-restore --configuration Release -- --urls http://127.0.0.1:5080
 ~~~
@@ -39,7 +39,7 @@ The full test runner creates a disposable PostgreSQL instance, applies migration
 and SQL regressions, restores a logical backup into another database, and runs all
 .NET tests against the restored database. Direct solution-wide dotnet test fails
 without integration database configuration rather than silently skipping tests.
-For domain/HTTP tests alone, select backend/tests/SalekhPos.Tests.
+For domain/HTTP tests alone, select backend/tests/Unit/SalekhPos.Tests.csproj.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for Docker and hosted CI.
 
 ## Implemented endpoints

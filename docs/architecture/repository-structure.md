@@ -1,52 +1,46 @@
 # Repository structure
 
-Current decision: [ADR 002](../adr/002-current-architecture-charter.md).
-The current charter supersedes the earlier server/client layout decision.
-Only implemented components are present:
+The exact path contract is the user's September 7 replacement specification:
+[Final complete file structure](../requirements/final-complete-file-structure.md).
+It supersedes the charter's earlier incremental directory-creation rule.
+The original source is retained byte-for-byte. Every one of its 1,543 entries
+(1,340 directories and 203 named files) is represented in the repository.
 
-```text
-SalekhPos/
-├── backend/
-│   ├── src/
-│   │   ├── Bootstrapper/SalekhPos.Api/
-│   │   ├── BuildingBlocks/SalekhPos.SharedKernel/
-│   │   └── Modules/
-│   │       ├── Organizations/
-│   │       ├── Access/
-│   │       └── Identity/
-│   │           ├── Application/
-│   │           ├── Api/
-│   │           ├── Infrastructure/
-│   │           └── Persistence/Migrations/
-│   └── tests/
-├── infra/postgres/           # Immutable legacy migrations and SQL regressions
-├── scripts/                 # Windows and CI verification
-├── docs/                    # Requirements, decisions, contracts and progress
-├── .github/                 # Quality workflow and dependency updates
-└── SalekhPos.slnx            # Existing modern .NET solution format
-```
+`repository-structure-manifest.json` is a machine-readable transcription.
+`./scripts/ci/check-structure.ps1 -RequireTracked` verifies every path against the
+original tree, including file/directory types and survival after a Git clone.
+Leaf directories use `.gitkeep` where implementation is still pending.
+Project files, dependency locks, implementation code, evidence documents and
+these tracking files supplement the supplied tree; they do not replace its paths.
 
-SystemAdministration now adds separate Domain, Application, Contracts,
-Infrastructure and API projects under `backend/src/Modules/SystemAdministration`.
-`backend/src/Bootstrapper/SalekhPos.Admin` is an operator-only root commissioning
-executable. [ADR 003](../adr/003-platform-authority.md) describes its boundaries.
+## Implemented code placement
 
-The full future tree is in the preserved charter. Web, desktop, mobile, kiosk,
-workers and shared client packages are created only with real implementations.
-Desktop and mobile have separate target roots; the earlier apps/client plan is
-superseded. No frontend is currently implemented.
+- API composition: `backend/src/Bootstrapper/SalekhPos.Api`.
+- Exact monetary arithmetic: `BuildingBlocks/SalekhPos.SharedKernel/Money`.
+- Organization hierarchy: `Modules/Organizations/SalekhPos.Organizations.Domain`.
+- Tenant permission reads: `Modules/Authorization`, separate Application and
+  Infrastructure assemblies. Existing database schema names remain compatible.
+- Token revocation: `Modules/Identity`, separate Application, Infrastructure and
+  API assemblies. API depends on an application interface, not PostgreSQL.
+- Root authority: the five `Modules/SystemAdministration` layer assemblies.
+- Root commissioning CLI: `tools/cli/SalekhPos.Cli`.
+- Unit/HTTP tests: `backend/tests/Unit`; integration tests: `backend/tests/Integration`.
+- Historical SQL migrations 001-003: `database/migrations`; later module-owned
+  migrations stay in their Infrastructure/Persistence/Migrations directories.
+- SQL regressions: `tests/integration/database`.
+- Root solution: `SalekhPos.sln`; .NET versions: `Directory.Packages.props`.
+- Automatic quality workflow: `.github/workflows/ci.yml`.
 
-Module migrations stay with their owner. Existing migrations 001-003 retain their
-original paths and contents. The common migration inventory orders both legacy
-and owned migrations and rejects duplicate versions. Native and Docker runners
-execute the same migration set before backup/restore and integration testing.
+## Readiness
 
-The small existing modules remain internally layered assemblies. Splitting their
-layers into separate assemblies is incremental work, not an excuse to create
-unused interfaces. Architecture CI prevents references between module assemblies;
-the existing Access-to-Organizations SQL dependency is documented debt in ADR 002.
+Directory presence is a delivery-layout guarantee, not a feature guarantee.
+Reserved client files and hardware abstractions contain no claim of working POS
+behavior. Unimplemented operational scripts/workflows fail explicitly instead
+of reporting success or deploying incomplete components. Reserved configuration
+must be implemented and validated before use. The only production-readiness
+claims allowed are those supported by `docs/development/progress.md`.
 
-Organization is the existing tenant boundary; Branch represents a store. Existing
-v1 API paths and persisted names remain compatible. Root Super Admin is a separate
-persisted platform authority; production provider login/MFA enrollment and platform
-management capabilities beyond administrator registration/revocation remain open.
+Branch remains the persisted/v1 store name. Tenant identity, authorization,
+immutable audit, root restrictions, token revocation and migration versions are
+preserved through the move. The existing authorization query across organization
+schema boundaries remains documented debt; renaming it does not eliminate it.
