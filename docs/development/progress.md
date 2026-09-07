@@ -1,5 +1,51 @@
 # Implementation progress
 
+## September 7, 2026 — supplied final structure implemented
+
+The newer explicit structure instruction supersedes incremental directory creation.
+Preserved the full original in `docs/requirements/final-complete-file-structure.md`;
+SHA256: `3648134C078BB553F7D322A4FC03E6750D700A3645F9E16F9F2F81D69E3B7942`.
+All 1,543 supplied entries (1,340 directories, 203 files) are present and Git-tracked.
+Keep markers preserve reserved directories after a clone. The source/manifest/type
+checker is included in CI. Additional code/project/evidence files support the tree.
+
+Moved the CLI to `tools/cli/SalekhPos.Cli`, split Identity into Application,
+Infrastructure and API assemblies with `ITokenRevocations` dependency inversion,
+split Authorization Application/Infrastructure, and moved hierarchy code into
+Organizations.Domain. Moved Money, exception handling and tests to required paths.
+Historical migrations now live in `database/migrations`; SQL regressions are in
+`tests/integration/database`. Every moved migration blob remains identical.
+`SalekhPos.sln` contains all 16 implemented projects. Package versions are managed
+centrally. Updated references, namespaces, locks, native/Docker runners, Dependabot,
+backend entry scripts and `.github/workflows/ci.yml`.
+
+The complete Windows Native gate passed: 137 unit/configuration/HTTP tests and
+48 real PostgreSQL integration tests; zero failures/skips. Release build passed
+with zero warnings/errors. Formatting, architecture, original requirement hashes,
+Gitleaks and NuGet advisory checks passed. All five migrations, SQL regressions,
+logical restore and the relocated real root bootstrap CLI passed. The disposable
+server stopped. Structure/Git tracking, PowerShell syntax and JSON parsing passed.
+The incomplete local SDK and package cache were restored using the exact pinned
+SDK and a dedicated temporary package cache. No production data was touched.
+
+Implementation commit `aac5246` is published to GitHub main. Hosted Linux verification
+[34121562942](https://github.com/AlakhiarovSalekh/SalekhPos/actions/runs/34121562942)
+passed the complete Linux/Docker gate, including all 185 tests and the relocated CLI.
+
+### Exact continuation and limitations
+
+The path layout and existing-code relocation are complete. The complete POS is
+not ready for handover. Requested client, hardware, operations and configuration
+locations remain explicitly reserved. Their presence does not mean functioning
+sales, inventory, offline synchronization, MFA enrollment or production deployment.
+Unimplemented scripts and manual workflows fail explicitly instead of reporting
+success. Implemented backend check workflows reuse the full quality gate.
+
+Next implement real OIDC authorization-code + PKCE web login, MFA step-up and
+provider session revocation in the supplied paths, followed by audited tenant
+onboarding and the store/catalog vertical slice. Replace reservations with working
+behavior without removing required paths. The full product goal remains active.
+
 ## September 7, 2026 — original-root authority and audited administration
 
 The active goal remains the complete global, six-platform retail ecosystem. This
