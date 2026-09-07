@@ -45,7 +45,10 @@ and the full gate was rerun normally. No production process or data was touched.
 
 ### Continue here
 
-Commit/publish this verified milestone and confirm hosted Quality. Then implement
+Published implementation commit `6a90e1b` to GitHub main. Hosted Linux Quality
+[34117600524](https://github.com/AlakhiarovSalekh/SalekhPos/actions/runs/34117600524)
+passed the full gate, including the real operator CLI and Docker PostgreSQL tests.
+Next implement
 a real OIDC provider integration and web login with authorization code + PKCE,
 MFA enrollment/step-up and provider session/refresh-token revocation. The platform
 policy currently validates signed test-provider assurance; it is not proof of an
