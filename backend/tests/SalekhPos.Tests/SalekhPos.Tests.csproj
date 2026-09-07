@@ -11,6 +11,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <ProjectReference Include="../../src/Api/SalekhPos.Api.csproj" />
+    <ProjectReference Include="../../src/Bootstrapper/SalekhPos.Api/SalekhPos.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/Organizations/SalekhPos.Organizations.csproj" />
   </ItemGroup>
 </Project>

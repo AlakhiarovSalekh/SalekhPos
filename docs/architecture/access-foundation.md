@@ -3,6 +3,10 @@
 Status: the first protected read-only vertical slice. This is not a complete identity,
 session, Owner, MFA, audited provisioning or client implementation.
 
+Current addition: all authenticated requests also check the Identity module's
+[durable token revocation store](token-revocation.md). The branch-read contract
+below remains unchanged. Provider session/device revocation is still open.
+
 ## HTTP contract
 
 GET /api/v1/organizations/{organizationId}/branches requires JWT authentication and
@@ -69,8 +73,9 @@ must be configured explicitly. Forwarded headers are not trusted by default.
 
 Queries read at most 100+1 rows; the extra row determines nextCursor. They do not
 load all grants into memory or compute unbounded total counts. A list request uses
-four statements: runtime safety, context, authorization and data, plus transaction
-begin/commit. This is not a throughput benchmark. Realistic query-plan and load
+four branch statements: runtime safety, context, authorization and data, plus transaction
+begin/commit. Identity revocation validation uses a separate preceding transaction.
+This is not a throughput benchmark. Realistic query-plan and load
 verification remain performance gates.
 
 Initial per-process limits allow 300 requests per IP per minute and 64 concurrent

@@ -487,11 +487,15 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "SalekhPos.Access": "[1.0.0, )",
+          "SalekhPos.Identity": "[1.0.0, )",
           "SalekhPos.SharedKernel": "[1.0.0, )"
         }
       },
-      "salekhpos.organizations": {
-        "type": "Project"
+      "salekhpos.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )"
+        }
       },
       "salekhpos.sharedkernel": {
         "type": "Project"

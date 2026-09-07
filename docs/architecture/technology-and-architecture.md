@@ -1,3 +1,5 @@
+> Historical decision: superseded where indicated by ADR 002 and the current architecture charter.
+
 # SalekhPos technology and architecture
 
 Original design: September 6, 2026. English edition: September 7.

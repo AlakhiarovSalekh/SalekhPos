@@ -83,6 +83,12 @@
           "Npgsql": "[10.0.3, )"
         }
       },
+      "salekhpos.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )"
+        }
+      },
       "salekhpos.sharedkernel": {
         "type": "Project"
       }

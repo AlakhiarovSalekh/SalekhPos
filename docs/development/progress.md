@@ -1,5 +1,62 @@
 # Implementation progress
 
+## September 7, 2026 — current charter and durable token revocation
+
+The newly supplied Master Architecture Prompt was read in full: 4,720 lines and
+168 numbered sections. A byte-identical copy is committed as
+`docs/requirements/master-architecture-charter.md`; CI checks its SHA256 and every
+section range, alongside the 296 earlier sections. ADR 002 records precedence,
+repository migration, preserved terminology and remaining module-boundary debt.
+`AGENTS.md` records the continuation entry point and latest language directions.
+
+### Implemented and verified
+
+- Moved working code into backend/src/Bootstrapper, BuildingBlocks, Modules and
+  backend/tests. Updated solution, references, scripts, dependency paths and docs.
+  Existing migration 001-003 bytes, public API routes and business data are preserved.
+- Identity-owned POST /api/v1/identity/revoke-current-token durably revokes the
+  authenticated current API credential. Every authenticated request checks it.
+  New module-owned migration 004 participates in both Windows and Docker runners.
+- Revocation and its immutable audit are one atomic row. SHA256 fingerprints cover
+  validated JWT signing input so alternate signature encodings cannot bypass
+  revocation. No raw credentials persist. Identity-scoped forced RLS, restricted
+  insert columns, runtime checks and pooled transaction-local context are enforced.
+- Repeat/concurrent writes are idempotent; requests using a revoked token receive
+  401. Host restart preserves revocation. Another user's or distinct token's access
+  is unaffected. Missing revocation storage fails closed and readiness stays down.
+- Full Windows CI gate passed: 121 domain/configuration/HTTP tests and 35 real
+  PostgreSQL integration tests (156 total), zero failures/skips; Release build with
+  zero warnings/errors; locked restore, formatting/analyzers, requirement integrity,
+  architecture checks, Gitleaks and NuGet advisory checks passed.
+- Migrations 001-004 and all SQL regressions passed; a logical backup was restored
+  into another database before .NET integration tests. Native test data remains
+  outside the repository and the disposable PostgreSQL instance was stopped.
+
+### Precise continuation point
+
+This is a verified backend milestone, not a complete POS application. Next implement
+Identity provisioning and provider integration with server-owned platform authority:
+choose/test an OIDC provider, establish Root Super Admin bootstrap with MFA, and
+add audited tenant-owner provisioning without public platform-role elevation.
+Provider logout and refresh-token/session/device revocation are still open; the
+new endpoint revokes one API credential only. No production identity provider or
+hosting credentials have been configured. Continue independent policy/domain work
+before requiring external provider credentials.
+
+Then implement store management and catalog as complete authorized/audited vertical
+slices, followed by register/shift, atomic sales/payments, inventory event handling,
+native offline storage/sync and hardware proofs. Web/Desktop/Mobile/Kiosk remain
+unimplemented. Do not create their target trees without actual functionality.
+
+Before production: audit retention/export, provider revocation, trusted TLS/proxy
+configuration and operating controls remain release gates. Never roll back to an
+API build lacking revocation checks while revoked tokens remain valid. Details:
+`docs/architecture/token-revocation.md`.
+
+GitHub publication is authorized; publish this verified milestone and inspect the
+hosted Quality run. Earlier open Dependabot PRs are outside this implementation.
+
+
 ## September 7, 2026 — verified identity and branch-read foundation
 
 Both master documents were read completely: 7,412 lines, 296 main sections and

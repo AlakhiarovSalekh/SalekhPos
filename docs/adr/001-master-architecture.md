@@ -1,3 +1,5 @@
+> Historical decision: superseded where indicated by ADR 002 and the current architecture charter.
+
 # ADR 001: master specification alignment
 
 Date: 2026-09-07. Status: accepted for implementation; six-platform delivery remains unverified.

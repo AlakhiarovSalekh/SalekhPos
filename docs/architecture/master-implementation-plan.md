@@ -1,3 +1,5 @@
+> Historical planning/evidence: current charter and layout decisions are in ADR 002 and docs/development/progress.md. Earlier implementation statuses below are not current completeness claims.
+
 # SalekhPos master implementation plan
 
 Established September 6, 2026; translated and updated September 7.

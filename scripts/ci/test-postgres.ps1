@@ -19,7 +19,7 @@ function Invoke-DockerCheck([string[]] $Arguments) {
     if ($LASTEXITCODE -ne 0) { throw "Docker $($Arguments[0]) failed with exit code $LASTEXITCODE." }
 }
 
-$taskMigrations = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/migrations') -Filter '*.sql' | Sort-Object Name)
+$taskMigrations = @(& (Join-Path $PSScriptRoot 'get-migrations.ps1') -RepositoryRoot $taskRoot)
 $taskSqlTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/tests') -Filter '*.sql' | Sort-Object Name)
 if ($taskMigrations.Count -eq 0 -or $taskSqlTests.Count -eq 0) { throw 'Migrations and SQL tests must both exist.' }
 $taskVersions = @{}
@@ -67,6 +67,7 @@ try {
     foreach ($taskMigration in $taskMigrations) {
         $taskVersion = $taskMigration.Name.Substring(0, 3)
         Write-Output "Applying $($taskMigration.Name) and its regression checks."
+        Invoke-DockerCheck @('cp', $taskMigration.FullName, ("${taskContainerId}:/checks/migrations/" + $taskMigration.Name))
         foreach ($taskTest in $taskSqlTests | Where-Object { $_.Name.StartsWith($taskVersion + '_') -and $_.Name.EndsWith('_before.sql') }) {
             Invoke-DockerCheck ($taskPsql + @('-f', ('/checks/tests/' + $taskTest.Name)))
         }

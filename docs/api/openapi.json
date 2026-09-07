@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "SalekhPos branch access API",
-    "version": "1.0.0",
-    "description": "Current implemented read-only scope. Not a complete POS API or identity provider. See docs/architecture/access-foundation.md."
+    "title": "SalekhPos foundation API",
+    "version": "1.1.0",
+    "description": "Implemented branch reads and current API token revocation. Not a complete POS or identity provider."
   },
   "security": [
     {
@@ -255,6 +255,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/identity/revoke-current-token": {
+      "post": {
+        "operationId": "revokeCurrentToken",
+        "description": "Durably revoke only the validated current API token. Provider sessions and refresh tokens are unaffected. Revoked credentials receive 401 on subsequent requests, including retries.",
+        "responses": {
+          "503": {
+            "description": "Revocation could not be safely persisted."
+          },
+          "204": {
+            "description": "Revocation and immutable audit committed."
+          },
+          "401": {
+            "description": "Missing, invalid or already revoked bearer token."
+          },
+          "429": {
+            "description": "Request capacity exceeded."
           }
         }
       }

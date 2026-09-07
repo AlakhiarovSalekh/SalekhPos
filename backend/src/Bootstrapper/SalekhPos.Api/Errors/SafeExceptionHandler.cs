@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Npgsql;
 using SalekhPos.Access.Application;
+using SalekhPos.Identity.Application;
 
 namespace SalekhPos.Api.Errors;
 
@@ -11,7 +12,7 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
         var (status, code, title) = exception switch
         {
             AccessDeniedException => (403, "access_denied", "Access is not permitted"),
-            AccessUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or IdentityUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

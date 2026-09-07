@@ -12,8 +12,8 @@ Standing user directions, established on September 6–7, 2026:
   Environment-enforced permissions remain separate technical constraints.
 - Publish verified work to GitHub in coherent milestones and logical commits.
   Do not push every small edit separately.
-- Use English for all communication, code, documentation, filenames and commit
-  messages. The user's use of Azerbaijani does not change the working language.
+- Use English for code, documentation, filenames and commit messages.
+  The latest user direction permits Azerbaijani conversation.
   Preserve original supplied evidence and necessary multilingual test fixtures.
 
 Engineering practice: small reviewable changes; automated tests focused on money,

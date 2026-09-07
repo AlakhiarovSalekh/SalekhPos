@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.JsonWebTokens;
 using SalekhPos.Access.Application;
+using SalekhPos.Identity.Application;
+using SalekhPos.Identity.Infrastructure;
 
 namespace SalekhPos.Api.Authentication;
 
@@ -58,14 +61,14 @@ public static class AuthenticationSetup
                     }
                     return Task.CompletedTask;
                 },
-                OnTokenValidated = context =>
+                OnTokenValidated = async context =>
                 {
                     var issuers = context.Principal!.FindAll("iss").ToArray();
                     var subjects = context.Principal.FindAll("sub").ToArray();
                     if (issuers.Length != 1 || subjects.Length != 1)
                     {
                         context.Fail("A unique subject and issuer are required.");
-                        return Task.CompletedTask;
+                        return;
                     }
                     try
                     {
@@ -74,8 +77,22 @@ public static class AuthenticationSetup
                     catch (ArgumentException)
                     {
                         context.Fail("The identity is invalid.");
+                        return;
                     }
-                    return Task.CompletedTask;
+                    if (context.SecurityToken is not JsonWebToken token)
+                    {
+                        context.Fail("The credential format is unsupported.");
+                        return;
+                    }
+                    var credential = new AuthenticatedCredential(issuers[0].Value, subjects[0].Value,
+                        token.EncodedToken, token.ValidTo);
+                    var revocations = context.HttpContext.RequestServices.GetRequiredService<TokenRevocations>();
+                    if (await revocations.IsRevokedAsync(credential, context.HttpContext.RequestAborted))
+                    {
+                        context.Fail("The credential is unavailable.");
+                        return;
+                    }
+                    context.HttpContext.Items[typeof(AuthenticatedCredential)] = credential;
                 }
             };
         });

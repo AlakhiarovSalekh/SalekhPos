@@ -33,7 +33,7 @@ try {
     $taskRuntimePassword = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
     "CREATE ROLE salekhpos_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD '$taskRuntimePassword';" | & (Join-Path $PostgresBin 'psql.exe') @taskConnection
     if ($LASTEXITCODE -ne 0) { throw 'Runtime role provisioning failed.' }
-    $taskMigrations = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/migrations') -Filter '*.sql' | Sort-Object Name)
+    $taskMigrations = @(& (Join-Path $PSScriptRoot 'ci/get-migrations.ps1') -RepositoryRoot $taskRoot)
     $taskTests = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'infra/postgres/tests') -Filter '*.sql' | Sort-Object Name)
     foreach ($taskMigration in $taskMigrations) {
         $taskVersion = $taskMigration.Name.Substring(0, 3)

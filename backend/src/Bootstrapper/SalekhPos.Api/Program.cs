@@ -6,6 +6,8 @@ using SalekhPos.Access.Infrastructure;
 using SalekhPos.Api.Authentication;
 using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.Errors;
+using SalekhPos.Identity.Api;
+using SalekhPos.Identity.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -27,6 +29,7 @@ builder.Services.AddPlatformAuthentication(builder.Configuration);
 builder.Services.AddSingleton(new AccessDatabase(builder.Configuration.GetConnectionString("Application"),
     builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")));
 builder.Services.AddSingleton<BranchAccessReader>();
+builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -74,11 +77,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" })).AllowAnonymous();
-app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAccessReader reader, CancellationToken cancellationToken) =>
-    authentication.IsConfigured && await reader.IsReadyAsync(cancellationToken)
+app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAccessReader reader,
+    TokenRevocations revocations, CancellationToken cancellationToken) =>
+    authentication.IsConfigured && await reader.IsReadyAsync(cancellationToken) && await revocations.IsReadyAsync(cancellationToken)
         ? Results.Ok(new { status = "ready", capability = "authorized_branch_reads" })
         : Results.Problem(statusCode: 503, title: "Service is not ready",
             extensions: new Dictionary<string, object?> { ["code"] = "dependencies_unavailable" })).AllowAnonymous();
 app.MapBranchEndpoints();
+app.MapIdentityEndpoints();
 
 app.Run();

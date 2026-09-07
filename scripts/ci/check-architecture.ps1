@@ -4,7 +4,7 @@ param([string] $RepositoryRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $taskRoot = [IO.Path]::GetFullPath($RepositoryRoot)
-$taskProjects = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'server') -Filter '*.csproj' -Recurse)
+$taskProjects = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'backend') -Filter '*.csproj' -Recurse)
 if ($taskProjects.Count -eq 0) { throw 'No .NET projects were found.' }
 [xml] $taskSolution = Get-Content -LiteralPath (Join-Path $taskRoot 'SalekhPos.slnx') -Raw
 $taskSolutionPaths = @($taskSolution.SelectNodes('//Project') | ForEach-Object {
@@ -14,10 +14,10 @@ $taskSolutionPaths = @($taskSolution.SelectNodes('//Project') | ForEach-Object {
 function Get-ProjectLayer([string] $Path) {
     $taskRelative = [IO.Path]::GetRelativePath($taskRoot, $Path).Replace('\', '/')
     switch -Regex ($taskRelative) {
-        '^server/src/SharedKernel/' { return 'SharedKernel' }
-        '^server/src/Modules/([^/]+)/' { return ('Module:' + $Matches[1]) }
-        '^server/src/(Api|Worker)/' { return 'Host' }
-        '^server/tests/' { return 'Tests' }
+        '^backend/src/BuildingBlocks/SalekhPos.SharedKernel/' { return 'SharedKernel' }
+        '^backend/src/Modules/([^/]+)/' { return ('Module:' + $Matches[1]) }
+        '^backend/src/Bootstrapper/SalekhPos\.(Api|Worker)/' { return 'Host' }
+        '^backend/tests/' { return 'Tests' }
         default { throw "Unclassified project location: $taskRelative. Extend the architecture rule explicitly." }
     }
 }
