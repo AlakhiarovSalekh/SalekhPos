@@ -8,6 +8,9 @@ using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.Errors;
 using SalekhPos.Identity.Api;
 using SalekhPos.Identity.Infrastructure;
+using SalekhPos.SystemAdministration.Api;
+using SalekhPos.SystemAdministration.Application;
+using SalekhPos.SystemAdministration.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -30,6 +33,10 @@ builder.Services.AddSingleton(new AccessDatabase(builder.Configuration.GetConnec
     builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")));
 builder.Services.AddSingleton<BranchAccessReader>();
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(new PlatformMfaPolicy(builder.Configuration["Authentication:PrivilegedAcr"], TimeProvider.System));
+builder.Services.AddSingleton<ISuperAdminRegistry>(provider => new PostgresSuperAdminRegistry(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<SuperAdminAdministration>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -85,5 +92,6 @@ app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAcc
             extensions: new Dictionary<string, object?> { ["code"] = "dependencies_unavailable" })).AllowAnonymous();
 app.MapBranchEndpoints();
 app.MapIdentityEndpoints();
+app.MapPlatformEndpoints();
 
 app.Run();

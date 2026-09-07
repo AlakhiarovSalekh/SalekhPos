@@ -1,5 +1,69 @@
 # Implementation progress
 
+## September 7, 2026 — original-root authority and audited administration
+
+The active goal remains the complete global, six-platform retail ecosystem. This
+is one implemented security dependency, not a redefinition of the final goal.
+The goal attachment was compared with the current charter; after normalizing
+bullet markers and blank lines, its content is identical.
+
+### Implemented and verified
+
+- Added SystemAdministration with separate Domain, Application, Contracts,
+  Infrastructure and API assemblies. CI enforces framework-independent core
+  layers and allowed module-layer references.
+- Added an operator-only root bootstrap executable and module-owned migration 005.
+  Initial root authority is bound to a reviewed external issuer/subject, with no
+  public bootstrap/signup route or production seed identity. Replacing/deleting/
+  revoking the original root is forbidden. Separate bootstrap credentials are
+  never read by the API or passed in CLI arguments.
+- Added current platform-authority lookup and root-only registration/revocation
+  of additional Super Admins. Persisted authority is separate from tenant roles;
+  root receives no automatic tenant-data access. Additional admins cannot delegate.
+- Mutation requires configured provider MFA assurance and recent auth_time.
+  Missing assurance configuration fails closed. JWT signature/issuer/audience/
+  lifetime/type and durable token revocation remain enforced.
+- Atomic immutable audit, exact idempotent replay, conflicting-ID rejection and
+  concurrent duplicate protection are implemented. API runtime has no registry/
+  audit table privileges. Controlled functions use a non-login owner, fixed
+  search_path, forced RLS and no PUBLIC execution. Database administrators remain
+  a trusted operational boundary, not a claimed tamper-proof adversary boundary.
+- Full Windows quality gate passed: 137 unit/configuration/HTTP and 48 real
+  PostgreSQL integration tests, 185 total, zero failures/skips. Release build has
+  zero warnings/errors. Formatting including informational analyzers, requirement
+  hashes/section coverage, architecture, Gitleaks and NuGet advisory checks passed.
+- Migration 005 SQL tests cover runtime bootstrap denial, tenant escalation,
+  missing/stale MFA, immutable root/audit and rollback after injected audit failure.
+  All five migrations and logical restore passed. The real bootstrap CLI was run
+  against restored disposable PostgreSQL: initial commit, retry, root replacement
+  rejection and runtime-credential rejection passed. The disposable server stopped.
+
+A test exposed empty MFA configuration producing 500; fixed it to deny privileged
+access. A redirected native PostgreSQL run held an inherited output handle after
+pg_ctl exited; that specific disposable server was stopped, the attempt ended,
+and the full gate was rerun normally. No production process or data was touched.
+
+### Continue here
+
+Commit/publish this verified milestone and confirm hosted Quality. Then implement
+a real OIDC provider integration and web login with authorization code + PKCE,
+MFA enrollment/step-up and provider session/refresh-token revocation. The platform
+policy currently validates signed test-provider assurance; it is not proof of an
+actual production MFA flow. No real IdP account or root owner has been provisioned.
+Select and validate the provider using current primary documentation, preserving
+provider-independent business boundaries. User permission is not needed for
+ordinary implementation or disposable local integration environments.
+
+After identity flow, implement audited tenant-owner onboarding and store/catalog
+vertical slices. Sales, purchasing, inventory, native clients, offline/sync,
+hardware, reporting and remaining lifecycle capabilities are still required by
+the active full goal. Production secret/hosting setup, audit retention/export,
+durable denied-security events and original IdP account recovery remain open.
+
+Contracts and bootstrap/runbook details: docs/architecture/platform-administration.md.
+Architecture and trust decisions: docs/adr/003-platform-authority.md.
+
+
 ## September 7, 2026 — current charter and durable token revocation
 
 The newly supplied Master Architecture Prompt was read in full: 4,720 lines and

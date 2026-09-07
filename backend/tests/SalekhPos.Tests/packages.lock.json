@@ -488,7 +488,9 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "SalekhPos.Access": "[1.0.0, )",
           "SalekhPos.Identity": "[1.0.0, )",
-          "SalekhPos.SharedKernel": "[1.0.0, )"
+          "SalekhPos.SharedKernel": "[1.0.0, )",
+          "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
+          "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )"
         }
       },
       "salekhpos.identity": {
@@ -502,6 +504,32 @@
       },
       "salekhpos.sharedkernel": {
         "type": "Project"
+      },
+      "salekhpos.systemadministration.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.SystemAdministration.Application": "[1.0.0, )"
+        }
+      },
+      "salekhpos.systemadministration.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.SystemAdministration.Contracts": "[1.0.0, )",
+          "SalekhPos.SystemAdministration.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.systemadministration.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.systemadministration.domain": {
+        "type": "Project"
+      },
+      "salekhpos.systemadministration.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.SystemAdministration.Application": "[1.0.0, )"
+        }
       }
     }
   }

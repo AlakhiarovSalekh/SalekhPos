@@ -4,5 +4,7 @@
     <ProjectReference Include="../../BuildingBlocks/SalekhPos.SharedKernel/SalekhPos.SharedKernel.csproj" />
     <ProjectReference Include="../../Modules/Access/SalekhPos.Access.csproj" />
     <ProjectReference Include="../../Modules/Identity/SalekhPos.Identity.csproj" />
+    <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Api/SalekhPos.SystemAdministration.Api.csproj" />
+    <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure/SalekhPos.SystemAdministration.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

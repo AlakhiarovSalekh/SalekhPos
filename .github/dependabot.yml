@@ -12,6 +12,12 @@ updates:
       - /backend/src/Modules/Organizations
       - /backend/src/Modules/Access
       - /backend/src/Modules/Identity
+      - /backend/src/Bootstrapper/SalekhPos.Admin
+      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain
+      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Contracts
+      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application
+      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure
+      - /backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Api
       - /backend/tests/SalekhPos.Tests
       - /backend/tests/SalekhPos.IntegrationTests
     schedule:

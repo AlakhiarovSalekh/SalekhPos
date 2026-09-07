@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "salekhpos.systemadministration.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.systemadministration.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}

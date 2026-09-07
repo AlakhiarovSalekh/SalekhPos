@@ -26,6 +26,11 @@ SalekhPos/
 └── SalekhPos.slnx            # Existing modern .NET solution format
 ```
 
+SystemAdministration now adds separate Domain, Application, Contracts,
+Infrastructure and API projects under `backend/src/Modules/SystemAdministration`.
+`backend/src/Bootstrapper/SalekhPos.Admin` is an operator-only root commissioning
+executable. [ADR 003](../adr/003-platform-authority.md) describes its boundaries.
+
 The full future tree is in the preserved charter. Web, desktop, mobile, kiosk,
 workers and shared client packages are created only with real implementations.
 Desktop and mobile have separate target roots; the earlier apps/client plan is
@@ -43,4 +48,5 @@ the existing Access-to-Organizations SQL dependency is documented debt in ADR 00
 
 Organization is the existing tenant boundary; Branch represents a store. Existing
 v1 API paths and persisted names remain compatible. Root Super Admin is a separate
-platform authority that has not yet been implemented.
+persisted platform authority; production provider login/MFA enrollment and platform
+management capabilities beyond administrator registration/revocation remain open.

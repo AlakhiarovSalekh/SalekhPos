@@ -40,6 +40,10 @@ public sealed class AccessFixture : IAsyncLifetime
         RuntimeConnection = Environment.GetEnvironmentVariable("SALEKHPOS_TEST_RUNTIME_CONNECTION")
             ?? throw new InvalidOperationException("Missing disposable runtime connection. Use the PostgreSQL test runner.");
         admin = NpgsqlDataSource.Create(adminConnection);
+        await ExecuteAsync("""
+            SELECT system_administration.bootstrap_root('51000000-0000-0000-0000-000000000001',
+                $1,'platform-root','Integration fixture original root','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+            """, Issuer);
         await using (var restored = admin.CreateCommand("""
             SELECT count(*) FROM organization.branches
             WHERE branch_id='90000000-0000-0000-0000-000000000002'
@@ -76,6 +80,7 @@ public sealed class AccessFixture : IAsyncLifetime
             builder.UseEnvironment("Testing");
             builder.UseSetting("Authentication:Authority", Issuer);
             builder.UseSetting("Authentication:Audience", Audience);
+            builder.UseSetting("Authentication:PrivilegedAcr", "urn:salekhpos:test:mfa");
             builder.UseSetting("ConnectionStrings:Application", RuntimeConnection);
             builder.ConfigureServices(services => services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {
@@ -103,11 +108,14 @@ public sealed class AccessFixture : IAsyncLifetime
     }
 
     public string Token(string subject = "alice", string? issuer = null, string? audience = null,
-        bool expired = false, bool badSignature = false, string type = "at+jwt", bool forgedClaims = false)
+        bool expired = false, bool badSignature = false, string type = "at+jwt", bool forgedClaims = false,
+        string? acr = null, long? authTime = null)
     {
         using var otherKey = badSignature ? RSA.Create(2048) : null;
         var key = otherKey is null ? Key : new RsaSecurityKey(otherKey) { KeyId = Key.KeyId };
         var claims = new List<Claim> { new("sub", subject), new("jti", Guid.NewGuid().ToString()) };
+        if (acr is not null) { claims.Add(new Claim("acr", acr)); }
+        if (authTime is not null) { claims.Add(new Claim("auth_time", authTime.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), ClaimValueTypes.Integer64)); }
         if (forgedClaims)
         {
             claims.AddRange([new("role", "PlatformOwner"), new("permission", "branches.view"), new("organization_id", OrganizationB.ToString())]);

@@ -56,6 +56,9 @@ try {
         $taskPrefix = "Host=127.0.0.1;Port=$Port;Database=salekhpos_restored;Timeout=5;Command Timeout=15;SSL Mode=Disable;"
         $env:SALEKHPOS_TEST_ADMIN_CONNECTION = $taskPrefix + "Username=postgres;Password=$env:PGPASSWORD"
         $env:SALEKHPOS_TEST_RUNTIME_CONNECTION = $taskPrefix + "Username=salekhpos_runtime;Password=$taskRuntimePassword"
+        & (Join-Path $PSScriptRoot 'dotnet.ps1') build (Join-Path $taskRoot 'backend/src/Bootstrapper/SalekhPos.Admin') --configuration $Configuration --no-restore
+        if ($LASTEXITCODE -ne 0) { throw 'Bootstrap tool build failed.' }
+        & (Join-Path $PSScriptRoot 'ci/test-bootstrap.ps1') -Configuration $Configuration
         & (Join-Path $PSScriptRoot 'dotnet.ps1') test SalekhPos.slnx --configuration $Configuration --no-restore
         if ($LASTEXITCODE -ne 0) { throw '.NET tests failed against disposable PostgreSQL.' }
     }

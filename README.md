@@ -5,8 +5,10 @@ A retail operating platform being developed for real stores.
 **Current status:** a verified backend foundation, not a production-ready POS.
 Organization/business/region/branch models, PostgreSQL RLS, JWT-protected branch
 reads, active membership, permission scopes and durable current-token revocation
-with an immutable audit record are implemented. Login UI, Owner/MFA
-administration, sales, inventory, offline operation and hardware integrations remain open.
+with an immutable audit record are implemented. Protected original-root bootstrap
+and root-only Super Admin registration/revocation are implemented; provider login
+and MFA enrollment, tenant onboarding, sales, inventory, offline operation and
+hardware integrations remain open.
 
 ## Technical foundation
 
@@ -51,12 +53,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for Docker and hosted CI.
 - GET /api/v1/organizations/{id}/branches/{branchId}: the same authorization checks.
 - POST /api/v1/identity/revoke-current-token: revoke the validated current API
   credential durably; subsequent authenticated requests using it return 401.
+- GET /api/v1/platform/authority: current persisted platform authority.
+- POST /api/v1/platform/super-admins and /{adminId}/revoke: original-root-only,
+  recent-MFA-protected, audited, idempotent administrator registration/revocation.
 
 Local HTTP is for development. Provider selection, production TLS/proxy settings,
 session/device revocation, auditing and operating controls remain release gates.
 See [access configuration and limitations](docs/architecture/access-foundation.md).
 Token revocation does not revoke provider sessions or refresh tokens; see
 [the exact revocation contract and deployment constraints](docs/architecture/token-revocation.md).
+See [platform administration and operator bootstrap](docs/architecture/platform-administration.md)
+for the separate root authority model. No production owner identity is seeded.
 
 Build artifacts, live databases, credentials and test reports stay outside the
 OneDrive source directory. Independent checkouts on the same machine must use

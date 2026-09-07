@@ -83,6 +83,7 @@ try {
     $taskConnectionPrefix = "Host=127.0.0.1;Port=$taskPort;Database=salekhpos_restored;Timeout=5;Command Timeout=15;Include Error Detail=false;"
     $env:SALEKHPOS_TEST_ADMIN_CONNECTION = $taskConnectionPrefix + "Username=postgres;Password=$env:POSTGRES_PASSWORD"
     $env:SALEKHPOS_TEST_RUNTIME_CONNECTION = $taskConnectionPrefix + "Username=salekhpos_runtime;Password=$taskRuntimePassword"
+    & (Join-Path $PSScriptRoot 'test-bootstrap.ps1')
     New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null
     & (Join-Path $taskRoot 'scripts/dotnet.ps1') test (Join-Path $taskRoot 'SalekhPos.slnx') --configuration Release --no-build --no-restore --logger trx --results-directory (Join-Path $ReportDirectory 'tests')
     if ($LASTEXITCODE -ne 0) { throw '.NET unit and live PostgreSQL integration tests failed.' }

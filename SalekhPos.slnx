@@ -1,6 +1,12 @@
 <Solution>
   <Folder Name="/backend/src/">
     <Project Path="backend/src/Bootstrapper/SalekhPos.Api/SalekhPos.Api.csproj" />
+    <Project Path="backend/src/Bootstrapper/SalekhPos.Admin/SalekhPos.Admin.csproj" />
+    <Project Path="backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Domain/SalekhPos.SystemAdministration.Domain.csproj" />
+    <Project Path="backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Contracts/SalekhPos.SystemAdministration.Contracts.csproj" />
+    <Project Path="backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Application/SalekhPos.SystemAdministration.Application.csproj" />
+    <Project Path="backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure/SalekhPos.SystemAdministration.Infrastructure.csproj" />
+    <Project Path="backend/src/Modules/SystemAdministration/SalekhPos.SystemAdministration.Api/SalekhPos.SystemAdministration.Api.csproj" />
     <Project Path="backend/src/BuildingBlocks/SalekhPos.SharedKernel/SalekhPos.SharedKernel.csproj" />
     <Project Path="backend/src/Modules/Access/SalekhPos.Access.csproj" />
     <Project Path="backend/src/Modules/Identity/SalekhPos.Identity.csproj" />

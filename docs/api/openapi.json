@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SalekhPos foundation API",
-    "version": "1.1.0",
-    "description": "Implemented branch reads and current API token revocation. Not a complete POS or identity provider."
+    "version": "1.2.0",
+    "description": "Implemented branch access, token revocation and protected platform authority. Not a complete POS or identity provider."
   },
   "security": [
     {
@@ -278,6 +278,168 @@
           }
         }
       }
+    },
+    "/api/v1/platform/authority": {
+      "get": {
+        "operationId": "getPlatformAuthority",
+        "responses": {
+          "401": {
+            "description": "Invalid bearer credential."
+          },
+          "503": {
+            "description": "Platform storage unavailable."
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAuthority"
+                }
+              }
+            },
+            "description": "Current persisted platform authority only."
+          }
+        }
+      }
+    },
+    "/api/v1/platform/super-admins": {
+      "post": {
+        "responses": {
+          "429": {
+            "description": "Capacity exceeded."
+          },
+          "403": {
+            "description": "Root authority or recent MFA missing."
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuperAdmin"
+                }
+              }
+            },
+            "description": "Audited operation committed or safely replayed."
+          },
+          "409": {
+            "description": "Operation conflicts with input or current state."
+          },
+          "400": {
+            "description": "Invalid operation fields."
+          },
+          "503": {
+            "description": "Platform storage unavailable."
+          },
+          "401": {
+            "description": "Invalid bearer credential."
+          }
+        },
+        "description": "Requires persisted original root authority and fresh configured MFA assurance. Exact operation retries return the original response snapshot.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "reason": {
+                    "maxLength": 1000,
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subject": {
+                    "maxLength": 256,
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "reason",
+                  "subject"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "operationId": "registerSuperAdmin"
+      }
+    },
+    "/api/v1/platform/super-admins/{adminId}/revoke": {
+      "post": {
+        "responses": {
+          "429": {
+            "description": "Capacity exceeded."
+          },
+          "403": {
+            "description": "Root authority or recent MFA missing."
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuperAdmin"
+                }
+              }
+            },
+            "description": "Audited operation committed or safely replayed."
+          },
+          "409": {
+            "description": "Operation conflicts with input or current state."
+          },
+          "400": {
+            "description": "Invalid operation fields."
+          },
+          "503": {
+            "description": "Platform storage unavailable."
+          },
+          "401": {
+            "description": "Invalid bearer credential."
+          }
+        },
+        "description": "Requires persisted original root authority and fresh configured MFA assurance. Exact operation retries return the original response snapshot.",
+        "parameters": [
+          {
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": "adminId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "reason": {
+                    "maxLength": 1000,
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "reason"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "operationId": "revokeSuperAdmin"
+      }
     }
   },
   "components": {
@@ -380,6 +542,62 @@
             "type": "string"
           }
         }
+      },
+      "PlatformAuthority": {
+        "properties": {
+          "isRoot": {
+            "type": "boolean"
+          },
+          "isSuperAdmin": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isRoot",
+          "isSuperAdmin"
+        ],
+        "type": "object"
+      },
+      "SuperAdmin": {
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isRoot": {
+            "type": "boolean"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "issuer",
+          "subject",
+          "isRoot",
+          "isActive",
+          "createdAt",
+          "revokedAt"
+        ],
+        "type": "object"
       }
     }
   }
