@@ -53,8 +53,10 @@ configuration and operating controls remain release gates. Never roll back to an
 API build lacking revocation checks while revoked tokens remain valid. Details:
 `docs/architecture/token-revocation.md`.
 
-GitHub publication is authorized; publish this verified milestone and inspect the
-hosted Quality run. Earlier open Dependabot PRs are outside this implementation.
+Published implementation commit `e77de5b` to GitHub main. Hosted Linux Quality run
+[34091471890](https://github.com/AlakhiarovSalekh/SalekhPos/actions/runs/34091471890)
+passed the complete gate, including Docker PostgreSQL migration/restore and tests.
+Earlier open Dependabot PRs are outside this implementation.
 
 
 ## September 7, 2026 — verified identity and branch-read foundation
