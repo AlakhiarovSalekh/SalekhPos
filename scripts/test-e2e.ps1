@@ -1,2 +1,3 @@
 #requires -Version 7.2
-throw 'test e2e is not implemented. See docs/development/progress.md; no operation was performed.'
+$ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot 'test-postgres.ps1') -RunWebIdentityTests

@@ -2,10 +2,12 @@ param(
     [string] $PostgresBin = (Join-Path $env:TEMP 'salekhpos-postgresql-18/pgsql/bin'),
     [int] $Port = 55438,
     [switch] $RunDotnetTests,
+    [switch] $RunWebIdentityTests,
     [string] $Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RunWebIdentityTests) { $RunDotnetTests = $true }
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskRun = Join-Path $env:TEMP ('salekhpos-pg-test-' + [guid]::NewGuid().ToString('N'))
 $taskData = Join-Path $taskRun 'data'
@@ -61,6 +63,7 @@ try {
         & (Join-Path $PSScriptRoot 'ci/test-bootstrap.ps1') -Configuration $Configuration
         & (Join-Path $PSScriptRoot 'dotnet.ps1') test SalekhPos.sln --configuration $Configuration --no-restore
         if ($LASTEXITCODE -ne 0) { throw '.NET tests failed against disposable PostgreSQL.' }
+        if ($RunWebIdentityTests) { & (Join-Path $PSScriptRoot 'ci/test-web-identity.ps1') }
     }
     Write-Output 'PASS: PostgreSQL migration and isolation checks completed.'
 }

@@ -29,6 +29,7 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 builder.Services.AddExceptionHandler<SafeExceptionHandler>();
 builder.Services.Configure<ExceptionHandlerOptions>(options => options.SuppressDiagnosticsCallback = _ => true);
 builder.Services.AddPlatformAuthentication(builder.Configuration);
+builder.Services.AddWebAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSingleton(new AccessDatabase(builder.Configuration.GetConnectionString("Application"),
     builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")));
 builder.Services.AddSingleton<BranchAccessReader>();
@@ -93,6 +94,7 @@ app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAcc
             extensions: new Dictionary<string, object?> { ["code"] = "dependencies_unavailable" })).AllowAnonymous();
 app.MapBranchEndpoints();
 app.MapIdentityEndpoints();
+app.MapWebAuthentication();
 app.MapPlatformEndpoints();
 
 app.Run();

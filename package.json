@@ -6,5 +6,6 @@
     "structure": "pwsh -NoProfile -File scripts/ci/check-structure.ps1",
     "build": "pwsh -NoProfile -File scripts/build-all.ps1",
     "test": "pwsh -NoProfile -File scripts/test-all.ps1"
-  }
+  },
+  "packageManager": "pnpm@11.19.0"
 }

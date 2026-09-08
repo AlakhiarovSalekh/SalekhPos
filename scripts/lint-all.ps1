@@ -2,3 +2,5 @@
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'dotnet.ps1') format SalekhPos.sln --verify-no-changes --no-restore --severity info
 if ($LASTEXITCODE -ne 0) { throw "Command failed with exit code $LASTEXITCODE." }
+& pnpm --filter @salekhpos/web lint
+if ($LASTEXITCODE -ne 0) { throw 'Web lint failed.' }

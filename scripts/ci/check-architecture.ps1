@@ -74,8 +74,9 @@ foreach ($taskPath in $taskSolutionPaths) {
     if ($taskPath -notin $taskProjects.FullName) { throw "Solution references an absent project: $taskPath" }
 }
 # Do not allow a dependency added through a shared import to bypass the project rules.
-foreach ($taskFile in Get-ChildItem -LiteralPath $taskRoot -File -Recurse -Include '*.props', '*.targets') {
-    if ($taskFile.FullName -match '[/\\](bin|obj|\.git)[/\\]') { continue }
+$taskImports = @(& git -C $taskRoot ls-files --cached --others --exclude-standard -- '*.props' '*.targets' | Sort-Object -Unique)
+foreach ($taskImport in $taskImports) {
+    $taskFile = Get-Item -LiteralPath (Join-Path $taskRoot $taskImport)
     [xml] $taskXml = Get-Content -LiteralPath $taskFile.FullName -Raw
     if ($taskXml.SelectNodes('//ProjectReference | //Reference').Count -gt 0) {
         throw "Shared imports must not introduce hidden project/assembly dependencies: $($taskFile.FullName)"

@@ -34,8 +34,28 @@ else {
     if ($LASTEXITCODE -ne 0) { throw 'Could not extract the verified Gitleaks archive.' }
 }
 $taskExecutable = Join-Path $taskToolDirectory $taskExecutableName
-& $taskExecutable dir $taskRoot --redact=100 --no-banner --report-format json --report-path (Join-Path $ReportDirectory 'secrets-worktree.json')
-if ($LASTEXITCODE -ne 0) { throw 'Working tree secret scan failed. Review the redacted scanner output.' }
+$taskScanDirectory = Join-Path ([IO.Path]::GetTempPath()) ("salekhpos-secret-scan-" + [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $taskScanDirectory | Out-Null
+try {
+    $taskSourcePaths = @(& git -C $taskRoot ls-files --cached --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0 -or $taskSourcePaths.Count -eq 0) {
+        throw 'Could not enumerate tracked and publishable working-tree files for secret scanning.'
+    }
+    foreach ($taskRelativePath in $taskSourcePaths) {
+        $taskSourcePath = Join-Path $taskRoot $taskRelativePath
+        if (-not (Test-Path -LiteralPath $taskSourcePath -PathType Leaf)) { continue }
+        $taskDestinationPath = Join-Path $taskScanDirectory $taskRelativePath
+        New-Item -ItemType Directory -Path (Split-Path $taskDestinationPath -Parent) -Force | Out-Null
+        Copy-Item -LiteralPath $taskSourcePath -Destination $taskDestinationPath
+    }
+    & $taskExecutable dir $taskScanDirectory --redact=100 --no-banner --report-format json --report-path (Join-Path $ReportDirectory 'secrets-worktree.json')
+    if ($LASTEXITCODE -ne 0) { throw 'Working tree secret scan failed. Review the redacted scanner output.' }
+}
+finally {
+    if (Test-Path -LiteralPath $taskScanDirectory) {
+        Remove-Item -LiteralPath $taskScanDirectory -Recurse -Force
+    }
+}
 & git -C $taskRoot rev-parse --verify HEAD 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
     & $taskExecutable git $taskRoot --log-opts=--all --redact=100 --no-banner --report-format json --report-path (Join-Path $ReportDirectory 'secrets-history.json')
