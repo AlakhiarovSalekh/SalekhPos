@@ -16,5 +16,6 @@
     <ProjectReference Include="../../src/Modules/Catalog/SalekhPos.Catalog.Domain/SalekhPos.Catalog.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Inventory/SalekhPos.Inventory.Domain/SalekhPos.Inventory.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Pricing/SalekhPos.Pricing.Domain/SalekhPos.Pricing.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Sales/SalekhPos.Sales.Domain/SalekhPos.Sales.Domain.csproj" />
   </ItemGroup>
 </Project>

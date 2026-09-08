@@ -1,5 +1,29 @@
 # Implementation progress
 
+## September 9, 2026 — atomic cash-sale completion slice
+
+Implemented Sales as five module projects in the supplied Sales structure. The
+first versioned completion endpoint accepts a bounded product/quantity cart and
+cash tender. It resolves active branch/base prices at one database timestamp and
+persists immutable sale headers and lines with the exact applied price, currency,
+tax mode, rate, net, tax and gross values. Six-decimal half-even calculation is a
+single domain policy; mixed currencies and insufficient cash fail before writes.
+
+Migration 010 adds tenant-composite sales, line and outbox records with forced RLS
+and insert/select-only runtime grants. Completion requires the persisted,
+branch-scoped `sales.complete` permission. One database transaction writes the
+sale, lines, inventory sale movements and `sales.sale_completed.v1` outbox
+message. Transaction-scoped advisory locks serialize each product/branch stock
+decision, preventing concurrent overselling. UUID operation locks make exact
+retries return the original sale without another stock movement; changed retries
+return 409. Completed financial records cannot be updated or deleted by runtime.
+
+The focused native PostgreSQL migration/restore run passes 165 unit/configuration/
+HTTP tests and 63 integration tests with zero failures or skips. Coverage includes
+tax arithmetic, cash/change, atomic persistence, replay, insufficient stock,
+authorization, tenant isolation and concurrent oversell prevention. Next implement
+read/query APIs and receipt projection, followed by the separate Payments boundary.
+
 ## September 8, 2026 — deterministic scheduled pricing slice
 
 Implemented Pricing as five module projects in the supplied module structure.

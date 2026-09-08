@@ -1,0 +1,21 @@
+BEGIN;
+INSERT INTO organization.organizations(organization_id,name) VALUES('11111111-1111-1111-1111-111111111111','Sales tenant');
+INSERT INTO organization.businesses(organization_id,business_id,code,name) VALUES('11111111-1111-1111-1111-111111111111','a1000000-0000-0000-0000-000000000001','MAIN','Main');
+INSERT INTO organization.branches(organization_id,business_id,branch_id,code,name,time_zone_id) VALUES('11111111-1111-1111-1111-111111111111','a1000000-0000-0000-0000-000000000001','a2000000-0000-0000-0000-000000000001','MAIN','Main','Asia/Tbilisi');
+SELECT set_config('app.issuer','sql-test',true),set_config('app.subject','sales-test',true);
+INSERT INTO catalog.products(organization_id,product_id,operation_id,sku,name,unit_code) VALUES('11111111-1111-1111-1111-111111111111','a3000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','SALE','Sale test','EA');
+INSERT INTO pricing.prices(organization_id,price_id,operation_id,product_id,amount,currency,tax_mode,tax_rate,valid_from,issuer,subject) VALUES('11111111-1111-1111-1111-111111111111','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001','a3000000-0000-0000-0000-000000000001',11.80,'GEL','inclusive',18,'2026-01-01Z','test','test');
+SET ROLE salekhpos_runtime;
+SELECT set_config('app.organization_id','11111111-1111-1111-1111-111111111111',true);
+INSERT INTO inventory.stock_movements(organization_id,movement_id,operation_id,branch_id,product_id,kind,direction,quantity,reason,occurred_at,issuer,subject) VALUES('11111111-1111-1111-1111-111111111111','a7000000-0000-0000-0000-000000000001','a8000000-0000-0000-0000-000000000001','a2000000-0000-0000-0000-000000000001','a3000000-0000-0000-0000-000000000001','sale',-1,1,'SQL sale','2026-06-01Z','test','test');
+INSERT INTO sales.completed_sales(organization_id,sale_id,operation_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at,issuer,subject) VALUES('11111111-1111-1111-1111-111111111111','a9000000-0000-0000-0000-000000000001','aa000000-0000-0000-0000-000000000001','a2000000-0000-0000-0000-000000000001','GEL',10,1.8,11.8,12,0.2,'2026-06-01Z','test','test');
+INSERT INTO sales.sale_lines(organization_id,sale_id,line_number,product_id,price_id,inventory_movement_id,inventory_operation_id,quantity,unit_amount,currency,tax_mode,tax_rate,net_amount,tax_amount,gross_amount) VALUES('11111111-1111-1111-1111-111111111111','a9000000-0000-0000-0000-000000000001',1,'a3000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','a7000000-0000-0000-0000-000000000001','a8000000-0000-0000-0000-000000000001',1,11.8,'GEL','inclusive',18,10,1.8,11.8);
+INSERT INTO sales.outbox_messages(organization_id,message_id,sale_id,event_type,payload,occurred_at) VALUES('11111111-1111-1111-1111-111111111111','ab000000-0000-0000-0000-000000000001','a9000000-0000-0000-0000-000000000001','sales.sale_completed.v1','{"saleId":"a9000000-0000-0000-0000-000000000001"}','2026-06-01Z');
+DO $$ BEGIN
+ IF (SELECT grand_total FROM sales.completed_sales)<>11.8 THEN RAISE EXCEPTION 'sale total incorrect'; END IF;
+ BEGIN UPDATE sales.completed_sales SET grand_total=1; RAISE EXCEPTION 'sale update accepted'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ BEGIN DELETE FROM sales.sale_lines; RAISE EXCEPTION 'line delete accepted'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+SELECT set_config('app.organization_id','22222222-2222-2222-2222-222222222222',true);
+DO $$ BEGIN IF EXISTS(SELECT FROM sales.completed_sales) THEN RAISE EXCEPTION 'cross tenant sale exposed'; END IF; END $$;
+ROLLBACK;
