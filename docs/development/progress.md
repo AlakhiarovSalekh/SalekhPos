@@ -17,11 +17,13 @@ return the original product, while changed payloads and duplicate SKUs return 40
 Runtime-role elevation and missing forced RLS fail closed.
 
 Release compilation and architecture checks pass for 21 projects. The disposable
-PostgreSQL migration/restore/application run passes 149 unit/configuration/HTTP tests
-and 55 integration tests with zero failures or skips. The exact next product work is
-optimistic-concurrency update/deactivation and barcode lookup, followed by Pricing
-and inventory movement-ledger slices. The current web session is not yet a BFF for
-these business APIs.
+PostgreSQL migration/restore/application run passes 149 unit/configuration/HTTP tests.
+The product API also supports lookup by ID or barcode and organization-authorized
+updates/deactivation. Updates use the persisted row version, return 409 for stale
+writes or barcode conflicts, and create an immutable audit record. The latest run
+passes 56 integration tests with zero failures or skips. Next implement Pricing and
+the inventory movement ledger. The current web session is not yet a BFF for these
+business APIs.
 
 ## September 8, 2026 — web identity vertical slice verified
 

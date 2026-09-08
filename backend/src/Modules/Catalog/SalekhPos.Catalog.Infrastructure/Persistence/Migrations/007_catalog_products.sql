@@ -57,4 +57,5 @@ FOR EACH ROW EXECUTE FUNCTION catalog.audit_product_mutation();
 GRANT USAGE ON SCHEMA catalog TO salekhpos_runtime;
 GRANT SELECT ON catalog.products TO salekhpos_runtime;
 GRANT INSERT(organization_id,product_id,operation_id,sku,name,unit_code,barcode) ON catalog.products TO salekhpos_runtime;
+GRANT UPDATE(name,unit_code,barcode,is_active,row_version,updated_at) ON catalog.products TO salekhpos_runtime;
 COMMIT;

@@ -16,6 +16,7 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             AccessDeniedException => (403, "access_denied", "Access is not permitted"),
             CatalogDeniedException => (403, "catalog_access_denied", "Catalog access is not permitted"),
             ProductConflictException => (409, "product_operation_conflict", "The product operation conflicts with current state"),
+            ProductNotFoundException => (404, "product_not_found", "The product is unavailable"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),

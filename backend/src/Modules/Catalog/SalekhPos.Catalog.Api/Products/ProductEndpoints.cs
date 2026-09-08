@@ -18,6 +18,22 @@ public static class ProductEndpoints
             if (!TryQuery(context, out var pageSize, out var after)) return InvalidQuery();
             return Results.Ok(await catalog.ReadAsync(Identity(context), organizationId, pageSize, after, cancellationToken));
         });
+        group.MapGet("/{productId:guid}", async (Guid organizationId, Guid productId, HttpContext context,
+            IProductCatalog catalog, CancellationToken cancellationToken) =>
+        {
+            var product = await catalog.ReadOneAsync(Identity(context), organizationId, productId, null, cancellationToken);
+            return product is null ? Results.NotFound() : Results.Ok(product);
+        });
+        group.MapGet("/by-barcode/{barcode}", async (Guid organizationId, string barcode, HttpContext context,
+            IProductCatalog catalog, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var product = await catalog.ReadOneAsync(Identity(context), organizationId, null, barcode, cancellationToken);
+                return product is null ? Results.NotFound() : Results.Ok(product);
+            }
+            catch (ArgumentException) { return InvalidQuery(); }
+        });
         group.MapPost("", async (Guid organizationId, CreateProductRequest request, HttpContext context,
             IProductCatalog catalog, CancellationToken cancellationToken) =>
         {
@@ -33,6 +49,16 @@ public static class ProductEndpoints
             return result.Created
                 ? Results.Created($"/api/v1/organizations/{organizationId:D}/products/{result.Product.Id:D}", result.Product)
                 : Results.Ok(result.Product);
+        });
+        group.MapPut("/{productId:guid}", async (Guid organizationId, Guid productId, UpdateProductRequest request,
+            HttpContext context, IProductCatalog catalog, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await catalog.UpdateAsync(Identity(context), new(organizationId, productId,
+                    request.Name, request.UnitCode, request.Barcode, request.IsActive, request.ExpectedVersion), cancellationToken));
+            }
+            catch (ArgumentException) { return InvalidQuery(); }
         });
     }
 

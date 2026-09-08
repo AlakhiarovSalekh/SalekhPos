@@ -95,6 +95,83 @@ public sealed class PostgresProductCatalog(NpgsqlDataSource? source) : IProductC
         return new(products.AsReadOnly(), next);
     }
 
+    public async Task<ProductResponse?> ReadOneAsync(CatalogIdentity identity, Guid organizationId,
+        Guid? productId, string? barcode, CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || (productId is null) == (barcode is null) || productId == Guid.Empty)
+            throw new ArgumentException("Product lookup is invalid.");
+        if (barcode is not null)
+            _ = new SalekhPos.Catalog.Domain.Products.Product(organizationId, Guid.NewGuid(), "VALID", "Valid", "EA", barcode);
+        var dataSource = source ?? throw new CatalogUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await DemandSafeRuntime(connection, transaction, cancellationToken);
+        await SetContext(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, identity, "products.view", false, cancellationToken);
+        await using var command = new NpgsqlCommand("""
+            SELECT product_id, sku, name, unit_code, barcode, is_active, row_version
+            FROM catalog.products WHERE organization_id=$1
+              AND (($2::uuid IS NOT NULL AND product_id=$2) OR ($3::text IS NOT NULL AND barcode=$3))
+            """, connection, transaction);
+        command.Parameters.AddWithValue(organizationId);
+        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid, Value = (object?)productId ?? DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)barcode ?? DBNull.Value });
+        ProductResponse? response;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            response = await reader.ReadAsync(cancellationToken) ? Read(reader) : null;
+        await transaction.CommitAsync(cancellationToken);
+        return response;
+    }
+
+    public async Task<ProductResponse> UpdateAsync(CatalogIdentity identity, UpdateProductCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (command.OrganizationId == Guid.Empty || command.ProductId == Guid.Empty || command.ExpectedVersion < 1)
+            throw new ArgumentException("Product update is invalid.");
+        var validated = new SalekhPos.Catalog.Domain.Products.Product(command.OrganizationId, command.ProductId,
+            "VALID", command.Name, command.UnitCode, command.Barcode, command.IsActive);
+        var dataSource = source ?? throw new CatalogUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await DemandSafeRuntime(connection, transaction, cancellationToken);
+        await SetContext(connection, transaction, command.OrganizationId, identity, cancellationToken);
+        await Demand(connection, transaction, command.OrganizationId, identity, "products.update", true, cancellationToken);
+        await using var update = new NpgsqlCommand("""
+            UPDATE catalog.products SET name=$3,unit_code=$4,barcode=$5,is_active=$6,
+              row_version=row_version+1,updated_at=statement_timestamp()
+            WHERE organization_id=$1 AND product_id=$2 AND row_version=$7
+            RETURNING product_id,sku,name,unit_code,barcode,is_active,row_version
+            """, connection, transaction);
+        update.Parameters.AddWithValue(command.OrganizationId);
+        update.Parameters.AddWithValue(command.ProductId);
+        update.Parameters.AddWithValue(validated.Name);
+        update.Parameters.AddWithValue(validated.UnitCode);
+        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)validated.Barcode ?? DBNull.Value });
+        update.Parameters.AddWithValue(validated.IsActive);
+        update.Parameters.AddWithValue(command.ExpectedVersion);
+        ProductResponse? response;
+        try
+        {
+            await using var reader = await update.ExecuteReaderAsync(cancellationToken);
+            response = await reader.ReadAsync(cancellationToken) ? Read(reader) : null;
+        }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
+        {
+            throw new ProductConflictException();
+        }
+        if (response is null)
+        {
+            await using var exists = new NpgsqlCommand(
+                "SELECT EXISTS(SELECT FROM catalog.products WHERE organization_id=$1 AND product_id=$2)", connection, transaction);
+            exists.Parameters.AddWithValue(command.OrganizationId);
+            exists.Parameters.AddWithValue(command.ProductId);
+            if (await exists.ExecuteScalarAsync(cancellationToken) is true) throw new ProductConflictException();
+            throw new ProductNotFoundException();
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return response;
+    }
+
     private static async Task SetContext(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid organizationId,
         CatalogIdentity identity, CancellationToken cancellationToken)
     {

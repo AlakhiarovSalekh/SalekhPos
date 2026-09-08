@@ -83,12 +83,32 @@ public sealed class ProductCatalogTests(AccessFixture fixture) : IClassFixture<A
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(Path(fixture.OrganizationB))).StatusCode);
     }
 
-    private async Task<HttpResponseMessage> SendCreate(Guid operation, string sku, string name)
+    [Fact]
+    public async Task ProductLookupAndOptimisticUpdatePreserveHistory()
+    {
+        using var created = await SendCreate(Guid.NewGuid(), "BREAD.001", "Bread", "99887766");
+        using var createdJson = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var id = createdJson.RootElement.GetProperty("id").GetGuid();
+        using var client = fixture.Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(Path() + "/" + id)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(Path() + "/by-barcode/99887766")).StatusCode);
+
+        var update = new { name = "Wholegrain Bread", unitCode = "EA", barcode = "99887766", isActive = false, expectedVersion = 1 };
+        using var updated = await client.PutAsJsonAsync(Path() + "/" + id, update);
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        using var updatedJson = JsonDocument.Parse(await updated.Content.ReadAsStringAsync());
+        Assert.Equal(2, updatedJson.RootElement.GetProperty("version").GetInt64());
+        Assert.False(updatedJson.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync(Path() + "/" + id, update)).StatusCode);
+    }
+
+    private async Task<HttpResponseMessage> SendCreate(Guid operation, string sku, string name, string? barcode = null)
     {
         using var client = fixture.Factory.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, Path())
         {
-            Content = JsonContent.Create(new { sku, name, unitCode = "EA", barcode = (string?)null })
+            Content = JsonContent.Create(new { sku, name, unitCode = "EA", barcode })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
         request.Headers.Add("Idempotency-Key", operation.ToString("D"));

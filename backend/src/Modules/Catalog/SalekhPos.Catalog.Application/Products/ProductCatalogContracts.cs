@@ -29,6 +29,8 @@ public sealed record CreateProductCommand(Guid OrganizationId, Guid ProductId, G
 }
 
 public sealed record ProductWriteResult(ProductResponse Product, bool Created);
+public sealed record UpdateProductCommand(Guid OrganizationId, Guid ProductId, string Name,
+    string UnitCode, string? Barcode, bool IsActive, long ExpectedVersion);
 
 public interface IProductCatalog
 {
@@ -36,8 +38,13 @@ public interface IProductCatalog
         CancellationToken cancellationToken);
     Task<ProductPage> ReadAsync(CatalogIdentity identity, Guid organizationId, int pageSize,
         Guid? after, CancellationToken cancellationToken);
+    Task<ProductResponse?> ReadOneAsync(CatalogIdentity identity, Guid organizationId,
+        Guid? productId, string? barcode, CancellationToken cancellationToken);
+    Task<ProductResponse> UpdateAsync(CatalogIdentity identity, UpdateProductCommand command,
+        CancellationToken cancellationToken);
 }
 
 public sealed class CatalogDeniedException : Exception;
 public sealed class CatalogUnavailableException : Exception;
 public sealed class ProductConflictException : Exception;
+public sealed class ProductNotFoundException : Exception;
