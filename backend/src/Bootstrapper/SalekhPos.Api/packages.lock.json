@@ -91,6 +91,35 @@
           "SalekhPos.Authorization.Application": "[1.0.0, )"
         }
       },
+      "salekhpos.catalog.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Catalog.Application": "[1.0.0, )",
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.catalog.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )",
+          "SalekhPos.Catalog.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.catalog.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.catalog.domain": {
+        "type": "Project"
+      },
+      "salekhpos.catalog.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Catalog.Application": "[1.0.0, )",
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )",
+          "SalekhPos.Catalog.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.identity.api": {
         "type": "Project",
         "dependencies": {

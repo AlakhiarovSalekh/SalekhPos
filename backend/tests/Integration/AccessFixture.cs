@@ -66,6 +66,8 @@ public sealed class AccessFixture : IAsyncLifetime
             """, OrganizationA, BusinessA, BranchA, RegionA, BranchA2, BusinessA2, BranchA3, OrganizationB, BusinessB, BranchB);
         await AddMembershipAsync("alice", OrganizationA, "branch", BusinessA, branch: BranchA);
         await AddMembershipAsync("owner", OrganizationA, "organization");
+        await GrantAsync("owner", OrganizationA, "products.view");
+        await GrantAsync("owner", OrganizationA, "products.create");
         await AddMembershipAsync("manager", OrganizationA, "business", BusinessA);
         await AddMembershipAsync("regional", OrganizationA, "region", BusinessA, RegionA);
         await AddMembershipAsync("bob", OrganizationB, "organization");
@@ -106,6 +108,12 @@ public sealed class AccessFixture : IAsyncLifetime
                 """, organization, Guid.NewGuid(), member, scope, business ?? (object)DBNull.Value, region ?? (object)DBNull.Value, branch ?? (object)DBNull.Value);
         }
     }
+
+    public Task GrantAsync(string subject, Guid organization, string permission) => ExecuteAsync("""
+        INSERT INTO access.permission_grants(organization_id,grant_id,membership_id,permission,scope_kind)
+        SELECT organization_id,$1,membership_id,$2,'organization' FROM access.memberships
+        WHERE organization_id=$3 AND issuer=$4 AND subject=$5
+        """, Guid.NewGuid(), permission, organization, Issuer, subject);
 
     public string Token(string subject = "alice", string? issuer = null, string? audience = null,
         bool expired = false, bool badSignature = false, string type = "at+jwt", bool forgedClaims = false,

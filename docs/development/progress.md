@@ -1,5 +1,28 @@
 # Implementation progress
 
+## September 8, 2026 — tenant-isolated product catalog slice
+
+Implemented Catalog as five real module projects: Domain, Contracts, Application,
+Infrastructure and API. The first versioned product API can create and list product
+definitions. Product identity, SKU, name, unit and numeric barcode invariants are
+enforced in both the domain and PostgreSQL. Creation requires an organization-scoped
+`products.create` grant; reads require `products.view`. Client claims do not grant
+tenant access.
+
+Migration 007 adds the catalog schema, composite tenant keys, per-tenant SKU/barcode
+uniqueness, forced RLS, minimal runtime privileges and an audit trigger that records
+the validated issuer and subject without exposing audit rows to the runtime role.
+Creation requires a UUID `Idempotency-Key`; exact sequential and concurrent replays
+return the original product, while changed payloads and duplicate SKUs return 409.
+Runtime-role elevation and missing forced RLS fail closed.
+
+Release compilation and architecture checks pass for 21 projects. The disposable
+PostgreSQL migration/restore/application run passes 149 unit/configuration/HTTP tests
+and 55 integration tests with zero failures or skips. The exact next product work is
+optimistic-concurrency update/deactivation and barcode lookup, followed by Pricing
+and inventory movement-ledger slices. The current web session is not yet a BFF for
+these business APIs.
+
 ## September 8, 2026 — web identity vertical slice verified
 
 Implemented the first working browser application in `apps/web`: public landing,

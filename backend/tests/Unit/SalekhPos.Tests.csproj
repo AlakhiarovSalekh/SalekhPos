@@ -13,5 +13,6 @@
     </PackageReference>
     <ProjectReference Include="../../src/Bootstrapper/SalekhPos.Api/SalekhPos.Api.csproj" />
     <ProjectReference Include="../../src/Modules/Organizations/SalekhPos.Organizations.Domain/SalekhPos.Organizations.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Catalog/SalekhPos.Catalog.Domain/SalekhPos.Catalog.Domain.csproj" />
   </ItemGroup>
 </Project>

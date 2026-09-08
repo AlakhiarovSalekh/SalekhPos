@@ -466,6 +466,8 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.11, )",
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Catalog.Api": "[1.0.0, )",
+          "SalekhPos.Catalog.Infrastructure": "[1.0.0, )",
           "SalekhPos.Identity.Api": "[1.0.0, )",
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.SharedKernel": "[1.0.0, )",
@@ -481,6 +483,35 @@
         "dependencies": {
           "Npgsql": "[10.0.3, )",
           "SalekhPos.Authorization.Application": "[1.0.0, )"
+        }
+      },
+      "salekhpos.catalog.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Catalog.Application": "[1.0.0, )",
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.catalog.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )",
+          "SalekhPos.Catalog.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.catalog.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.catalog.domain": {
+        "type": "Project"
+      },
+      "salekhpos.catalog.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Catalog.Application": "[1.0.0, )",
+          "SalekhPos.Catalog.Contracts": "[1.0.0, )",
+          "SalekhPos.Catalog.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.identity.api": {
