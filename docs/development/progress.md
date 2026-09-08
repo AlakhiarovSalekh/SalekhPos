@@ -1,5 +1,28 @@
 # Implementation progress
 
+## September 8, 2026 — deterministic scheduled pricing slice
+
+Implemented Pricing as five module projects in the supplied module structure.
+The versioned API schedules organization-base or branch-specific product prices
+and resolves the deterministic price at an explicit UTC instant. Branch prices
+override organization prices. Amount and tax-rate precision, ISO-style uppercase
+currency syntax, inclusive/exclusive tax mode and half-open effective intervals
+are enforced in both domain code and PostgreSQL.
+
+Migration 009 adds tenant-composite product/branch references, forced RLS, minimum
+runtime grants and database exclusion constraints that reject concurrent overlapping
+prices for the same product and scope. Stored prices are immutable to the runtime
+role and retain issuer, subject, tax policy and validity for historical correctness.
+Scheduling requires `pricing.manage`; resolution requires `pricing.view`, active
+persisted membership and active organization/store hierarchy. Writes use UUID
+idempotency keys and changed replays return 409.
+
+The focused native PostgreSQL migration/restore run passed 163 unit/configuration/
+HTTP tests and 60 integration tests with no failures or skips. SQL and HTTP coverage
+includes immutable rows, tenant isolation, overlapping-window rejection, safe replay,
+branch precedence and unauthorized access. Next integrate Catalog, Pricing and
+Inventory into an atomic cash-sale workflow that persists applied price/tax snapshots.
+
 ## September 8, 2026 — immutable inventory ledger slice
 
 Implemented Inventory as five module projects with a branch-scoped stock API and

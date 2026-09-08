@@ -9,6 +9,9 @@ using SalekhPos.Catalog.Infrastructure.Products;
 using SalekhPos.Inventory.Api.Stock;
 using SalekhPos.Inventory.Application.Stock;
 using SalekhPos.Inventory.Infrastructure.Stock;
+using SalekhPos.Pricing.Api.Prices;
+using SalekhPos.Pricing.Application.Prices;
+using SalekhPos.Pricing.Infrastructure.Prices;
 using SalekhPos.Api.Authentication;
 using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.ExceptionHandling;
@@ -42,6 +45,8 @@ builder.Services.AddSingleton<BranchAccessReader>();
 builder.Services.AddSingleton<IProductCatalog>(provider => new PostgresProductCatalog(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IInventoryLedger>(provider => new PostgresInventoryLedger(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IPriceBook>(provider => new PostgresPriceBook(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -105,6 +110,7 @@ app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAcc
 app.MapBranchEndpoints();
 app.MapProductEndpoints();
 app.MapInventoryEndpoints();
+app.MapPricingEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapPlatformEndpoints();

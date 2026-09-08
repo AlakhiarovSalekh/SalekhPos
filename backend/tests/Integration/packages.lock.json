@@ -472,6 +472,8 @@
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
           "SalekhPos.Inventory.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Pricing.Api": "[1.0.0, )",
+          "SalekhPos.Pricing.Infrastructure": "[1.0.0, )",
           "SalekhPos.SharedKernel": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )"
@@ -559,6 +561,38 @@
           "SalekhPos.Inventory.Application": "[1.0.0, )",
           "SalekhPos.Inventory.Contracts": "[1.0.0, )",
           "SalekhPos.Inventory.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.pricing.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Pricing.Application": "[1.0.0, )",
+          "SalekhPos.Pricing.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.pricing.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Pricing.Contracts": "[1.0.0, )",
+          "SalekhPos.Pricing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.pricing.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.pricing.domain": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.SharedKernel": "[1.0.0, )"
+        }
+      },
+      "salekhpos.pricing.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Pricing.Application": "[1.0.0, )",
+          "SalekhPos.Pricing.Contracts": "[1.0.0, )",
+          "SalekhPos.Pricing.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.sharedkernel": {
