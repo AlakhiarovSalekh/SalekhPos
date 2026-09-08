@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 8, 2026 — immutable inventory ledger slice
+
+Implemented Inventory as five module projects with a branch-scoped stock API and
+an immutable PostgreSQL movement ledger. Receipts, inward/outward adjustments,
+sales and returns have explicit direction semantics, positive six-decimal quantity
+validation and canonical UTC microsecond timestamps. Movement creation requires
+`inventory.adjust`; stock reads require `inventory.view`. Both permissions are
+resolved from active persisted membership and organization/business/branch scope.
+
+Migration 008 adds composite tenant foreign keys to branches and products, forced
+RLS, minimum runtime grants and immutable rows because the runtime can insert and
+select but cannot update or delete movements. A UUID idempotency key safely replays
+the original operation; a changed replay returns 409. Current stock is derived from
+the ledger and paged by product ID. Database and HTTP tests verify tenant isolation,
+authorization, replay behavior, immutability and exact stock totals.
+
+Verified against disposable PostgreSQL 18.6 with logical backup/restore: 158 unit,
+configuration and HTTP tests plus 58 integration tests passed with zero failures or
+skips. Release build completed with zero warnings or errors. Next implement tenant
+pricing, tax-inclusive/exclusive price rules and effective-date conflict handling,
+then use Catalog, Pricing and Inventory in the atomic sales workflow.
+
 ## September 8, 2026 — tenant-isolated product catalog slice
 
 Implemented Catalog as five real module projects: Domain, Contracts, Application,

@@ -136,6 +136,35 @@
           "SalekhPos.Identity.Application": "[1.0.0, )"
         }
       },
+      "salekhpos.inventory.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Inventory.Application": "[1.0.0, )",
+          "SalekhPos.Inventory.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.inventory.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Inventory.Contracts": "[1.0.0, )",
+          "SalekhPos.Inventory.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.inventory.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.inventory.domain": {
+        "type": "Project"
+      },
+      "salekhpos.inventory.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Inventory.Application": "[1.0.0, )",
+          "SalekhPos.Inventory.Contracts": "[1.0.0, )",
+          "SalekhPos.Inventory.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.sharedkernel": {
         "type": "Project"
       },

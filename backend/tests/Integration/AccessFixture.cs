@@ -69,6 +69,8 @@ public sealed class AccessFixture : IAsyncLifetime
         await GrantAsync("owner", OrganizationA, "products.view");
         await GrantAsync("owner", OrganizationA, "products.create");
         await GrantAsync("owner", OrganizationA, "products.update");
+        await GrantAsync("owner", OrganizationA, "inventory.view");
+        await GrantAsync("owner", OrganizationA, "inventory.adjust");
         await AddMembershipAsync("manager", OrganizationA, "business", BusinessA);
         await AddMembershipAsync("regional", OrganizationA, "region", BusinessA, RegionA);
         await AddMembershipAsync("bob", OrganizationB, "organization");

@@ -6,6 +6,9 @@ using SalekhPos.Authorization.Infrastructure;
 using SalekhPos.Catalog.Api.Products;
 using SalekhPos.Catalog.Application.Products;
 using SalekhPos.Catalog.Infrastructure.Products;
+using SalekhPos.Inventory.Api.Stock;
+using SalekhPos.Inventory.Application.Stock;
+using SalekhPos.Inventory.Infrastructure.Stock;
 using SalekhPos.Api.Authentication;
 using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.ExceptionHandling;
@@ -37,6 +40,8 @@ builder.Services.AddSingleton(new AccessDatabase(builder.Configuration.GetConnec
     builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")));
 builder.Services.AddSingleton<BranchAccessReader>();
 builder.Services.AddSingleton<IProductCatalog>(provider => new PostgresProductCatalog(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IInventoryLedger>(provider => new PostgresInventoryLedger(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -99,6 +104,7 @@ app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAcc
             extensions: new Dictionary<string, object?> { ["code"] = "dependencies_unavailable" })).AllowAnonymous();
 app.MapBranchEndpoints();
 app.MapProductEndpoints();
+app.MapInventoryEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapPlatformEndpoints();
