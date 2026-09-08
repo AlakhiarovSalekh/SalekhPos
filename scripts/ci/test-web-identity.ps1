@@ -6,6 +6,10 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not $IsWindows) { throw 'This native identity browser runner currently requires Windows.' }
 if (-not $env:SALEKHPOS_TEST_RUNTIME_CONNECTION) { throw 'Run through scripts/test-postgres.ps1 -RunWebIdentityTests.' }
+$taskJavaExecutable = Join-Path $JavaDirectory 'bin/java.exe'
+$taskKeycloakExecutable = Join-Path $KeycloakDirectory 'bin/kc.bat'
+if (-not (Test-Path -LiteralPath $taskJavaExecutable)) { throw "Java runtime not found: $taskJavaExecutable" }
+if (-not (Test-Path -LiteralPath $taskKeycloakExecutable)) { throw "Keycloak runtime not found: $taskKeycloakExecutable" }
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $taskRun = Join-Path $env:TEMP ('salekhpos-browser-' + [guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($taskRun) | Out-Null
@@ -67,7 +71,7 @@ try {
     [IO.Directory]::CreateDirectory((Split-Path $taskImport -Parent)) | Out-Null
     $taskRealmConfig | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $taskImport
     Set-TestEnvironment 'JAVA_HOME' $JavaDirectory
-    Start-TestProcess (Join-Path $KeycloakDirectory 'bin/kc.bat') @('start-dev','--http-host=127.0.0.1','--http-port=8180','--import-realm') $KeycloakDirectory 'provider'
+    Start-TestProcess $taskKeycloakExecutable @('start-dev','--http-host=127.0.0.1','--http-port=8180','--import-realm') $KeycloakDirectory 'provider'
     Wait-Ready "http://127.0.0.1:8180/realms/$taskRealm/.well-known/openid-configuration"
     Remove-Item -LiteralPath $taskImport
     Set-TestEnvironment 'ASPNETCORE_ENVIRONMENT' 'Development'

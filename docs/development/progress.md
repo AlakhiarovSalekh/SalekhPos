@@ -1,5 +1,29 @@
 # Implementation progress
 
+## September 8, 2026 — web identity vertical slice verified
+
+Implemented the first working browser application in `apps/web`: public landing,
+sign-in and authenticated workspace pages. Added a confidential OpenID Connect
+authorization-code flow with PKCE in the ASP.NET bootstrapper. Browser code receives
+only an HttpOnly session identifier; provider tokens are encrypted through ASP.NET
+Data Protection and stored server-side in PostgreSQL. Login and logout mutations use
+antiforgery and exact-origin validation. Production configuration requires HTTPS and
+an explicit persisted, certificate-protected Data Protection key ring.
+
+Migration 006 adds forced-RLS web sessions and an owner-controlled mutation audit.
+Runtime access is scoped to the hashed session key, and logout deletes the durable
+ticket so replaying a copied cookie fails. Added unit, PostgreSQL integration, SQL
+regression and Playwright coverage. The native verification passed 142 unit/HTTP
+tests, 50 real PostgreSQL integration tests and one real Keycloak 26.7.3 browser
+login/logout test, all without skips. The Next.js production build, ESLint and
+working-tree/Git-history Gitleaks scans passed. The native runner now fails immediately
+when its Java or Keycloak runtime is absent instead of waiting for a readiness timeout.
+
+This is a completed identity/web slice, not the complete POS. Next implement provider
+MFA enrollment and step-up/session revocation, then audited tenant onboarding and the
+first store/catalog/sales vertical slice. Business APIs are not yet exposed through
+the browser session.
+
 ## September 7, 2026 — supplied final structure implemented
 
 The newer explicit structure instruction supersedes incremental directory creation.
