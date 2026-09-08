@@ -13,6 +13,7 @@ using SalekhPos.Pricing.Api.Prices;
 using SalekhPos.Pricing.Application.Prices;
 using SalekhPos.Pricing.Infrastructure.Prices;
 using SalekhPos.Sales.Api.CompleteSale;
+using SalekhPos.Sales.Api.Receipts;
 using SalekhPos.Sales.Application.CompleteSale;
 using SalekhPos.Sales.Infrastructure.CompleteSale;
 using SalekhPos.Api.Authentication;
@@ -51,8 +52,10 @@ builder.Services.AddSingleton<IInventoryLedger>(provider => new PostgresInventor
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IPriceBook>(provider => new PostgresPriceBook(
     provider.GetRequiredService<AccessDatabase>().DataSource));
-builder.Services.AddSingleton<ICashSaleCompletion>(provider => new PostgresCashSaleCompletion(
+builder.Services.AddSingleton(provider => new PostgresCashSaleCompletion(
     provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ICashSaleCompletion>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
+builder.Services.AddSingleton<ISaleReader>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -117,6 +120,7 @@ app.MapProductEndpoints();
 app.MapInventoryEndpoints();
 app.MapPricingEndpoints();
 app.MapCashSaleEndpoints();
+app.MapReceiptEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapPlatformEndpoints();

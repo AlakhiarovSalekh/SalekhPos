@@ -1,5 +1,20 @@
 # Implementation progress
 
+## September 9, 2026 — authorized sale reads and receipt projection
+
+Added branch-scoped sale and receipt endpoints backed only by immutable completed-sale
+snapshots. Both operations require the persisted `sales.view` permission and repeat
+the active organization, business, branch and membership checks before reading.
+RLS remains forced on the underlying sale and line records. Unknown sale identifiers
+return 404 only inside an authorized scope; callers without permission receive 403.
+
+Receipt values are projected from the unit price, currency, tax mode, tax rate and
+calculated totals stored when the sale completed. Historical receipts therefore do
+not change when pricing or tax configuration changes. The focused disposable native
+PostgreSQL run passes 165 unit/configuration/HTTP tests and 64 integration tests with
+zero failures or skips. Next establish the separate Payments module and associate an
+immutable cash payment with each completed cash sale.
+
 ## September 9, 2026 — atomic cash-sale completion slice
 
 Implemented Sales as five module projects in the supplied Sales structure. The
@@ -21,8 +36,7 @@ return 409. Completed financial records cannot be updated or deleted by runtime.
 The focused native PostgreSQL migration/restore run passes 165 unit/configuration/
 HTTP tests and 63 integration tests with zero failures or skips. Coverage includes
 tax arithmetic, cash/change, atomic persistence, replay, insufficient stock,
-authorization, tenant isolation and concurrent oversell prevention. Next implement
-read/query APIs and receipt projection, followed by the separate Payments boundary.
+authorization, tenant isolation and concurrent oversell prevention.
 
 ## September 8, 2026 — deterministic scheduled pricing slice
 

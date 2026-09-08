@@ -16,8 +16,23 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var created = await Complete(productId, 2m, 25m, operationId);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         using var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var saleId = body.RootElement.GetProperty("id").GetGuid();
         Assert.Equal(20m, body.RootElement.GetProperty("grandTotal").GetDecimal());
         Assert.Equal(5m, body.RootElement.GetProperty("changeDue").GetDecimal());
+        using var reader = Client("owner");
+        using var read = await reader.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId}");
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
+        Assert.Equal(saleId, readBody.RootElement.GetProperty("id").GetGuid());
+        Assert.Equal(20m, readBody.RootElement.GetProperty("grandTotal").GetDecimal());
+        Assert.Single(readBody.RootElement.GetProperty("lines").EnumerateArray());
+        using var receipt = await reader.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId}/receipt");
+        Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+        using var receiptBody = JsonDocument.Parse(await receipt.Content.ReadAsStringAsync());
+        Assert.Equal(saleId.ToString("N").ToUpperInvariant(), receiptBody.RootElement.GetProperty("receiptNumber").GetString());
+        Assert.Equal(20m, receiptBody.RootElement.GetProperty("grandTotal").GetDecimal());
+        Assert.Equal(5m, receiptBody.RootElement.GetProperty("changeDue").GetDecimal());
+        Assert.Single(receiptBody.RootElement.GetProperty("lines").EnumerateArray());
         using var replay = await Complete(productId, 2m, 25m, operationId);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         using var client = Client("owner");
@@ -26,6 +41,18 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         var item = stockBody.RootElement.GetProperty("items").EnumerateArray()
             .Single(value => value.GetProperty("productId").GetGuid() == productId);
         Assert.Equal(3m, item.GetProperty("quantity").GetDecimal());
+    }
+
+    [Fact]
+    public async Task SaleReadRequiresPermissionAndReturnsNotFoundWithinAuthorizedScope()
+    {
+        using var owner = Client("owner");
+        using var missing = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+
+        using var alice = Client("alice");
+        using var denied = await alice.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
 
     [Fact]

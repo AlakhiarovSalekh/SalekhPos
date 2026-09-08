@@ -9,8 +9,24 @@ using SalekhPos.Sales.Domain.Sales;
 
 namespace SalekhPos.Sales.Infrastructure.CompleteSale;
 
-public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICashSaleCompletion
+public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICashSaleCompletion, ISaleReader
 {
+    public async Task<CompletedSaleResponse?> ReadAsync(SalesIdentity identity, Guid organizationId, Guid branchId,
+        Guid saleId, CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || saleId == Guid.Empty)
+            throw new ArgumentException("Sale query is invalid.");
+        var dataSource = source ?? throw new SalesUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await EnsureSafeRuntime(connection, transaction, cancellationToken);
+        await SetContext(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, branchId, identity, "sales.view", cancellationToken);
+        var response = await ReadById(connection, transaction, organizationId, branchId, saleId, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return response;
+    }
+
     public async Task<CashSaleWriteResult> CompleteAsync(SalesIdentity identity, CompleteCashSaleCommand command,
         CancellationToken cancellationToken)
     {
@@ -20,7 +36,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await EnsureSafeRuntime(connection, transaction, cancellationToken);
         await SetContext(connection, transaction, command.OrganizationId, identity, cancellationToken);
-        await Demand(connection, transaction, command, identity, cancellationToken);
+        await Demand(connection, transaction, command.OrganizationId, command.BranchId, identity,
+            "sales.complete", cancellationToken);
         await Lock(connection, transaction, $"sale:{command.OrganizationId:D}:{command.OperationId:D}", cancellationToken);
         var replay = await ReadByOperation(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
         if (replay is not null)
@@ -95,7 +112,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
     }
 
     private static async Task Demand(NpgsqlConnection connection, NpgsqlTransaction transaction,
-        CompleteCashSaleCommand command, SalesIdentity identity, CancellationToken cancellationToken)
+        Guid organizationId, Guid branchId, SalesIdentity identity, string permission,
+        CancellationToken cancellationToken)
     {
         await using var query = new NpgsqlCommand("""
             SELECT EXISTS(SELECT FROM access.memberships m JOIN access.permission_grants g
@@ -105,13 +123,14 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             JOIN organization.organizations organization ON organization.organization_id=b.organization_id
             WHERE m.organization_id=$1 AND m.issuer=$3 AND m.subject=$4 AND m.is_active AND b.is_active
               AND business.is_active AND organization.is_active AND m.valid_from<=statement_timestamp()
-              AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp()) AND g.permission='sales.complete'
+              AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp()) AND g.permission=$5
               AND (g.scope_kind='organization' OR (g.scope_kind='business' AND g.business_id=b.business_id)
                 OR (g.scope_kind='region' AND g.business_id=b.business_id AND g.region_id=b.region_id)
                 OR (g.scope_kind='branch' AND g.business_id=b.business_id AND g.branch_id=b.branch_id)))
             """, connection, transaction);
-        query.Parameters.AddWithValue(command.OrganizationId); query.Parameters.AddWithValue(command.BranchId);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
         query.Parameters.AddWithValue(identity.Issuer); query.Parameters.AddWithValue(identity.Subject);
+        query.Parameters.AddWithValue(permission);
         if (await query.ExecuteScalarAsync(cancellationToken) is not true) throw new SalesDeniedException();
     }
 
@@ -254,6 +273,31 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         return new(id, branch, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
     }
 
+    private static async Task<CompletedSaleResponse?> ReadById(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, Guid organizationId, Guid branchId, Guid saleId,
+        CancellationToken cancellationToken)
+    {
+        await using var saleQuery = new NpgsqlCommand("SELECT sale_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at FROM sales.completed_sales WHERE organization_id=$1 AND branch_id=$2 AND sale_id=$3", connection, transaction);
+        saleQuery.Parameters.AddWithValue(organizationId); saleQuery.Parameters.AddWithValue(branchId);
+        saleQuery.Parameters.AddWithValue(saleId);
+        Guid id; string currency; decimal net; decimal tax; decimal grand; decimal cash; decimal change; DateTimeOffset at;
+        await using (var reader = await saleQuery.ExecuteReaderAsync(cancellationToken))
+        {
+            if (!await reader.ReadAsync(cancellationToken)) return null;
+            id = reader.GetGuid(0); currency = reader.GetString(2); net = reader.GetDecimal(3);
+            tax = reader.GetDecimal(4); grand = reader.GetDecimal(5); cash = reader.GetDecimal(6);
+            change = reader.GetDecimal(7); at = reader.GetFieldValue<DateTimeOffset>(8);
+        }
+        await using var lineQuery = new NpgsqlCommand("SELECT line_number,product_id,price_id,quantity,unit_amount,currency,tax_mode,tax_rate,net_amount,tax_amount,gross_amount FROM sales.sale_lines WHERE organization_id=$1 AND sale_id=$2 ORDER BY line_number", connection, transaction);
+        lineQuery.Parameters.AddWithValue(organizationId); lineQuery.Parameters.AddWithValue(id);
+        var lines = new List<CompletedSaleLineResponse>();
+        await using (var reader = await lineQuery.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken)) lines.Add(new(reader.GetInt32(0), reader.GetGuid(1),
+                reader.GetGuid(2), reader.GetDecimal(3), reader.GetDecimal(4), reader.GetString(5), reader.GetString(6),
+                reader.GetDecimal(7), reader.GetDecimal(8), reader.GetDecimal(9), reader.GetDecimal(10)));
+        return new(id, branchId, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
+    }
+
     private static bool SameRequest(CompletedSaleResponse sale, CompleteCashSaleCommand command) =>
         sale.BranchId == command.BranchId && sale.CashReceived == command.CashReceived && sale.Lines.Count == command.Lines.Count
         && sale.Lines.Zip(command.Lines).All(pair => pair.First.ProductId == pair.Second.ProductId
@@ -266,4 +310,3 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         new(sale.Id, sale.BranchId, sale.Currency, sale.NetTotal, sale.TaxTotal, sale.GrandTotal,
             sale.CashReceived, sale.ChangeDue, sale.CompletedAt, lines);
 }
-
