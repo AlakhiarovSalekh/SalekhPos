@@ -18,4 +18,7 @@
     <ProjectReference Include="../../src/Modules/Pricing/SalekhPos.Pricing.Domain/SalekhPos.Pricing.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Sales/SalekhPos.Sales.Domain/SalekhPos.Sales.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Payments\SalekhPos.Payments.Domain\SalekhPos.Payments.Domain.csproj" />
+  </ItemGroup>
 </Project>

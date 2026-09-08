@@ -165,6 +165,34 @@
           "SalekhPos.Inventory.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.payments.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Payments.Application": "[1.0.0, )",
+          "SalekhPos.Payments.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.payments.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Payments.Contracts": "[1.0.0, )",
+          "SalekhPos.Payments.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.payments.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.payments.domain": {
+        "type": "Project"
+      },
+      "salekhpos.payments.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Payments.Application": "[1.0.0, )",
+          "SalekhPos.Payments.Contracts": "[1.0.0, )"
+        }
+      },
       "salekhpos.pricing.api": {
         "type": "Project",
         "dependencies": {

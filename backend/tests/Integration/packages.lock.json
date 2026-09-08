@@ -472,6 +472,8 @@
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
           "SalekhPos.Inventory.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Payments.Api": "[1.0.0, )",
+          "SalekhPos.Payments.Infrastructure": "[1.0.0, )",
           "SalekhPos.Pricing.Api": "[1.0.0, )",
           "SalekhPos.Pricing.Infrastructure": "[1.0.0, )",
           "SalekhPos.Sales.Api": "[1.0.0, )",
@@ -563,6 +565,34 @@
           "SalekhPos.Inventory.Application": "[1.0.0, )",
           "SalekhPos.Inventory.Contracts": "[1.0.0, )",
           "SalekhPos.Inventory.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.payments.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Payments.Application": "[1.0.0, )",
+          "SalekhPos.Payments.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.payments.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Payments.Contracts": "[1.0.0, )",
+          "SalekhPos.Payments.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.payments.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.payments.domain": {
+        "type": "Project"
+      },
+      "salekhpos.payments.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Payments.Application": "[1.0.0, )",
+          "SalekhPos.Payments.Contracts": "[1.0.0, )"
         }
       },
       "salekhpos.pricing.api": {

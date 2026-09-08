@@ -33,6 +33,14 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(20m, receiptBody.RootElement.GetProperty("grandTotal").GetDecimal());
         Assert.Equal(5m, receiptBody.RootElement.GetProperty("changeDue").GetDecimal());
         Assert.Single(receiptBody.RootElement.GetProperty("lines").EnumerateArray());
+        using var payment = await reader.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId}/payment");
+        Assert.Equal(HttpStatusCode.OK, payment.StatusCode);
+        using var paymentBody = JsonDocument.Parse(await payment.Content.ReadAsStringAsync());
+        Assert.Equal(saleId, paymentBody.RootElement.GetProperty("saleId").GetGuid());
+        Assert.Equal("cash", paymentBody.RootElement.GetProperty("method").GetString());
+        Assert.Equal("completed", paymentBody.RootElement.GetProperty("status").GetString());
+        Assert.Equal(20m, paymentBody.RootElement.GetProperty("amount").GetDecimal());
+        Assert.Equal(25m, paymentBody.RootElement.GetProperty("tendered").GetDecimal());
         using var replay = await Complete(productId, 2m, 25m, operationId);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         using var client = Client("owner");
@@ -53,6 +61,8 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var alice = Client("alice");
         using var denied = await alice.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        using var paymentDenied = await alice.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{Guid.NewGuid()}/payment");
+        Assert.Equal(HttpStatusCode.Forbidden, paymentDenied.StatusCode);
     }
 
     [Fact]

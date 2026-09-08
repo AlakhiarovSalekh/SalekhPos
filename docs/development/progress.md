@@ -1,5 +1,24 @@
 # Implementation progress
 
+## September 9, 2026 — atomic cash-payment association slice
+
+Implemented Payments as five module projects in the supplied Payments structure.
+Migration 011 adds immutable, tenant-isolated payment records and an internal
+database trigger that creates exactly one completed cash payment in the same
+transaction as each completed sale. The payment preserves the sale, branch,
+method, status, currency, amount, tendered cash, change and completion timestamp.
+The runtime role can read payment records but cannot create, update or delete them.
+
+The versioned payment query is scoped by organization, branch and sale and requires
+the persisted `payments.view` permission. It returns no cardholder or provider
+secret data. Database checks verify atomic capture, exact financial snapshots,
+immutability, denied direct runtime insertion and tenant isolation. Application
+coverage verifies the payment response created by the existing cash-sale flow,
+including permission denial. The focused native PostgreSQL run passes 167 unit/
+configuration/HTTP tests and 64 integration tests with zero failures or skips.
+Next implement sale listing with bounded keyset pagination, then sale returns and
+their reversing inventory/payment records.
+
 ## September 9, 2026 — authorized sale reads and receipt projection
 
 Added branch-scoped sale and receipt endpoints backed only by immutable completed-sale

@@ -17,4 +17,8 @@
     <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Api/SalekhPos.SystemAdministration.Api.csproj" />
     <ProjectReference Include="../../Modules/SystemAdministration/SalekhPos.SystemAdministration.Infrastructure/SalekhPos.SystemAdministration.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Payments\SalekhPos.Payments.Api\SalekhPos.Payments.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Payments\SalekhPos.Payments.Infrastructure\SalekhPos.Payments.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

@@ -13,4 +13,7 @@
     </PackageReference>
     <ProjectReference Include="../../src/Bootstrapper/SalekhPos.Api/SalekhPos.Api.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Payments\SalekhPos.Payments.Contracts\SalekhPos.Payments.Contracts.csproj" />
+  </ItemGroup>
 </Project>
