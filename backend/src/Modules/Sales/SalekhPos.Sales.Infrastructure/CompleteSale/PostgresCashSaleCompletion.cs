@@ -23,7 +23,7 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         await SetContext(connection, transaction, organizationId, identity, cancellationToken);
         await Demand(connection, transaction, organizationId, branchId, identity, "sales.view", cancellationToken);
         await using var query = new NpgsqlCommand("""
-            SELECT sale_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at
+            SELECT sale_id,branch_id,shift_id,register_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at
             FROM sales.completed_sales
             WHERE organization_id=$1 AND branch_id=$2 AND ($3::uuid IS NULL OR sale_id>$3)
             ORDER BY sale_id LIMIT $4
@@ -38,8 +38,9 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         var items = new List<SaleSummaryResponse>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
             while (await reader.ReadAsync(cancellationToken)) items.Add(new(reader.GetGuid(0), reader.GetGuid(1),
-                reader.GetString(2), reader.GetDecimal(3), reader.GetDecimal(4), reader.GetDecimal(5),
-                reader.GetDecimal(6), reader.GetDecimal(7), reader.GetFieldValue<DateTimeOffset>(8)));
+                reader.IsDBNull(2) ? null : reader.GetGuid(2), reader.IsDBNull(3) ? null : reader.GetGuid(3),
+                reader.GetString(4), reader.GetDecimal(5), reader.GetDecimal(6), reader.GetDecimal(7),
+                reader.GetDecimal(8), reader.GetDecimal(9), reader.GetFieldValue<DateTimeOffset>(10)));
         Guid? next = null;
         if (items.Count > pageSize) { items.RemoveAt(pageSize); next = items[^1].Id; }
         await transaction.CommitAsync(cancellationToken);
@@ -73,6 +74,7 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         await SetContext(connection, transaction, command.OrganizationId, identity, cancellationToken);
         await Demand(connection, transaction, command.OrganizationId, command.BranchId, identity,
             "sales.complete", cancellationToken);
+        await Lock(connection, transaction, $"{command.OrganizationId:D}:{command.ShiftId:D}", cancellationToken);
         await Lock(connection, transaction, $"sale:{command.OrganizationId:D}:{command.OperationId:D}", cancellationToken);
         var replay = await ReadByOperation(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
         if (replay is not null)
@@ -85,6 +87,9 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
 
         if (command.SuspendedCartId is Guid cartId)
             await ConsumeCart(connection, transaction, identity, command, cartId, cancellationToken);
+
+        var (registerId, shiftCurrency) = await ActiveShiftRegister(connection, transaction, command.OrganizationId,
+            command.BranchId, command.ShiftId, cancellationToken) ?? throw new SalesConflictException();
 
         foreach (var productId in command.Lines.Select(line => line.ProductId).Order())
             await Lock(connection, transaction, $"stock:{command.OrganizationId:D}:{command.BranchId:D}:{productId:D}", cancellationToken);
@@ -102,7 +107,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         }
         var sale = new CompletedSale(command.OrganizationId, command.BranchId, command.SaleId, calculations,
             command.CashReceived, completedAt);
-        await InsertSale(connection, transaction, sale, command.OperationId, identity, cancellationToken);
+        if (sale.Currency != shiftCurrency) throw new SalesConflictException();
+        await InsertSale(connection, transaction, sale, command.ShiftId, registerId, command.OperationId, identity, cancellationToken);
         var responses = new List<CompletedSaleLineResponse>(calculations.Count);
         for (var index = 0; index < calculations.Count; index++)
         {
@@ -117,7 +123,7 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         if (command.SuspendedCartId is Guid consumedCartId)
             await LinkCart(connection, transaction, command.OrganizationId, consumedCartId, sale.Id, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new(ToResponse(sale, responses), true);
+        return new(ToResponse(sale, command.ShiftId, registerId, responses), true);
     }
 
     private static async Task ConsumeCart(NpgsqlConnection connection, NpgsqlTransaction transaction,
@@ -155,7 +161,7 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
 
     private static void Validate(CompleteCashSaleCommand command)
     {
-        if (command.OrganizationId == Guid.Empty || command.BranchId == Guid.Empty || command.SaleId == Guid.Empty
+        if (command.OrganizationId == Guid.Empty || command.BranchId == Guid.Empty || command.ShiftId == Guid.Empty || command.SaleId == Guid.Empty
             || command.OperationId == Guid.Empty || command.Lines is null || command.Lines.Count is < 1 or > 500
             || command.Lines.Any(line => line.ProductId == Guid.Empty || line.Quantity <= 0
                 || decimal.Round(line.Quantity, 6) != line.Quantity)
@@ -254,20 +260,30 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
     }
 
     private static async Task InsertSale(NpgsqlConnection connection, NpgsqlTransaction transaction, CompletedSale sale,
-        Guid operationId, SalesIdentity identity, CancellationToken cancellationToken)
+        Guid shiftId, Guid registerId, Guid operationId, SalesIdentity identity, CancellationToken cancellationToken)
     {
         await using var query = new NpgsqlCommand("""
-            INSERT INTO sales.completed_sales(organization_id,sale_id,operation_id,branch_id,currency,net_total,
+            INSERT INTO sales.completed_sales(organization_id,sale_id,operation_id,branch_id,shift_id,register_id,currency,net_total,
               tax_total,grand_total,cash_received,change_due,completed_at,issuer,subject)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
             """, connection, transaction);
         query.Parameters.AddWithValue(sale.OrganizationId); query.Parameters.AddWithValue(sale.Id);
         query.Parameters.AddWithValue(operationId); query.Parameters.AddWithValue(sale.BranchId);
+        query.Parameters.AddWithValue(shiftId); query.Parameters.AddWithValue(registerId);
         query.Parameters.AddWithValue(sale.Currency); query.Parameters.AddWithValue(sale.NetTotal);
         query.Parameters.AddWithValue(sale.TaxTotal); query.Parameters.AddWithValue(sale.GrandTotal);
         query.Parameters.AddWithValue(sale.CashReceived); query.Parameters.AddWithValue(sale.ChangeDue);
         query.Parameters.AddWithValue(sale.CompletedAt); query.Parameters.AddWithValue(identity.Issuer);
         query.Parameters.AddWithValue(identity.Subject); await query.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task<(Guid RegisterId, string Currency)?> ActiveShiftRegister(NpgsqlConnection connection,
+        NpgsqlTransaction transaction, Guid organizationId, Guid branchId, Guid shiftId, CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("SELECT register_id,currency FROM shifts.shifts WHERE organization_id=$1 AND branch_id=$2 AND shift_id=$3 AND status='open'", connection, transaction);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId); query.Parameters.AddWithValue(shiftId);
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? (reader.GetGuid(0), reader.GetString(1)) : null;
     }
 
     private static async Task InsertMovement(NpgsqlConnection connection, NpgsqlTransaction transaction,
@@ -328,15 +344,15 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
     private static async Task<CompletedSaleResponse?> ReadByOperation(NpgsqlConnection connection,
         NpgsqlTransaction transaction, Guid organizationId, Guid operationId, CancellationToken cancellationToken)
     {
-        await using var saleQuery = new NpgsqlCommand("SELECT sale_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at FROM sales.completed_sales WHERE organization_id=$1 AND operation_id=$2", connection, transaction);
+        await using var saleQuery = new NpgsqlCommand("SELECT sale_id,branch_id,shift_id,register_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at FROM sales.completed_sales WHERE organization_id=$1 AND operation_id=$2", connection, transaction);
         saleQuery.Parameters.AddWithValue(organizationId); saleQuery.Parameters.AddWithValue(operationId);
-        Guid id; Guid branch; string currency; decimal net; decimal tax; decimal grand; decimal cash; decimal change; DateTimeOffset at;
+        Guid id; Guid branch; Guid? shift; Guid? register; string currency; decimal net; decimal tax; decimal grand; decimal cash; decimal change; DateTimeOffset at;
         await using (var reader = await saleQuery.ExecuteReaderAsync(cancellationToken))
         {
             if (!await reader.ReadAsync(cancellationToken)) return null;
-            id = reader.GetGuid(0); branch = reader.GetGuid(1); currency = reader.GetString(2); net = reader.GetDecimal(3);
-            tax = reader.GetDecimal(4); grand = reader.GetDecimal(5); cash = reader.GetDecimal(6);
-            change = reader.GetDecimal(7); at = reader.GetFieldValue<DateTimeOffset>(8);
+            id = reader.GetGuid(0); branch = reader.GetGuid(1); shift = reader.IsDBNull(2) ? null : reader.GetGuid(2); register = reader.IsDBNull(3) ? null : reader.GetGuid(3); currency = reader.GetString(4); net = reader.GetDecimal(5);
+            tax = reader.GetDecimal(6); grand = reader.GetDecimal(7); cash = reader.GetDecimal(8);
+            change = reader.GetDecimal(9); at = reader.GetFieldValue<DateTimeOffset>(10);
         }
         await using var lineQuery = new NpgsqlCommand("SELECT line_number,product_id,price_id,quantity,unit_amount,currency,tax_mode,tax_rate,net_amount,tax_amount,gross_amount FROM sales.sale_lines WHERE organization_id=$1 AND sale_id=$2 ORDER BY line_number", connection, transaction);
         lineQuery.Parameters.AddWithValue(organizationId); lineQuery.Parameters.AddWithValue(id);
@@ -345,23 +361,23 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             while (await reader.ReadAsync(cancellationToken)) lines.Add(new(reader.GetInt32(0), reader.GetGuid(1),
                 reader.GetGuid(2), reader.GetDecimal(3), reader.GetDecimal(4), reader.GetString(5), reader.GetString(6),
                 reader.GetDecimal(7), reader.GetDecimal(8), reader.GetDecimal(9), reader.GetDecimal(10)));
-        return new(id, branch, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
+        return new(id, branch, shift, register, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
     }
 
     private static async Task<CompletedSaleResponse?> ReadById(NpgsqlConnection connection,
         NpgsqlTransaction transaction, Guid organizationId, Guid branchId, Guid saleId,
         CancellationToken cancellationToken)
     {
-        await using var saleQuery = new NpgsqlCommand("SELECT sale_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at FROM sales.completed_sales WHERE organization_id=$1 AND branch_id=$2 AND sale_id=$3", connection, transaction);
+        await using var saleQuery = new NpgsqlCommand("SELECT sale_id,branch_id,shift_id,register_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at FROM sales.completed_sales WHERE organization_id=$1 AND branch_id=$2 AND sale_id=$3", connection, transaction);
         saleQuery.Parameters.AddWithValue(organizationId); saleQuery.Parameters.AddWithValue(branchId);
         saleQuery.Parameters.AddWithValue(saleId);
-        Guid id; string currency; decimal net; decimal tax; decimal grand; decimal cash; decimal change; DateTimeOffset at;
+        Guid id; Guid? shift; Guid? register; string currency; decimal net; decimal tax; decimal grand; decimal cash; decimal change; DateTimeOffset at;
         await using (var reader = await saleQuery.ExecuteReaderAsync(cancellationToken))
         {
             if (!await reader.ReadAsync(cancellationToken)) return null;
-            id = reader.GetGuid(0); currency = reader.GetString(2); net = reader.GetDecimal(3);
-            tax = reader.GetDecimal(4); grand = reader.GetDecimal(5); cash = reader.GetDecimal(6);
-            change = reader.GetDecimal(7); at = reader.GetFieldValue<DateTimeOffset>(8);
+            id = reader.GetGuid(0); shift = reader.IsDBNull(2) ? null : reader.GetGuid(2); register = reader.IsDBNull(3) ? null : reader.GetGuid(3); currency = reader.GetString(4); net = reader.GetDecimal(5);
+            tax = reader.GetDecimal(6); grand = reader.GetDecimal(7); cash = reader.GetDecimal(8);
+            change = reader.GetDecimal(9); at = reader.GetFieldValue<DateTimeOffset>(10);
         }
         await using var lineQuery = new NpgsqlCommand("SELECT line_number,product_id,price_id,quantity,unit_amount,currency,tax_mode,tax_rate,net_amount,tax_amount,gross_amount FROM sales.sale_lines WHERE organization_id=$1 AND sale_id=$2 ORDER BY line_number", connection, transaction);
         lineQuery.Parameters.AddWithValue(organizationId); lineQuery.Parameters.AddWithValue(id);
@@ -370,18 +386,18 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             while (await reader.ReadAsync(cancellationToken)) lines.Add(new(reader.GetInt32(0), reader.GetGuid(1),
                 reader.GetGuid(2), reader.GetDecimal(3), reader.GetDecimal(4), reader.GetString(5), reader.GetString(6),
                 reader.GetDecimal(7), reader.GetDecimal(8), reader.GetDecimal(9), reader.GetDecimal(10)));
-        return new(id, branchId, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
+        return new(id, branchId, shift, register, currency, net, tax, grand, cash, change, at, lines.AsReadOnly());
     }
 
     private static bool SameRequest(CompletedSaleResponse sale, CompleteCashSaleCommand command) =>
-        sale.BranchId == command.BranchId && sale.CashReceived == command.CashReceived && sale.Lines.Count == command.Lines.Count
+        sale.BranchId == command.BranchId && sale.ShiftId == command.ShiftId && sale.CashReceived == command.CashReceived && sale.Lines.Count == command.Lines.Count
         && sale.Lines.Zip(command.Lines).All(pair => pair.First.ProductId == pair.Second.ProductId
             && pair.First.Quantity == pair.Second.Quantity);
     private static CompletedSaleLineResponse Response(SaleLineCalculation line, int number) => new(number, line.ProductId,
         line.PriceId, line.Quantity, line.UnitAmount, line.Currency,
         line.TaxMode == AppliedTaxMode.Inclusive ? "inclusive" : "exclusive", line.TaxRate,
         line.NetAmount, line.TaxAmount, line.GrossAmount);
-    private static CompletedSaleResponse ToResponse(CompletedSale sale, IReadOnlyList<CompletedSaleLineResponse> lines) =>
-        new(sale.Id, sale.BranchId, sale.Currency, sale.NetTotal, sale.TaxTotal, sale.GrandTotal,
+    private static CompletedSaleResponse ToResponse(CompletedSale sale, Guid shiftId, Guid registerId, IReadOnlyList<CompletedSaleLineResponse> lines) =>
+        new(sale.Id, sale.BranchId, shiftId, registerId, sale.Currency, sale.NetTotal, sale.TaxTotal, sale.GrandTotal,
             sale.CashReceived, sale.ChangeDue, sale.CompletedAt, lines);
 }

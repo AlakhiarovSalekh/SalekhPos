@@ -8,6 +8,8 @@ namespace SalekhPos.IntegrationTests;
 
 public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>
 {
+    private readonly SemaphoreSlim saleShiftGate = new(1, 1);
+    private Guid? saleShiftId;
     [Fact]
     public async Task ShiftOpeningIsIdempotentPermissionCheckedAndLimitedToOnePerRegister()
     {
@@ -104,6 +106,8 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         using var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
         var saleId = body.RootElement.GetProperty("id").GetGuid();
+        Assert.NotEqual(Guid.Empty, body.RootElement.GetProperty("shiftId").GetGuid());
+        Assert.NotEqual(Guid.Empty, body.RootElement.GetProperty("registerId").GetGuid());
         Assert.Equal(20m, body.RootElement.GetProperty("grandTotal").GetDecimal());
         Assert.Equal(5m, body.RootElement.GetProperty("changeDue").GetDecimal());
         using var reader = Client("owner");
@@ -475,12 +479,32 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     private async Task<HttpResponseMessage> Complete(Guid productId, decimal quantity, decimal cashReceived,
         Guid operationId, string subject = "owner", Guid? suspendedCartId = null)
     {
+        var shiftId = await EnsureSaleShift();
         using var client = Client(subject);
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
-        { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
+        { Content = JsonContent.Create(new { shiftId, lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         return await client.SendAsync(request);
+    }
+
+    private async Task<Guid> EnsureSaleShift()
+    {
+        if (saleShiftId is Guid existing) return existing;
+        await saleShiftGate.WaitAsync();
+        try
+        {
+            if (saleShiftId is Guid ready) return ready;
+            using var owner = Client("owner");
+            using var registerRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers") { Content = JsonContent.Create(new { code = "SALE-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), name = "Sale Test Register" }) };
+            registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+            using var registerResponse = await owner.SendAsync(registerRequest); registerResponse.EnsureSuccessStatusCode();
+            using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
+            using var shiftResponse = await OpenShift(owner, registerBody.RootElement.GetProperty("id").GetGuid(), Guid.NewGuid(), 0m); shiftResponse.EnsureSuccessStatusCode();
+            using var shiftBody = JsonDocument.Parse(await shiftResponse.Content.ReadAsStringAsync());
+            saleShiftId = shiftBody.RootElement.GetProperty("id").GetGuid(); return saleShiftId.Value;
+        }
+        finally { saleShiftGate.Release(); }
     }
 
     private async Task<HttpResponseMessage> OpenShift(HttpClient client, Guid registerId, Guid operationId, decimal openingBalance)

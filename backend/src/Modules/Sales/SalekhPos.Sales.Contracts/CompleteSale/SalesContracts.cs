@@ -1,14 +1,14 @@
 namespace SalekhPos.Sales.Contracts.CompleteSale;
 
 public sealed record CompleteCashSaleLineRequest(Guid ProductId, decimal Quantity);
-public sealed record CompleteCashSaleRequest(IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived,
+public sealed record CompleteCashSaleRequest(Guid ShiftId, IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived,
     Guid? SuspendedCartId = null);
 public sealed record CompletedSaleLineResponse(int LineNumber, Guid ProductId, Guid PriceId, decimal Quantity,
     decimal UnitAmount, string Currency, string TaxMode, decimal TaxRate, decimal NetAmount,
     decimal TaxAmount, decimal GrossAmount);
-public sealed record CompletedSaleResponse(Guid Id, Guid BranchId, string Currency, decimal NetTotal,
+public sealed record CompletedSaleResponse(Guid Id, Guid BranchId, Guid? ShiftId, Guid? RegisterId, string Currency, decimal NetTotal,
     decimal TaxTotal, decimal GrandTotal, decimal CashReceived, decimal ChangeDue, DateTimeOffset CompletedAt,
     IReadOnlyList<CompletedSaleLineResponse> Lines);
-public sealed record SaleSummaryResponse(Guid Id, Guid BranchId, string Currency, decimal NetTotal,
+public sealed record SaleSummaryResponse(Guid Id, Guid BranchId, Guid? ShiftId, Guid? RegisterId, string Currency, decimal NetTotal,
     decimal TaxTotal, decimal GrandTotal, decimal CashReceived, decimal ChangeDue, DateTimeOffset CompletedAt);
 public sealed record SalePage(IReadOnlyList<SaleSummaryResponse> Items, Guid? NextCursor);

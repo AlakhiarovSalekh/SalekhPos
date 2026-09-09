@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 9, 2026 — cash sales assigned to active shifts
+
+Cash-sale completion now requires an explicit shift and atomically snapshots its
+register assignment on the completed sale. The server validates that the shift is
+open in the requested tenant branch, derives the register and currency from persisted
+shift state, rejects currency mismatch, and serializes sale admission with shift cash
+operations. Idempotent replay now includes the shift identity in request equivalence.
+
+Migration 024 adds nullable transition columns for historical sales, tenant-composite
+foreign keys to shifts and registers, and a filtered shift/time access path. The active
+API never creates an unassigned sale. Sale detail and history expose assignment while
+remaining able to represent pre-migration records. Native CI passes all structure,
+architecture, secret, dependency, formatting and migration/restore checks, 167
+unit/configuration/HTTP tests and 70 integration tests with zero failures or skips.
+Next propagate the persisted shift assignment through return and void refund evidence,
+then implement authoritative expected-cash calculation and shift closing.
+
 ## September 9, 2026 — immutable shift cash-movement ledger
 
 Added authorized cash-in and cash-out recording and retrieval beneath an open shift.

@@ -45,7 +45,7 @@ public static class CashSaleEndpoints
                     || operationId == Guid.Empty || request.Lines is null) return Invalid();
                 try
                 {
-                    var command = new CompleteCashSaleCommand(organizationId, branchId, Guid.NewGuid(), operationId,
+                    var command = new CompleteCashSaleCommand(organizationId, branchId, request.ShiftId, Guid.NewGuid(), operationId,
                         request.Lines,
                         request.CashReceived, request.SuspendedCartId);
                     var result = await completion.CompleteAsync(Identity(context), command, cancellationToken);
