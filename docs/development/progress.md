@@ -1,5 +1,19 @@
 # Implementation progress
 
+## September 9, 2026 — bounded sale-history query slice
+
+Added a branch-scoped sale-history endpoint with a strict maximum page size of 100
+and stable UUID keyset pagination. The query requires `sales.view`, repeats active
+hierarchy and membership authorization, executes under forced tenant RLS and returns
+only immutable completed-sale summaries. Unknown, duplicate or malformed query
+parameters fail with a bounded 400 response. Migration 012 adds the composite index
+used by the tenant, branch and cursor access path.
+
+Focused PostgreSQL coverage verifies the migration index, list authorization,
+bounded input and persisted sale visibility. Integration coverage walks consecutive
+one-item pages and verifies that the cursor cannot repeat a row. Next implement the
+Returns boundary with immutable return records and atomic reversing stock movements.
+
 ## September 9, 2026 — atomic cash-payment association slice
 
 Implemented Payments as five module projects in the supplied Payments structure.

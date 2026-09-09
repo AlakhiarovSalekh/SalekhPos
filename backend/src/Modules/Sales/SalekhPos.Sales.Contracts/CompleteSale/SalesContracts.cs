@@ -8,3 +8,6 @@ public sealed record CompletedSaleLineResponse(int LineNumber, Guid ProductId, G
 public sealed record CompletedSaleResponse(Guid Id, Guid BranchId, string Currency, decimal NetTotal,
     decimal TaxTotal, decimal GrandTotal, decimal CashReceived, decimal ChangeDue, DateTimeOffset CompletedAt,
     IReadOnlyList<CompletedSaleLineResponse> Lines);
+public sealed record SaleSummaryResponse(Guid Id, Guid BranchId, string Currency, decimal NetTotal,
+    decimal TaxTotal, decimal GrandTotal, decimal CashReceived, decimal ChangeDue, DateTimeOffset CompletedAt);
+public sealed record SalePage(IReadOnlyList<SaleSummaryResponse> Items, Guid? NextCursor);

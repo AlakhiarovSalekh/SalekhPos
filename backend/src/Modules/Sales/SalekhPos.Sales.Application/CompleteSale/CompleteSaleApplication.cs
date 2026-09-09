@@ -28,10 +28,11 @@ public interface ISaleReader
 {
     Task<CompletedSaleResponse?> ReadAsync(SalesIdentity identity, Guid organizationId, Guid branchId,
         Guid saleId, CancellationToken cancellationToken);
+    Task<SalePage> ListAsync(SalesIdentity identity, Guid organizationId, Guid branchId, int pageSize,
+        Guid? after, CancellationToken cancellationToken);
 }
 public sealed class SalesDeniedException : Exception;
 public sealed class SalesConflictException : Exception;
 public sealed class InsufficientStockException : Exception;
 public sealed class SalePriceUnavailableException : Exception;
 public sealed class SalesUnavailableException : Exception;
-

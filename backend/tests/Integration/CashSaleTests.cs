@@ -41,6 +41,11 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal("completed", paymentBody.RootElement.GetProperty("status").GetString());
         Assert.Equal(20m, paymentBody.RootElement.GetProperty("amount").GetDecimal());
         Assert.Equal(25m, paymentBody.RootElement.GetProperty("tendered").GetDecimal());
+        using var list = await reader.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales?pageSize=100");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        using var listBody = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
+        Assert.Contains(listBody.RootElement.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("id").GetGuid() == saleId);
         using var replay = await Complete(productId, 2m, 25m, operationId);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         using var client = Client("owner");
@@ -63,6 +68,8 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
         using var paymentDenied = await alice.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{Guid.NewGuid()}/payment");
         Assert.Equal(HttpStatusCode.Forbidden, paymentDenied.StatusCode);
+        using var invalid = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
     }
 
     [Fact]
@@ -96,6 +103,28 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         {
             foreach (var response in attempts) response.Dispose();
         }
+    }
+
+    [Fact]
+    public async Task SaleHistoryUsesStableBoundedKeysetPages()
+    {
+        var productId = await PrepareProduct(2m, 2m);
+        using var firstSale = await Complete(productId, 1m, 2m, Guid.NewGuid());
+        using var secondSale = await Complete(productId, 1m, 2m, Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Created, firstSale.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, secondSale.StatusCode);
+
+        using var client = Client("owner");
+        using var firstPage = await client.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales?pageSize=1");
+        using var firstBody = JsonDocument.Parse(await firstPage.Content.ReadAsStringAsync());
+        var firstItem = Assert.Single(firstBody.RootElement.GetProperty("items").EnumerateArray());
+        var cursor = firstBody.RootElement.GetProperty("nextCursor").GetGuid();
+        Assert.Equal(firstItem.GetProperty("id").GetGuid(), cursor);
+
+        using var secondPage = await client.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales?pageSize=1&after={cursor:D}");
+        using var secondBody = JsonDocument.Parse(await secondPage.Content.ReadAsStringAsync());
+        var secondItem = Assert.Single(secondBody.RootElement.GetProperty("items").EnumerateArray());
+        Assert.NotEqual(firstItem.GetProperty("id").GetGuid(), secondItem.GetProperty("id").GetGuid());
     }
 
     private async Task<Guid> PrepareProduct(decimal amount, decimal stock)

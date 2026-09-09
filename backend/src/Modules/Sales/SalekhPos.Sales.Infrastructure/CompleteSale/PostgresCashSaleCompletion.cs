@@ -11,6 +11,41 @@ namespace SalekhPos.Sales.Infrastructure.CompleteSale;
 
 public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICashSaleCompletion, ISaleReader
 {
+    public async Task<SalePage> ListAsync(SalesIdentity identity, Guid organizationId, Guid branchId,
+        int pageSize, Guid? after, CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || pageSize is < 1 or > 100
+            || after == Guid.Empty) throw new ArgumentException("Sale query is invalid.");
+        var dataSource = source ?? throw new SalesUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await EnsureSafeRuntime(connection, transaction, cancellationToken);
+        await SetContext(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, branchId, identity, "sales.view", cancellationToken);
+        await using var query = new NpgsqlCommand("""
+            SELECT sale_id,branch_id,currency,net_total,tax_total,grand_total,cash_received,change_due,completed_at
+            FROM sales.completed_sales
+            WHERE organization_id=$1 AND branch_id=$2 AND ($3::uuid IS NULL OR sale_id>$3)
+            ORDER BY sale_id LIMIT $4
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = (object?)after ?? DBNull.Value
+        });
+        query.Parameters.AddWithValue(pageSize + 1);
+        var items = new List<SaleSummaryResponse>(pageSize + 1);
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken)) items.Add(new(reader.GetGuid(0), reader.GetGuid(1),
+                reader.GetString(2), reader.GetDecimal(3), reader.GetDecimal(4), reader.GetDecimal(5),
+                reader.GetDecimal(6), reader.GetDecimal(7), reader.GetFieldValue<DateTimeOffset>(8)));
+        Guid? next = null;
+        if (items.Count > pageSize) { items.RemoveAt(pageSize); next = items[^1].Id; }
+        await transaction.CommitAsync(cancellationToken);
+        return new(items.AsReadOnly(), next);
+    }
+
     public async Task<CompletedSaleResponse?> ReadAsync(SalesIdentity identity, Guid organizationId, Guid branchId,
         Guid saleId, CancellationToken cancellationToken)
     {
