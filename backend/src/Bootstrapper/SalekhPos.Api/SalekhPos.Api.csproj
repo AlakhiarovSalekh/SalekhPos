@@ -7,6 +7,8 @@
     <ProjectReference Include="../../Modules/Authorization/SalekhPos.Authorization.Infrastructure/SalekhPos.Authorization.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Catalog/SalekhPos.Catalog.Api/SalekhPos.Catalog.Api.csproj" />
     <ProjectReference Include="../../Modules/Catalog/SalekhPos.Catalog.Infrastructure/SalekhPos.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Stores/SalekhPos.Stores.Api/SalekhPos.Stores.Api.csproj" />
+    <ProjectReference Include="../../Modules/Stores/SalekhPos.Stores.Infrastructure/SalekhPos.Stores.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Inventory/SalekhPos.Inventory.Api/SalekhPos.Inventory.Api.csproj" />
     <ProjectReference Include="../../Modules/Inventory/SalekhPos.Inventory.Infrastructure/SalekhPos.Inventory.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Pricing/SalekhPos.Pricing.Api/SalekhPos.Pricing.Api.csproj" />

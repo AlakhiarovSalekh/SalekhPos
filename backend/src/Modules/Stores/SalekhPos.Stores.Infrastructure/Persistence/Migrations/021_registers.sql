@@ -1,0 +1,10 @@
+BEGIN;
+DO $$ BEGIN IF current_user='salekhpos_runtime' THEN RAISE EXCEPTION 'Runtime role must not run migrations'; END IF; END $$;
+CREATE SCHEMA stores; REVOKE ALL ON SCHEMA stores FROM PUBLIC;
+CREATE TABLE stores.registers(organization_id uuid NOT NULL,register_id uuid NOT NULL,operation_id uuid NOT NULL,branch_id uuid NOT NULL,code varchar(32) NOT NULL,name varchar(100) NOT NULL,is_active boolean NOT NULL DEFAULT true,created_at timestamptz NOT NULL,issuer text NOT NULL,subject text NOT NULL,PRIMARY KEY(organization_id,register_id),UNIQUE(organization_id,operation_id),UNIQUE(organization_id,branch_id,code),FOREIGN KEY(organization_id,branch_id) REFERENCES organization.branches(organization_id,branch_id),CHECK(code~'^[A-Za-z0-9_-]{1,32}$'),CHECK(char_length(name) BETWEEN 1 AND 100));
+CREATE INDEX ix_registers_branch_cursor ON stores.registers(organization_id,branch_id,register_id);
+ALTER TABLE stores.registers ENABLE ROW LEVEL SECURITY; ALTER TABLE stores.registers FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON stores.registers USING(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid) WITH CHECK(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid);
+GRANT USAGE ON SCHEMA stores TO salekhpos_runtime; GRANT SELECT ON stores.registers TO salekhpos_runtime;
+GRANT INSERT(organization_id,register_id,operation_id,branch_id,code,name,is_active,created_at,issuer,subject) ON stores.registers TO salekhpos_runtime;
+COMMIT;

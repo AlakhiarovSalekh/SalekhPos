@@ -283,6 +283,35 @@
       "salekhpos.sharedkernel": {
         "type": "Project"
       },
+      "salekhpos.stores.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Stores.Application": "[1.0.0, )",
+          "SalekhPos.Stores.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.stores.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Stores.Contracts": "[1.0.0, )",
+          "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.stores.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.stores.domain": {
+        "type": "Project"
+      },
+      "salekhpos.stores.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Stores.Application": "[1.0.0, )",
+          "SalekhPos.Stores.Contracts": "[1.0.0, )",
+          "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.systemadministration.api": {
         "type": "Project",
         "dependencies": {

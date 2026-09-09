@@ -9,6 +9,35 @@ namespace SalekhPos.IntegrationTests;
 public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>
 {
     [Fact]
+    public async Task RegisterCreationIsIdempotentAndBranchScoped()
+    {
+        using var owner = Client("owner");
+        var operationId = Guid.NewGuid();
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        { Content = JsonContent.Create(new { code = "POS-01", name = "Front Register" }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var created = await owner.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        using var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var registerId = body.RootElement.GetProperty("id").GetGuid();
+        using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        { Content = JsonContent.Create(new { code = "POS-01", name = "Front Register" }) };
+        replayRequest.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var replay = await owner.SendAsync(replayRequest);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        using var listed = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers");
+        using var listedBody = JsonDocument.Parse(await listed.Content.ReadAsStringAsync());
+        Assert.Contains(listedBody.RootElement.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("id").GetGuid() == registerId);
+        using var denied = await Client("alice").GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
+    [Fact]
     public async Task CompletionPersistsFinancialSnapshotAndDecrementsStockOnce()
     {
         var productId = await PrepareProduct(10m, 5m);

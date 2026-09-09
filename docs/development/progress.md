@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 9, 2026 — tenant-safe register catalog slice
+
+Implemented Stores as five module projects and established persisted register identity
+as the prerequisite for shift and cash-drawer workflows. Authorized operators can
+create and list branch registers through versioned endpoints. Register codes are
+bounded and unique within a tenant branch, names preserve user text, and creation is
+operation-ID idempotent with changed replays rejected.
+
+Migration 021 adds tenant-composite branch references, forced RLS, a branch/cursor
+index and insert/select-only runtime grants; runtime update and delete are denied.
+Creation requires persisted `stores.manage`, while listing requires `stores.view`,
+with active organization/business/branch and membership scope checked before data
+access. Native CI passes structure, architecture coverage for 51 projects, secrets,
+dependencies, formatting, migration/restore, 167 unit/configuration/HTTP tests and
+69 integration tests with zero failures or skips. Next implement ShiftManagement's
+authorized, idempotent shift-opening workflow with one open shift per register.
+
 ## September 9, 2026 — unified branch payment-event history
 
 Added a bounded, branch-scoped reconciliation feed that projects completed cash

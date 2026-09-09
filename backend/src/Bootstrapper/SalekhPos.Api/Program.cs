@@ -36,6 +36,9 @@ using SalekhPos.Identity.Infrastructure.Tokens;
 using SalekhPos.SystemAdministration.Api;
 using SalekhPos.SystemAdministration.Application;
 using SalekhPos.SystemAdministration.Infrastructure;
+using SalekhPos.Stores.Api.Registers;
+using SalekhPos.Stores.Application.Registers;
+using SalekhPos.Stores.Infrastructure.Registers;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -79,6 +82,8 @@ builder.Services.AddSingleton<IPaymentReader>(provider => new PostgresPaymentRea
 builder.Services.AddSingleton<IReturnCompletion>(provider => new PostgresReturnCompletion(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IReturnReader>(provider => new PostgresReturnReader(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IRegisterCatalog>(provider => new PostgresRegisterCatalog(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -146,6 +151,7 @@ app.MapPricingEndpoints();
 app.MapCashSaleEndpoints();
 app.MapSuspendedCartEndpoints();
 app.MapSaleVoidEndpoints();
+app.MapRegisterEndpoints();
 app.MapReceiptEndpoints();
 app.MapPaymentEndpoints();
 app.MapReturnEndpoints();
