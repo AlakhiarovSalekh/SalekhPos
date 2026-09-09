@@ -21,10 +21,13 @@ using SalekhPos.Returns.Infrastructure.Returns;
 using SalekhPos.Sales.Api.Carts;
 using SalekhPos.Sales.Api.CompleteSale;
 using SalekhPos.Sales.Api.Receipts;
+using SalekhPos.Sales.Api.Voids;
 using SalekhPos.Sales.Application.Carts;
 using SalekhPos.Sales.Application.CompleteSale;
+using SalekhPos.Sales.Application.Voids;
 using SalekhPos.Sales.Infrastructure.Carts;
 using SalekhPos.Sales.Infrastructure.CompleteSale;
+using SalekhPos.Sales.Infrastructure.Voids;
 using SalekhPos.Api.Authentication;
 using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.ExceptionHandling;
@@ -64,6 +67,8 @@ builder.Services.AddSingleton<IPriceBook>(provider => new PostgresPriceBook(
 builder.Services.AddSingleton(provider => new PostgresCashSaleCompletion(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISuspendedCartService>(provider => new PostgresSuspendedCartService(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISaleVoidService>(provider => new PostgresSaleVoidService(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ICashSaleCompletion>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
 builder.Services.AddSingleton<ISaleReader>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
@@ -138,6 +143,7 @@ app.MapInventoryEndpoints();
 app.MapPricingEndpoints();
 app.MapCashSaleEndpoints();
 app.MapSuspendedCartEndpoints();
+app.MapSaleVoidEndpoints();
 app.MapReceiptEndpoints();
 app.MapPaymentEndpoints();
 app.MapReturnEndpoints();

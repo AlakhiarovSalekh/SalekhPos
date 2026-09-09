@@ -1,5 +1,20 @@
 # Implementation progress
 
+## September 9, 2026 — atomic completed-sale void slice
+
+Implemented controlled voiding of completed cash sales under persisted `sales.void`
+authority. A transaction-scoped sale lock prevents concurrent reversal. A sale with
+any return is rejected, and one sale can have only one immutable void. The same
+transaction writes the void and line evidence, restores each sold quantity through
+inventory movements and creates a cash void-refund linked to the original payment.
+Operation-ID replay returns the original result without duplicate effects.
+
+Migration 018 adds forced-RLS sale voids, line evidence and payment void-refunds with
+minimum runtime grants and database-triggered refund capture. Focused native PostgreSQL
+verification passes 167 unit/configuration/HTTP tests and 68 integration tests,
+including exact stock restoration, one refund, replay and duplicate-void rejection.
+Next add authorized void detail/history reads and exclude voided sales from return
+eligibility.
 ## September 9, 2026 — atomic suspended-cart completion slice
 
 Cash-sale completion can now consume an owner-bound suspended cart in the same

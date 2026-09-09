@@ -158,6 +158,49 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     }
 
     [Fact]
+    public async Task SaleVoidRestocksAndRefundsExactlyOnce()
+    {
+        var productId = await PrepareProduct(6m, 1m);
+        using var sale = await Complete(productId, 1m, 6m, Guid.NewGuid());
+        using var saleBody = JsonDocument.Parse(await sale.Content.ReadAsStringAsync());
+        var saleId = saleBody.RootElement.GetProperty("id").GetGuid();
+        var operationId = Guid.NewGuid();
+        using var owner = Client("owner");
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids")
+        { Content = JsonContent.Create(new { saleId, reason = "Cashier cancelled transaction" }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var voided = await owner.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, voided.StatusCode);
+        using var body = JsonDocument.Parse(await voided.Content.ReadAsStringAsync());
+        var voidId = body.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal(6m, body.RootElement.GetProperty("amount").GetDecimal());
+        Assert.Equal(1L, await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM payments.void_refunds WHERE organization_id=$1 AND void_id=$2",
+            fixture.OrganizationA, voidId));
+
+        using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids")
+        { Content = JsonContent.Create(new { saleId, reason = "Cashier cancelled transaction" }) };
+        replayRequest.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var replay = await owner.SendAsync(replayRequest);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+
+        using var secondRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids")
+        { Content = JsonContent.Create(new { saleId, reason = "Duplicate cancellation" }) };
+        secondRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var second = await owner.SendAsync(secondRequest);
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        using var stock = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/inventory/stock");
+        using var stockBody = JsonDocument.Parse(await stock.Content.ReadAsStringAsync());
+        Assert.Equal(1m, stockBody.RootElement.GetProperty("items").EnumerateArray()
+            .Single(item => item.GetProperty("productId").GetGuid() == productId)
+            .GetProperty("quantity").GetDecimal());
+    }
+
+    [Fact]
     public async Task SaleHistoryUsesStableBoundedKeysetPages()
     {
         var productId = await PrepareProduct(2m, 2m);
