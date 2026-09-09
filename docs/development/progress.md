@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 10, 2026 — actor-bound sync evidence reads
+
+Hardened protocol-v1 ingestion so only the authenticated issuer/subject that
+registered an active device can advance or inspect that device's checkpoint.
+Payloads must now be valid bounded-depth JSON objects before hashing or durable
+admission. This closes the earlier gap where another authorized operator could
+name a foreign device identifier, while preserving exact same-envelope replay.
+
+Added authorized message detail and bounded newest-first history endpoints without
+exposing stored payload bodies. History uses strict 1–100 sizing and sequence-keyset
+pagination; unknown parameters, invalid cursors, cross-branch access and foreign
+device actors remain bounded. Native CI passes structure and architecture for 66
+projects, secrets, dependencies, formatting, migration/restore, 167 unit/configuration/
+HTTP tests and 71 integration tests with zero failures or skips. Next define the
+strict offline-sale payload contract and atomically materialize it through the
+existing Sales, Payments, Inventory and outbox transaction with durable result evidence.
+
 ## September 10, 2026 — ordered versioned sync ingestion
 
 Implemented Sync as five module projects and added an authorized server ingestion

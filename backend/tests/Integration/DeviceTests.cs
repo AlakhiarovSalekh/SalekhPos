@@ -42,6 +42,16 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         Assert.Equal(HttpStatusCode.Conflict, changedMessage.StatusCode);
         using var gap = await Sync(owner, id, Guid.NewGuid(), 3, "{\"saleId\":\"gap\"}");
         Assert.Equal(HttpStatusCode.Conflict, gap.StatusCode);
+        using var malformed = await Sync(owner, id, Guid.NewGuid(), 2, "not-json");
+        Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
+        using var otherOperator = await Sync(Client("manager"), id, Guid.NewGuid(), 2, "{\"saleId\":\"foreign-device\"}");
+        Assert.Equal(HttpStatusCode.Conflict, otherOperator.StatusCode);
+        using var message = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages/{messageId:D}");
+        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        using var history = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode); using var historyBody = JsonDocument.Parse(await history.Content.ReadAsStringAsync()); Assert.Single(historyBody.RootElement.GetProperty("items").EnumerateArray());
+        using var invalidPage = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=0"); Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
+        using var foreignHistory = await Client("manager").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages"); Assert.Empty((await foreignHistory.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray());
         using var checkpoint = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/checkpoint");
         Assert.Equal(HttpStatusCode.OK, checkpoint.StatusCode);
         using var checkpointBody = JsonDocument.Parse(await checkpoint.Content.ReadAsStringAsync());
