@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../SalekhPos.Sync.Application/SalekhPos.Sync.Application.csproj" /><ProjectReference Include="../SalekhPos.Sync.Contracts/SalekhPos.Sync.Contracts.csproj" /></ItemGroup><ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup></Project>

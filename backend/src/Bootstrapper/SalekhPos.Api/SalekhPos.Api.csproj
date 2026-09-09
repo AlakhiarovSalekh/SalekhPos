@@ -13,6 +13,8 @@
     <ProjectReference Include="../../Modules/ShiftManagement/SalekhPos.ShiftManagement.Infrastructure/SalekhPos.ShiftManagement.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Devices/SalekhPos.Devices.Api/SalekhPos.Devices.Api.csproj" />
     <ProjectReference Include="../../Modules/Devices/SalekhPos.Devices.Infrastructure/SalekhPos.Devices.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Sync/SalekhPos.Sync.Api/SalekhPos.Sync.Api.csproj" />
+    <ProjectReference Include="../../Modules/Sync/SalekhPos.Sync.Infrastructure/SalekhPos.Sync.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Inventory/SalekhPos.Inventory.Api/SalekhPos.Inventory.Api.csproj" />
     <ProjectReference Include="../../Modules/Inventory/SalekhPos.Inventory.Infrastructure/SalekhPos.Inventory.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Pricing/SalekhPos.Pricing.Api/SalekhPos.Pricing.Api.csproj" />

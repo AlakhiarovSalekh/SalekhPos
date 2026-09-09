@@ -1,0 +1,10 @@
+BEGIN;
+DO $$ BEGIN IF current_user='salekhpos_runtime' THEN RAISE EXCEPTION 'Runtime role must not run migrations'; END IF; END $$;
+CREATE SCHEMA sync; REVOKE ALL ON SCHEMA sync FROM PUBLIC;
+CREATE TABLE sync.ingested_messages(organization_id uuid NOT NULL,branch_id uuid NOT NULL,device_id uuid NOT NULL,message_id uuid NOT NULL,sequence bigint NOT NULL,protocol_version integer NOT NULL,message_type varchar(64) NOT NULL,payload_digest char(64) NOT NULL,payload text NOT NULL,status varchar(16) NOT NULL,accepted_at timestamptz NOT NULL,issuer text NOT NULL,subject text NOT NULL,PRIMARY KEY(organization_id,message_id),UNIQUE(organization_id,device_id,sequence),FOREIGN KEY(organization_id,device_id) REFERENCES devices.registered_devices(organization_id,device_id),CHECK(sequence>0),CHECK(protocol_version=1),CHECK(message_type='sale.completed.v1'),CHECK(payload_digest~'^[0-9A-F]{64}$'),CHECK(octet_length(payload) BETWEEN 1 AND 49152),CHECK(status='accepted'));
+CREATE INDEX ix_sync_device_sequence ON sync.ingested_messages(organization_id,device_id,sequence DESC);
+ALTER TABLE sync.ingested_messages ENABLE ROW LEVEL SECURITY; ALTER TABLE sync.ingested_messages FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON sync.ingested_messages USING(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid) WITH CHECK(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid);
+GRANT USAGE ON SCHEMA sync TO salekhpos_runtime; GRANT SELECT ON sync.ingested_messages TO salekhpos_runtime;
+GRANT INSERT(organization_id,branch_id,device_id,message_id,sequence,protocol_version,message_type,payload_digest,payload,status,accepted_at,issuer,subject) ON sync.ingested_messages TO salekhpos_runtime;
+COMMIT;

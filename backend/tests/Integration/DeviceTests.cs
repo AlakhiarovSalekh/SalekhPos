@@ -28,8 +28,30 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var denied = await Client("alice").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices"); Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
         using var invalidProtocol = await Register(owner, Guid.NewGuid(), registerId, "BAD-" + code, "Bad Protocol", 2); Assert.Equal(HttpStatusCode.BadRequest, invalidProtocol.StatusCode);
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.registered_devices WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
+        var messageId = Guid.NewGuid();
+        using var accepted = await Sync(owner, id, messageId, 1, "{\"saleId\":\"local-1\"}");
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        using var acceptedBody = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync());
+        Assert.False(acceptedBody.RootElement.GetProperty("replay").GetBoolean());
+        Assert.Equal(64, acceptedBody.RootElement.GetProperty("payloadDigest").GetString()!.Length);
+        using var replayed = await Sync(owner, id, messageId, 1, "{\"saleId\":\"local-1\"}");
+        Assert.Equal(HttpStatusCode.OK, replayed.StatusCode);
+        using var replayedBody = JsonDocument.Parse(await replayed.Content.ReadAsStringAsync());
+        Assert.True(replayedBody.RootElement.GetProperty("replay").GetBoolean());
+        using var changedMessage = await Sync(owner, id, messageId, 1, "{\"saleId\":\"changed\"}");
+        Assert.Equal(HttpStatusCode.Conflict, changedMessage.StatusCode);
+        using var gap = await Sync(owner, id, Guid.NewGuid(), 3, "{\"saleId\":\"gap\"}");
+        Assert.Equal(HttpStatusCode.Conflict, gap.StatusCode);
+        using var checkpoint = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/checkpoint");
+        Assert.Equal(HttpStatusCode.OK, checkpoint.StatusCode);
+        using var checkpointBody = JsonDocument.Parse(await checkpoint.Content.ReadAsStringAsync());
+        Assert.Equal(1, checkpointBody.RootElement.GetProperty("lastAcceptedSequence").GetInt64());
+        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sync.ingested_messages WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
     }
     private async Task<HttpResponseMessage> Register(HttpClient client, Guid operation, Guid registerId, string code, string name, int protocol = 1)
     { using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices") { Content = JsonContent.Create(new { registerId, code, name, platform = "desktop", syncProtocolVersion = protocol }) }; request.Headers.Add("Idempotency-Key", operation.ToString("D")); return await client.SendAsync(request); }
     private HttpClient Client(string subject) { var c = fixture.Factory.CreateClient(); c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token(subject)); return c; }
+    private Task<HttpResponseMessage> Sync(HttpClient client, Guid deviceId, Guid messageId, long sequence, string payload) =>
+        client.PostAsJsonAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{deviceId:D}/sync/messages",
+            new { messageId, sequence, protocolVersion = 1, messageType = "sale.completed.v1", payload });
 }

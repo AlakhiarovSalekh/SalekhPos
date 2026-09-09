@@ -370,6 +370,35 @@
           "SalekhPos.Stores.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.sync.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Sync.Application": "[1.0.0, )",
+          "SalekhPos.Sync.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.sync.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Sync.Contracts": "[1.0.0, )",
+          "SalekhPos.Sync.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.sync.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.sync.domain": {
+        "type": "Project"
+      },
+      "salekhpos.sync.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Sync.Application": "[1.0.0, )",
+          "SalekhPos.Sync.Contracts": "[1.0.0, )",
+          "SalekhPos.Sync.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.systemadministration.api": {
         "type": "Project",
         "dependencies": {

@@ -45,6 +45,9 @@ using SalekhPos.ShiftManagement.Infrastructure.Shifts;
 using SalekhPos.Devices.Api.Devices;
 using SalekhPos.Devices.Application.Devices;
 using SalekhPos.Devices.Infrastructure.Devices;
+using SalekhPos.Sync.Api.SyncMessages;
+using SalekhPos.Sync.Application.SyncMessages;
+using SalekhPos.Sync.Infrastructure.SyncMessages;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -95,6 +98,7 @@ builder.Services.AddSingleton<IShiftService>(provider => new PostgresShiftServic
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IDeviceRegistry>(provider => new PostgresDeviceRegistry(
     provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISyncIngestion>(provider => new PostgresSyncIngestion(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -164,6 +168,7 @@ app.MapSaleVoidEndpoints();
 app.MapRegisterEndpoints();
 app.MapShiftEndpoints();
 app.MapDeviceEndpoints();
+app.MapSyncEndpoints();
 app.MapReceiptEndpoints();
 app.MapPaymentEndpoints();
 app.MapReturnEndpoints();

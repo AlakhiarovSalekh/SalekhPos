@@ -1,5 +1,24 @@
 # Implementation progress
 
+## September 10, 2026 — ordered versioned sync ingestion
+
+Implemented Sync as five module projects and added an authorized server ingestion
+boundary for protocol-v1 `sale.completed.v1` envelopes. Each registered active
+device receives an immutable, strictly monotonic sequence. A transaction-scoped
+per-device lock prevents concurrent gaps; duplicate message IDs replay only when
+device, sequence, protocol, type and the server-computed SHA-256 payload digest
+match exactly. Changed replay, gaps, stale sequences, unsupported versions and
+unregistered devices are rejected without advancing the durable checkpoint.
+
+Migration 028 adds forced-RLS immutable message evidence, tenant/device sequence
+uniqueness and insert/select-only runtime grants. `sync.ingest` is checked through
+active hierarchy and membership scope for ingestion and checkpoint reads. Native CI
+passes structure and architecture for 66 projects, secrets, dependencies, formatting,
+migration/restore, 167 unit/configuration/HTTP tests and 71 integration tests with
+zero failures or skips. Next validate and atomically materialize the accepted offline
+sale envelope into the existing Sales, Payments, Inventory and outbox records while
+preserving the local sale ID, shift/register assignment and exact replay semantics.
+
 ## September 10, 2026 — durable registered-device identity
 
 Implemented Devices as five module projects and established the durable device

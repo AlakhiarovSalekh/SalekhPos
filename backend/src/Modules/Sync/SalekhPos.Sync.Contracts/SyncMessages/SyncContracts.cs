@@ -1,0 +1,6 @@
+namespace SalekhPos.Sync.Contracts.SyncMessages;
+
+public sealed record IngestSyncMessageRequest(Guid MessageId, long Sequence, int ProtocolVersion, string MessageType, string Payload);
+public sealed record SyncAcknowledgementResponse(Guid MessageId, Guid DeviceId, long Sequence, int ProtocolVersion,
+    string MessageType, string Status, string PayloadDigest, DateTimeOffset AcceptedAt, bool Replay);
+public sealed record SyncCheckpointResponse(Guid DeviceId, long LastAcceptedSequence, DateTimeOffset? LastAcceptedAt);

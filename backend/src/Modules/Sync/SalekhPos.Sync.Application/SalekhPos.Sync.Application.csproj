@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../SalekhPos.Sync.Domain/SalekhPos.Sync.Domain.csproj" /><ProjectReference Include="../SalekhPos.Sync.Contracts/SalekhPos.Sync.Contracts.csproj" /></ItemGroup></Project>
