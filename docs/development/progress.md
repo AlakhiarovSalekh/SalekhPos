@@ -1,5 +1,21 @@
 # Implementation progress
 
+## September 9, 2026 — atomic full-sale return slice
+
+Implemented Returns as five module projects in the supplied Returns structure.
+The first versioned workflow performs a full return against an original completed
+cash sale. It requires persisted branch-scoped `sales.refund` authority, locks the
+sale, rejects a second return, and supports safe operation-ID replay.
+
+Migration 013 adds immutable return headers and line snapshots with forced tenant
+RLS. One transaction records the return, restores every sold quantity through
+positive inventory `return` movements and creates one completed cash refund linked
+to the original payment. Runtime access cannot update or delete returns/refunds or
+insert refunds directly. Focused native PostgreSQL verification passes 167 unit/
+configuration/HTTP tests and 66 integration tests. Coverage includes stock restoration,
+one refund, replay without duplicate effects, authorization and database isolation.
+Next extend this boundary with quantity-bounded partial returns.
+
 ## September 9, 2026 — bounded sale-history query slice
 
 Added a branch-scoped sale-history endpoint with a strict maximum page size of 100

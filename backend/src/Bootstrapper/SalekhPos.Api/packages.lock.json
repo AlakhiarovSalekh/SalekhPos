@@ -222,6 +222,35 @@
           "SalekhPos.Pricing.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.returns.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Returns.Application": "[1.0.0, )",
+          "SalekhPos.Returns.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.returns.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Returns.Contracts": "[1.0.0, )",
+          "SalekhPos.Returns.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.returns.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.returns.domain": {
+        "type": "Project"
+      },
+      "salekhpos.returns.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Returns.Application": "[1.0.0, )",
+          "SalekhPos.Returns.Contracts": "[1.0.0, )",
+          "SalekhPos.Returns.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.sales.api": {
         "type": "Project",
         "dependencies": {

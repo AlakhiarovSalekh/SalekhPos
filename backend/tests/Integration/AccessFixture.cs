@@ -76,6 +76,7 @@ public sealed class AccessFixture : IAsyncLifetime
         await GrantAsync("owner", OrganizationA, "sales.complete");
         await GrantAsync("owner", OrganizationA, "sales.view");
         await GrantAsync("owner", OrganizationA, "payments.view");
+        await GrantAsync("owner", OrganizationA, "sales.refund");
         await AddMembershipAsync("manager", OrganizationA, "business", BusinessA);
         await AddMembershipAsync("regional", OrganizationA, "region", BusinessA, RegionA);
         await AddMembershipAsync("bob", OrganizationB, "organization");
@@ -150,6 +151,14 @@ public sealed class AccessFixture : IAsyncLifetime
             command.Parameters.Add(new NpgsqlParameter { Value = parameter });
         }
         await command.ExecuteNonQueryAsync();
+    }
+
+    public async Task<T> ScalarAsync<T>(string sql, params object[] parameters)
+    {
+        await using var command = admin.CreateCommand(sql);
+        foreach (var parameter in parameters) command.Parameters.Add(new NpgsqlParameter { Value = parameter });
+        return (T)(await command.ExecuteScalarAsync()
+            ?? throw new InvalidOperationException("Expected a scalar result."));
     }
 
     public async Task DisposeAsync()

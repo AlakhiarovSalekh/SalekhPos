@@ -127,6 +127,56 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.NotEqual(firstItem.GetProperty("id").GetGuid(), secondItem.GetProperty("id").GetGuid());
     }
 
+    [Fact]
+    public async Task FullReturnRestocksOnceAndCreatesCashRefundAtomically()
+    {
+        var productId = await PrepareProduct(8m, 1m);
+        using var saleResponse = await Complete(productId, 1m, 10m, Guid.NewGuid());
+        using var saleBody = JsonDocument.Parse(await saleResponse.Content.ReadAsStringAsync());
+        var saleId = saleBody.RootElement.GetProperty("id").GetGuid();
+        var operationId = Guid.NewGuid();
+        using var client = Client("owner");
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var created = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        using var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var returnId = body.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal(8m, body.RootElement.GetProperty("amount").GetDecimal());
+
+        using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        replayRequest.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var replay = await client.SendAsync(replayRequest);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        using var stock = await client.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/inventory/stock");
+        using var stockBody = JsonDocument.Parse(await stock.Content.ReadAsStringAsync());
+        var level = stockBody.RootElement.GetProperty("items").EnumerateArray()
+            .Single(item => item.GetProperty("productId").GetGuid() == productId);
+        Assert.Equal(1m, level.GetProperty("quantity").GetDecimal());
+        Assert.Equal(1L, await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM payments.refund_records WHERE organization_id=$1 AND return_id=$2",
+            fixture.OrganizationA, returnId));
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal(1L, await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM payments.refund_records WHERE organization_id=$1 AND return_id=$2",
+            fixture.OrganizationA, returnId));
+        Assert.Equal(1L, await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM inventory.stock_movements WHERE organization_id=$1 AND product_id=$2 AND kind='return'",
+            fixture.OrganizationA, productId));
+
+        using var deniedClient = Client("alice");
+        using var deniedRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        deniedRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var denied = await deniedClient.SendAsync(deniedRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
     private async Task<Guid> PrepareProduct(decimal amount, decimal stock)
     {
         using var client = Client("owner");

@@ -6,6 +6,7 @@ using SalekhPos.Identity.Application.Sessions;
 using SalekhPos.Inventory.Application.Stock;
 using SalekhPos.Pricing.Application.Prices;
 using SalekhPos.Payments.Application.Payments;
+using SalekhPos.Returns.Application.Returns;
 using SalekhPos.Sales.Application.CompleteSale;
 using SalekhPos.SystemAdministration.Application;
 
@@ -27,13 +28,16 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             PricingConflictException => (409, "pricing_operation_conflict", "The pricing operation conflicts with current state"),
             SalesDeniedException => (403, "sales_access_denied", "Sales access is not permitted"),
             PaymentDeniedException => (403, "payment_access_denied", "Payment access is not permitted"),
+            ReturnDeniedException => (403, "return_access_denied", "Return access is not permitted"),
+            ReturnConflictException => (409, "return_operation_conflict", "The return operation conflicts with current state"),
+            ReturnSaleNotFoundException => (404, "return_sale_not_found", "The original sale is unavailable"),
             SalesConflictException => (409, "sale_operation_conflict", "The sale operation conflicts with current state"),
             SalePriceUnavailableException => (409, "sale_price_unavailable", "A current product price is unavailable"),
             InsufficientStockException => (409, "insufficient_stock", "Available stock is insufficient"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),
-            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or PaymentsUnavailableException or IdentityUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or IdentityUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

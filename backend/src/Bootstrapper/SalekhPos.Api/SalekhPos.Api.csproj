@@ -20,5 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Modules\Payments\SalekhPos.Payments.Api\SalekhPos.Payments.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Payments\SalekhPos.Payments.Infrastructure\SalekhPos.Payments.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Returns\SalekhPos.Returns.Api\SalekhPos.Returns.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Returns\SalekhPos.Returns.Infrastructure\SalekhPos.Returns.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
