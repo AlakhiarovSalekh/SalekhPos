@@ -5,3 +5,6 @@ public sealed record VoidedSaleLineResponse(int LineNumber, Guid ProductId, deci
     Guid InventoryMovementId);
 public sealed record VoidedSaleResponse(Guid Id, Guid SaleId, Guid BranchId, string Currency, decimal Amount,
     string Reason, DateTimeOffset VoidedAt, IReadOnlyList<VoidedSaleLineResponse> Lines);
+public sealed record VoidedSaleSummaryResponse(Guid Id, Guid SaleId, Guid BranchId, string Currency, decimal Amount,
+    string Reason, DateTimeOffset VoidedAt);
+public sealed record SaleVoidPage(IReadOnlyList<VoidedSaleSummaryResponse> Items, Guid? NextCursor);

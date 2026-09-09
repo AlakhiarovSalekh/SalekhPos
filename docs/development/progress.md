@@ -1,5 +1,20 @@
 # Implementation progress
 
+## September 9, 2026 — authorized sale-void retrieval and reversal exclusion
+
+Added branch-scoped retrieval of one immutable sale void and bounded void history
+with UUID keyset pagination and a strict 100-item maximum. Both reads require the
+persisted `sales.void` authority after active hierarchy and membership checks and
+execute under forced tenant RLS. Migration 019 adds the tenant/branch/cursor index.
+
+Sale void and return completion now share one transaction-scoped per-sale reversal
+lock. Return completion checks for a persisted void inside that serialized boundary,
+so a voided sale cannot subsequently be returned and concurrent void/return attempts
+cannot both commit. Native CI passes all structure, architecture, secret, dependency,
+migration/restore and formatting checks, 167 unit/configuration/HTTP tests and 68
+integration tests with zero failures or skips. Next expose the immutable refund
+records produced by return and void workflows through authorized payment queries.
+
 ## September 9, 2026 — atomic completed-sale void slice
 
 Implemented controlled voiding of completed cash sales under persisted `sales.void`

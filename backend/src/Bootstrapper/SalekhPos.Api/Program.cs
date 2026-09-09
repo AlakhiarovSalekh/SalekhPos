@@ -68,8 +68,10 @@ builder.Services.AddSingleton(provider => new PostgresCashSaleCompletion(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISuspendedCartService>(provider => new PostgresSuspendedCartService(
     provider.GetRequiredService<AccessDatabase>().DataSource));
-builder.Services.AddSingleton<ISaleVoidService>(provider => new PostgresSaleVoidService(
+builder.Services.AddSingleton(provider => new PostgresSaleVoidService(
     provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISaleVoidService>(provider => provider.GetRequiredService<PostgresSaleVoidService>());
+builder.Services.AddSingleton<ISaleVoidReader>(provider => provider.GetRequiredService<PostgresSaleVoidService>());
 builder.Services.AddSingleton<ICashSaleCompletion>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
 builder.Services.AddSingleton<ISaleReader>(provider => provider.GetRequiredService<PostgresCashSaleCompletion>());
 builder.Services.AddSingleton<IPaymentReader>(provider => new PostgresPaymentReader(

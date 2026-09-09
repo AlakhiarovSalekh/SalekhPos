@@ -179,6 +179,29 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
             "SELECT count(*) FROM payments.void_refunds WHERE organization_id=$1 AND void_id=$2",
             fixture.OrganizationA, voidId));
 
+        using var detail = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids/{voidId:D}");
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        using var detailBody = JsonDocument.Parse(await detail.Content.ReadAsStringAsync());
+        Assert.Equal(saleId, detailBody.RootElement.GetProperty("saleId").GetGuid());
+        Assert.Single(detailBody.RootElement.GetProperty("lines").EnumerateArray());
+        using var history = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode);
+        using var historyBody = JsonDocument.Parse(await history.Content.ReadAsStringAsync());
+        Assert.Equal(voidId, Assert.Single(historyBody.RootElement.GetProperty("items").EnumerateArray())
+            .GetProperty("id").GetGuid());
+        using var invalidHistory = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidHistory.StatusCode);
+
+        using var returnRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Return after sale void", lines = new[] { new { productId, quantity = 1m } } }) };
+        returnRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var rejectedReturn = await owner.SendAsync(returnRequest);
+        Assert.Equal(HttpStatusCode.Conflict, rejectedReturn.StatusCode);
+
         using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids")
         { Content = JsonContent.Create(new { saleId, reason = "Cashier cancelled transaction" }) };
@@ -198,6 +221,11 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(1m, stockBody.RootElement.GetProperty("items").EnumerateArray()
             .Single(item => item.GetProperty("productId").GetGuid() == productId)
             .GetProperty("quantity").GetDecimal());
+
+        using var deniedClient = Client("alice");
+        using var denied = await deniedClient.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
 
     [Fact]

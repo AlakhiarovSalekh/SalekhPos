@@ -10,6 +10,13 @@ public interface ISaleVoidService
     Task<VoidWriteResult> VoidAsync(string issuer, string subject, VoidSaleCommand command,
         CancellationToken cancellationToken);
 }
+public interface ISaleVoidReader
+{
+    Task<SaleVoidPage> ListAsync(string issuer, string subject, Guid organizationId, Guid branchId,
+        int pageSize, Guid? after, CancellationToken cancellationToken);
+    Task<VoidedSaleResponse?> ReadAsync(string issuer, string subject, Guid organizationId, Guid branchId,
+        Guid voidId, CancellationToken cancellationToken);
+}
 public sealed class SaleVoidDeniedException : Exception;
 public sealed class SaleVoidConflictException : Exception;
 public sealed class SaleVoidNotFoundException : Exception;

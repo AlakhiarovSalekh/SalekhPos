@@ -19,13 +19,15 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
         await Context(connection, transaction, command.OrganizationId, identity, cancellationToken);
         await Demand(connection, transaction, command, identity, cancellationToken);
         await using (var locking = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", connection, transaction))
-        { locking.Parameters.AddWithValue($"return:{command.OrganizationId:D}:{command.SaleId:D}"); await locking.ExecuteNonQueryAsync(cancellationToken); }
+        { locking.Parameters.AddWithValue($"sale-reversal:{command.OrganizationId:D}:{command.SaleId:D}"); await locking.ExecuteNonQueryAsync(cancellationToken); }
         var replay = await Read(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
         if (replay is not null)
         {
             if (!Matches(replay, command, reason, requested)) throw new ReturnConflictException();
             await transaction.CommitAsync(cancellationToken); return new(replay, false);
         }
+        if (await HasVoid(connection, transaction, command.OrganizationId, command.SaleId, cancellationToken))
+            throw new ReturnConflictException();
         var sale = await Sale(connection, transaction, command, cancellationToken) ?? throw new ReturnSaleNotFoundException();
         var lines = await ResolveLines(connection, transaction, command, requested, sale.Lines, cancellationToken);
         var amount = lines.Sum(x => x.Amount);
@@ -120,6 +122,14 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
         await using (var q = new NpgsqlCommand("SELECT line_number,product_id,quantity,gross_amount FROM sales.sale_lines WHERE organization_id=$1 AND sale_id=$2 ORDER BY line_number", c, t))
         { q.Parameters.AddWithValue(x.OrganizationId); q.Parameters.AddWithValue(x.SaleId); await using var reader = await q.ExecuteReaderAsync(ct); while (await reader.ReadAsync(ct)) { var line = new SaleLine(reader.GetInt32(0), reader.GetDecimal(2), reader.GetDecimal(3)); lines.Add(reader.GetGuid(1), line); } }
         return new(currency, lines);
+    }
+
+    private static async Task<bool> HasVoid(NpgsqlConnection c, NpgsqlTransaction t, Guid organizationId,
+        Guid saleId, CancellationToken ct)
+    {
+        await using var query = new NpgsqlCommand("SELECT EXISTS(SELECT FROM sales.sale_voids WHERE organization_id=$1 AND sale_id=$2)", c, t);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(saleId);
+        return await query.ExecuteScalarAsync(ct) is true;
     }
 
     private static async Task<DateTimeOffset> Time(NpgsqlConnection c, NpgsqlTransaction t, CancellationToken ct)
