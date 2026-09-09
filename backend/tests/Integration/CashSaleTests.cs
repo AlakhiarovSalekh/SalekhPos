@@ -106,6 +106,42 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     }
 
     [Fact]
+    public async Task SuspendedCartCanOnlyBeResumedOnceByItsOwner()
+    {
+        var productId = await PrepareProduct(4m, 2m);
+        using var owner = Client("owner");
+        var operationId = Guid.NewGuid();
+        using var suspendRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended")
+        { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity = 2m } }, note = "Counter order" }) };
+        suspendRequest.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        using var suspended = await owner.SendAsync(suspendRequest);
+        Assert.Equal(HttpStatusCode.Created, suspended.StatusCode);
+        using var body = JsonDocument.Parse(await suspended.Content.ReadAsStringAsync());
+        var cartId = body.RootElement.GetProperty("id").GetGuid();
+        Assert.True(body.RootElement.GetProperty("expiresAt").GetDateTimeOffset()
+            > body.RootElement.GetProperty("suspendedAt").GetDateTimeOffset());
+
+        await fixture.GrantAsync("manager", fixture.OrganizationA, "sales.complete");
+        using var manager = Client("manager");
+        using var ownerOnly = await manager.PostAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended/{cartId:D}/resume", null);
+        Assert.Equal(HttpStatusCode.NotFound, ownerOnly.StatusCode);
+
+        using var resumed = await owner.PostAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended/{cartId:D}/resume", null);
+        Assert.Equal(HttpStatusCode.OK, resumed.StatusCode);
+        using var resumedBody = JsonDocument.Parse(await resumed.Content.ReadAsStringAsync());
+        Assert.Equal(2m, Assert.Single(resumedBody.RootElement.GetProperty("lines").EnumerateArray())
+            .GetProperty("quantity").GetDecimal());
+        Assert.NotEqual(JsonValueKind.Null, resumedBody.RootElement.GetProperty("resumedAt").ValueKind);
+
+        using var secondResume = await owner.PostAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended/{cartId:D}/resume", null);
+        Assert.Equal(HttpStatusCode.NotFound, secondResume.StatusCode);
+    }
+
+    [Fact]
     public async Task SaleHistoryUsesStableBoundedKeysetPages()
     {
         var productId = await PrepareProduct(2m, 2m);

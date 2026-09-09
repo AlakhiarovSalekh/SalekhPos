@@ -1,5 +1,20 @@
 # Implementation progress
 
+## September 9, 2026 — owner-bound suspended cart slice
+
+Implemented suspended sale carts in the existing Sales module. An authorized cashier
+can persist a bounded product/quantity snapshot without reserving stock or creating
+financial records. Suspensions use operation-ID replay, retain an optional bounded
+note and expire exactly 24 hours after database time. Resume is serialized per cart,
+requires the same organization, branch, issuer and subject, and succeeds only once
+before expiry. PostgreSQL also enforces the permitted state transition and prevents
+the runtime role from deleting carts or changing their immutable fields.
+
+Migration 016 adds forced-RLS cart headers and lines, tenant-composite references,
+owner/expiry lookup and minimum column grants. Focused native PostgreSQL verification
+passes 167 unit/configuration/HTTP tests and 67 integration tests, including owner
+isolation and one-time resume. Next connect resumed carts directly to atomic sale
+completion so consuming a cart and completing its payment cannot diverge.
 ## September 9, 2026 — authorized return retrieval and history slice
 
 Added branch-scoped retrieval of one immutable return and a bounded return-history
