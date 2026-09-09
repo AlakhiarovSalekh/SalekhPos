@@ -1,5 +1,23 @@
 # Implementation progress
 
+## September 10, 2026 — shift reconciliation and authoritative closing
+
+Returns and sale voids now copy the original completed sale's persisted shift and
+register assignment into their immutable records and generated cash-refund evidence.
+Their admission shares the shift transaction lock with sales, cash movements and
+closing and requires that shift to remain open, preventing a refund from racing past
+the closing snapshot.
+
+Migration 025 adds tenant-composite evidence links and immutable closing totals.
+Authorized `shifts.close` writes one idempotent close transition containing opening
+cash, cash sales, return/void refunds, cash-in, cash-out, expected cash, counted cash
+and exact variance. Changed replay is rejected and a closed shift admits no later
+sale, cash movement, return or void. Native CI passes all structure, architecture,
+secret, dependency, formatting and migration/restore checks, 167 unit/configuration/
+HTTP tests and 70 integration tests with zero failures or skips. Next add bounded
+closed-shift history/detail and cashier-facing reconciliation projections, then begin
+the offline client transaction and synchronization foundation.
+
 ## September 9, 2026 — cash sales assigned to active shifts
 
 Cash-sale completion now requires an explicit shift and atomically snapshots its

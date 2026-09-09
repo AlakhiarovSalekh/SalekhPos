@@ -62,6 +62,19 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.OK, movements.StatusCode);
         using var movementsBody = JsonDocument.Parse(await movements.Content.ReadAsStringAsync());
         Assert.Equal(movementId, Assert.Single(movementsBody.RootElement.EnumerateArray()).GetProperty("id").GetGuid());
+        var closeOperation = Guid.NewGuid();
+        using var closed = await CloseShift(owner, shiftId, closeOperation, 124m);
+        Assert.Equal(HttpStatusCode.Created, closed.StatusCode);
+        using var closedBody = JsonDocument.Parse(await closed.Content.ReadAsStringAsync());
+        Assert.Equal("closed", closedBody.RootElement.GetProperty("status").GetString());
+        Assert.Equal(125m, closedBody.RootElement.GetProperty("expectedCash").GetDecimal());
+        Assert.Equal(-1m, closedBody.RootElement.GetProperty("variance").GetDecimal());
+        using var closeReplay = await CloseShift(owner, shiftId, closeOperation, 124m);
+        Assert.Equal(HttpStatusCode.OK, closeReplay.StatusCode);
+        using var changedClose = await CloseShift(owner, shiftId, closeOperation, 125m);
+        Assert.Equal(HttpStatusCode.Conflict, changedClose.StatusCode);
+        using var afterClose = await RecordCashMovement(owner, shiftId, Guid.NewGuid(), "cash_in", 1m, "Late movement");
+        Assert.Equal(HttpStatusCode.Conflict, afterClose.StatusCode);
         using var denied = await Client("alice").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open?registerId={registerId:D}");
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
         using var deniedMovement = await RecordCashMovement(Client("alice"), shiftId, Guid.NewGuid(), "cash_in", 1m, "Denied movement");
@@ -269,6 +282,8 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(1L, await fixture.ScalarAsync<long>(
             "SELECT count(*) FROM payments.void_refunds WHERE organization_id=$1 AND void_id=$2",
             fixture.OrganizationA, voidId));
+        Assert.Equal(await fixture.ScalarAsync<Guid>("SELECT shift_id FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId),
+            await fixture.ScalarAsync<Guid>("SELECT shift_id FROM payments.void_refunds WHERE organization_id=$1 AND void_id=$2", fixture.OrganizationA, voidId));
 
         using var detail = await owner.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids/{voidId:D}");
@@ -403,6 +418,8 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(1L, await fixture.ScalarAsync<long>(
             "SELECT count(*) FROM payments.refund_records WHERE organization_id=$1 AND return_id=$2",
             fixture.OrganizationA, returnId));
+        Assert.Equal(await fixture.ScalarAsync<Guid>("SELECT shift_id FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId),
+            await fixture.ScalarAsync<Guid>("SELECT shift_id FROM payments.refund_records WHERE organization_id=$1 AND return_id=$2", fixture.OrganizationA, returnId));
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         Assert.Equal(1L, await fixture.ScalarAsync<long>(
             "SELECT count(*) FROM payments.refund_records WHERE organization_id=$1 AND return_id=$2",
@@ -519,6 +536,13 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     private async Task<HttpResponseMessage> RecordCashMovement(HttpClient client, Guid shiftId, Guid operationId, string kind, decimal amount, string reason)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/cash-movements") { Content = JsonContent.Create(new { kind, amount, reason }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> CloseShift(HttpClient client, Guid shiftId, Guid operationId, decimal countedCash)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/close") { Content = JsonContent.Create(new { countedCash }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         return await client.SendAsync(request);
     }

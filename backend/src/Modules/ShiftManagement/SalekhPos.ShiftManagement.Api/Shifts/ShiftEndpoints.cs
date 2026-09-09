@@ -33,6 +33,12 @@ public static class ShiftEndpoints
             catch (ArgumentException) { return Invalid(); }
         });
         group.MapGet("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, HttpContext context, IShiftService service, CancellationToken cancellationToken) => Results.Ok(await service.ListCashMovementsAsync(Identity(context), organizationId, branchId, shiftId, cancellationToken)));
+        group.MapPost("/{shiftId:guid}/close", async (Guid organizationId, Guid branchId, Guid shiftId, CloseShiftRequest request, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        {
+            if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
+            try { var result = await service.CloseAsync(Identity(context), new(organizationId, branchId, shiftId, operationId, request.CountedCash), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}", result.Shift) : Results.Ok(result.Shift); }
+            catch (ArgumentException) { return Invalid(); }
+        });
     }
     private static ShiftIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The shift request is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_request" });

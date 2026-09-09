@@ -29,16 +29,19 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
         if (await HasVoid(connection, transaction, command.OrganizationId, command.SaleId, cancellationToken))
             throw new ReturnConflictException();
         var sale = await Sale(connection, transaction, command, cancellationToken) ?? throw new ReturnSaleNotFoundException();
+        await using (var shiftLock = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", connection, transaction))
+        { shiftLock.Parameters.AddWithValue($"{command.OrganizationId:D}:{sale.ShiftId:D}"); await shiftLock.ExecuteNonQueryAsync(cancellationToken); }
+        if (!await ShiftIsOpen(connection, transaction, command.OrganizationId, command.BranchId, sale.ShiftId, cancellationToken)) throw new ReturnConflictException();
         var lines = await ResolveLines(connection, transaction, command, requested, sale.Lines, cancellationToken);
         var amount = lines.Sum(x => x.Amount);
         var completedAt = await Time(connection, transaction, cancellationToken);
         _ = new CompletedReturn(command.ReturnId, command.SaleId, reason, amount, completedAt);
         try
         {
-            await using var insert = new NpgsqlCommand("INSERT INTO returns.completed_returns(organization_id,return_id,operation_id,sale_id,branch_id,currency,amount,reason,completed_at,issuer,subject) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", connection, transaction);
+            await using var insert = new NpgsqlCommand("INSERT INTO returns.completed_returns(organization_id,return_id,operation_id,sale_id,branch_id,shift_id,register_id,currency,amount,reason,completed_at,issuer,subject) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)", connection, transaction);
             insert.Parameters.AddWithValue(command.OrganizationId); insert.Parameters.AddWithValue(command.ReturnId);
             insert.Parameters.AddWithValue(command.OperationId); insert.Parameters.AddWithValue(command.SaleId);
-            insert.Parameters.AddWithValue(command.BranchId); insert.Parameters.AddWithValue(sale.Currency);
+            insert.Parameters.AddWithValue(command.BranchId); insert.Parameters.AddWithValue(sale.ShiftId); insert.Parameters.AddWithValue(sale.RegisterId); insert.Parameters.AddWithValue(sale.Currency);
             insert.Parameters.AddWithValue(amount); insert.Parameters.AddWithValue(reason); insert.Parameters.AddWithValue(completedAt);
             insert.Parameters.AddWithValue(identity.Issuer); insert.Parameters.AddWithValue(identity.Subject);
             await insert.ExecuteNonQueryAsync(cancellationToken);
@@ -116,12 +119,13 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
     private static async Task<SaleSnapshot?> Sale(NpgsqlConnection c, NpgsqlTransaction t, CompleteReturnCommand x, CancellationToken ct)
     {
         string currency;
-        await using (var q = new NpgsqlCommand("SELECT currency FROM sales.completed_sales WHERE organization_id=$1 AND branch_id=$2 AND sale_id=$3", c, t))
-        { q.Parameters.AddWithValue(x.OrganizationId); q.Parameters.AddWithValue(x.BranchId); q.Parameters.AddWithValue(x.SaleId); var value = await q.ExecuteScalarAsync(ct); if (value is null) return null; currency = (string)value; }
+        Guid shiftId; Guid registerId;
+        await using (var q = new NpgsqlCommand("SELECT currency,shift_id,register_id FROM sales.completed_sales WHERE organization_id=$1 AND branch_id=$2 AND sale_id=$3 AND shift_id IS NOT NULL AND register_id IS NOT NULL", c, t))
+        { q.Parameters.AddWithValue(x.OrganizationId); q.Parameters.AddWithValue(x.BranchId); q.Parameters.AddWithValue(x.SaleId); await using var reader = await q.ExecuteReaderAsync(ct); if (!await reader.ReadAsync(ct)) return null; currency = reader.GetString(0); shiftId = reader.GetGuid(1); registerId = reader.GetGuid(2); }
         var lines = new Dictionary<Guid, SaleLine>();
         await using (var q = new NpgsqlCommand("SELECT line_number,product_id,quantity,gross_amount FROM sales.sale_lines WHERE organization_id=$1 AND sale_id=$2 ORDER BY line_number", c, t))
         { q.Parameters.AddWithValue(x.OrganizationId); q.Parameters.AddWithValue(x.SaleId); await using var reader = await q.ExecuteReaderAsync(ct); while (await reader.ReadAsync(ct)) { var line = new SaleLine(reader.GetInt32(0), reader.GetDecimal(2), reader.GetDecimal(3)); lines.Add(reader.GetGuid(1), line); } }
-        return new(currency, lines);
+        return new(currency, shiftId, registerId, lines);
     }
 
     private static async Task<bool> HasVoid(NpgsqlConnection c, NpgsqlTransaction t, Guid organizationId,
@@ -131,6 +135,9 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
         query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(saleId);
         return await query.ExecuteScalarAsync(ct) is true;
     }
+
+    private static async Task<bool> ShiftIsOpen(NpgsqlConnection c, NpgsqlTransaction t, Guid organizationId, Guid branchId, Guid shiftId, CancellationToken ct)
+    { await using var query = new NpgsqlCommand("SELECT EXISTS(SELECT FROM shifts.shifts WHERE organization_id=$1 AND branch_id=$2 AND shift_id=$3 AND status='open')", c, t); query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId); query.Parameters.AddWithValue(shiftId); return await query.ExecuteScalarAsync(ct) is true; }
 
     private static async Task<DateTimeOffset> Time(NpgsqlConnection c, NpgsqlTransaction t, CancellationToken ct)
     {
@@ -152,6 +159,6 @@ public sealed class PostgresReturnCompletion(NpgsqlDataSource? source) : IReturn
     }
 
     private sealed record SaleLine(int Number, decimal Quantity, decimal Amount);
-    private sealed record SaleSnapshot(string Currency, IReadOnlyDictionary<Guid, SaleLine> Lines);
+    private sealed record SaleSnapshot(string Currency, Guid ShiftId, Guid RegisterId, IReadOnlyDictionary<Guid, SaleLine> Lines);
     private sealed record ResolvedLine(int Number, Guid ProductId, decimal Quantity, decimal Amount);
 }
