@@ -45,8 +45,25 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
         using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
         Assert.Equal(shiftId, readBody.RootElement.GetProperty("id").GetGuid());
+        var movementOperation = Guid.NewGuid();
+        using var movement = await RecordCashMovement(owner, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
+        Assert.Equal(HttpStatusCode.Created, movement.StatusCode);
+        using var movementBody = JsonDocument.Parse(await movement.Content.ReadAsStringAsync());
+        var movementId = movementBody.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal("GEL", movementBody.RootElement.GetProperty("currency").GetString());
+        Assert.Equal("owner", movementBody.RootElement.GetProperty("recordedBy").GetString());
+        using var movementReplay = await RecordCashMovement(owner, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
+        Assert.Equal(HttpStatusCode.OK, movementReplay.StatusCode);
+        using var changedMovement = await RecordCashMovement(owner, shiftId, movementOperation, "cash_out", 25m, "Petty cash float");
+        Assert.Equal(HttpStatusCode.Conflict, changedMovement.StatusCode);
+        using var movements = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/cash-movements");
+        Assert.Equal(HttpStatusCode.OK, movements.StatusCode);
+        using var movementsBody = JsonDocument.Parse(await movements.Content.ReadAsStringAsync());
+        Assert.Equal(movementId, Assert.Single(movementsBody.RootElement.EnumerateArray()).GetProperty("id").GetGuid());
         using var denied = await Client("alice").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open?registerId={registerId:D}");
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        using var deniedMovement = await RecordCashMovement(Client("alice"), shiftId, Guid.NewGuid(), "cash_in", 1m, "Denied movement");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedMovement.StatusCode);
     }
 
     [Fact]
@@ -471,6 +488,13 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open")
         { Content = JsonContent.Create(new { registerId, currency = "GEL", openingBalance }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> RecordCashMovement(HttpClient client, Guid shiftId, Guid operationId, string kind, decimal amount, string reason)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/cash-movements") { Content = JsonContent.Create(new { kind, amount, reason }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         return await client.SendAsync(request);
     }

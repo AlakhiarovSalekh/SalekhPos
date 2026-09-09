@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 9, 2026 — immutable shift cash-movement ledger
+
+Added authorized cash-in and cash-out recording and retrieval beneath an open shift.
+Each movement snapshots its shift currency, exact positive amount, bounded reason,
+database timestamp and authenticated operator. Operation-ID replay is stable, changed
+replay is rejected, and a transaction advisory lock serializes movement admission
+against the owning shift.
+
+Migration 023 adds tenant-composite shift references, forced RLS, an ordered lookup
+index and insert/select-only runtime privileges, leaving update and delete unavailable.
+Writes require persisted `shifts.cash.manage`; reads require `shifts.view`, both after
+active hierarchy and membership-scope checks. Native CI passes all structure,
+architecture, secret, dependency, formatting and migration/restore checks, 167
+unit/configuration/HTTP tests and 70 integration tests with zero failures or skips.
+Next bind sale and refund evidence to the active register shift before implementing
+authoritative expected-cash calculation and closing variance.
+
 ## September 9, 2026 — authorized shift-opening slice
 
 Implemented ShiftManagement as five module projects with versioned endpoints to open

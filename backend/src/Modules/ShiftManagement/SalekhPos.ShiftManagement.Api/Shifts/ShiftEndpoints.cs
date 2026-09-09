@@ -26,6 +26,13 @@ public static class ShiftEndpoints
             var shift = await service.ReadOpenAsync(Identity(context), organizationId, branchId, registerId, cancellationToken);
             return shift is null ? Results.NotFound() : Results.Ok(shift);
         });
+        group.MapPost("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, RecordCashMovementRequest request, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        {
+            if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
+            try { var result = await service.RecordCashMovementAsync(Identity(context), new(organizationId, branchId, shiftId, Guid.NewGuid(), operationId, request.Kind, request.Amount, request.Reason), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/cash-movements/{result.Movement.Id:D}", result.Movement) : Results.Ok(result.Movement); }
+            catch (ArgumentException) { return Invalid(); }
+        });
+        group.MapGet("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, HttpContext context, IShiftService service, CancellationToken cancellationToken) => Results.Ok(await service.ListCashMovementsAsync(Identity(context), organizationId, branchId, shiftId, cancellationToken)));
     }
     private static ShiftIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The shift request is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_request" });
