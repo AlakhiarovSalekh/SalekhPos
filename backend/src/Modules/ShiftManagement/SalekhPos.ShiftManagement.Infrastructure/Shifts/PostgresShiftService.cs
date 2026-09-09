@@ -99,8 +99,52 @@ public sealed class PostgresShiftService(NpgsqlDataSource? source) : IShiftServi
         await transaction.CommitAsync(cancellationToken); return new(response, true);
     }
 
+    public async Task<ClosedShiftResponse?> ReadClosedAsync(ShiftIdentity identity, Guid organizationId, Guid branchId, Guid shiftId, CancellationToken cancellationToken)
+    {
+        Validate(identity, organizationId, branchId, shiftId);
+        var dataSource = source ?? throw new ShiftUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await ContextDemand(connection, transaction, identity, organizationId, branchId, "shifts.view", cancellationToken);
+        ClosedShiftResponse? result;
+        await using (var query = new NpgsqlCommand($"{ClosedShiftSelect} WHERE organization_id=$1 AND branch_id=$2 AND shift_id=$3 AND status='closed'", connection, transaction))
+        {
+            query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId); query.Parameters.AddWithValue(shiftId);
+            await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+            result = await reader.ReadAsync(cancellationToken) ? ReadClosed(reader) : null;
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
+    public async Task<ClosedShiftPage> ListClosedAsync(ShiftIdentity identity, Guid organizationId, Guid branchId, int pageSize, Guid? after, CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || pageSize is < 1 or > 100 || after == Guid.Empty
+            || string.IsNullOrWhiteSpace(identity.Issuer) || string.IsNullOrWhiteSpace(identity.Subject)) throw new ArgumentException("Shift query is invalid.");
+        var dataSource = source ?? throw new ShiftUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await ContextDemand(connection, transaction, identity, organizationId, branchId, "shifts.view", cancellationToken);
+        var items = new List<ClosedShiftResponse>(pageSize + 1);
+        await using (var query = new NpgsqlCommand($"{ClosedShiftSelect} WHERE organization_id=$1 AND branch_id=$2 AND status='closed' AND ($3::uuid IS NULL OR shift_id < $3) ORDER BY shift_id DESC LIMIT $4", connection, transaction))
+        {
+            query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
+            query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Uuid, Value = (object?)after ?? DBNull.Value });
+            query.Parameters.AddWithValue(pageSize + 1);
+            await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken)) items.Add(ReadClosed(reader));
+        }
+        Guid? next = null;
+        if (items.Count > pageSize) { items.RemoveAt(pageSize); next = items[^1].Id; }
+        await transaction.CommitAsync(cancellationToken);
+        return new(items.AsReadOnly(), next);
+    }
+
+    private const string ClosedShiftSelect = "SELECT shift_id,branch_id,register_id,status,currency,opening_balance,cash_sales,cash_refunds,cash_in,cash_out,expected_cash,counted_cash,variance,opened_at,closed_at,opened_by,closed_by FROM shifts.shifts";
+    private static ClosedShiftResponse ReadClosed(NpgsqlDataReader r) => new(r.GetGuid(0), r.GetGuid(1), r.GetGuid(2), r.GetString(3), r.GetString(4), r.GetDecimal(5), r.GetDecimal(6), r.GetDecimal(7), r.GetDecimal(8), r.GetDecimal(9), r.GetDecimal(10), r.GetDecimal(11), r.GetDecimal(12), r.GetFieldValue<DateTimeOffset>(13), r.GetFieldValue<DateTimeOffset>(14), r.GetString(15), r.GetString(16));
+
     private static async Task<ClosedShiftResponse?> ClosedByOperation(NpgsqlConnection c, NpgsqlTransaction t, Guid organizationId, Guid operationId, CancellationToken ct)
-    { await using var q = new NpgsqlCommand("SELECT shift_id,branch_id,register_id,status,currency,opening_balance,cash_sales,cash_refunds,cash_in,cash_out,expected_cash,counted_cash,variance,opened_at,closed_at,opened_by,closed_by FROM shifts.shifts WHERE organization_id=$1 AND close_operation_id=$2", c, t); q.Parameters.AddWithValue(organizationId); q.Parameters.AddWithValue(operationId); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? new(r.GetGuid(0), r.GetGuid(1), r.GetGuid(2), r.GetString(3), r.GetString(4), r.GetDecimal(5), r.GetDecimal(6), r.GetDecimal(7), r.GetDecimal(8), r.GetDecimal(9), r.GetDecimal(10), r.GetDecimal(11), r.GetDecimal(12), r.GetFieldValue<DateTimeOffset>(13), r.GetFieldValue<DateTimeOffset>(14), r.GetString(15), r.GetString(16)) : null; }
+    { await using var q = new NpgsqlCommand($"{ClosedShiftSelect} WHERE organization_id=$1 AND close_operation_id=$2", c, t); q.Parameters.AddWithValue(organizationId); q.Parameters.AddWithValue(operationId); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadClosed(r) : null; }
 
     private static async Task<CashMovementResponse?> MovementByOperation(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid organizationId, Guid operationId, CancellationToken cancellationToken)
     { await using var query = new NpgsqlCommand("SELECT movement_id,shift_id,kind,currency,amount,reason,recorded_at,subject FROM shifts.cash_movements WHERE organization_id=$1 AND operation_id=$2", connection, transaction); query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(operationId); await using var reader = await query.ExecuteReaderAsync(cancellationToken); return await reader.ReadAsync(cancellationToken) ? ReadMovement(reader) : null; }

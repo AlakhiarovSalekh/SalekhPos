@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -39,7 +40,33 @@ public static class ShiftEndpoints
             try { var result = await service.CloseAsync(Identity(context), new(organizationId, branchId, shiftId, operationId, request.CountedCash), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}", result.Shift) : Results.Ok(result.Shift); }
             catch (ArgumentException) { return Invalid(); }
         });
+        group.MapGet("/closed", async (Guid organizationId, Guid branchId, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        {
+            if (!TryListQuery(context, out var pageSize, out var after)) return InvalidQuery();
+            try { return Results.Ok(await service.ListClosedAsync(Identity(context), organizationId, branchId, pageSize, after, cancellationToken)); }
+            catch (ArgumentException) { return InvalidQuery(); }
+        });
+        group.MapGet("/{shiftId:guid}", async (Guid organizationId, Guid branchId, Guid shiftId, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        {
+            var shift = await service.ReadClosedAsync(Identity(context), organizationId, branchId, shiftId, cancellationToken);
+            return shift is null ? Results.NotFound() : Results.Ok(shift);
+        });
     }
     private static ShiftIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The shift request is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_request" });
+    private static IResult InvalidQuery() => Results.Problem(statusCode: 400, title: "The shift query is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_query" });
+    private static bool TryListQuery(HttpContext context, out int pageSize, out Guid? after)
+    {
+        pageSize = 50; after = null;
+        if (context.Request.Query.Keys.Any(key => key is not "pageSize" and not "after")) return false;
+        if (context.Request.Query.TryGetValue("pageSize", out var sizes)
+            && (sizes.Count != 1 || !int.TryParse(sizes[0], NumberStyles.None, CultureInfo.InvariantCulture, out pageSize)
+                || pageSize is < 1 or > 100)) return false;
+        if (context.Request.Query.TryGetValue("after", out var cursors))
+        {
+            if (cursors.Count != 1 || !Guid.TryParseExact(cursors[0], "D", out var cursor) || cursor == Guid.Empty) return false;
+            after = cursor;
+        }
+        return true;
+    }
 }

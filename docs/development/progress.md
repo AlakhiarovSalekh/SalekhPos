@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 10, 2026 — authorized closed-shift reconciliation reads
+
+Added authorized detail and bounded history endpoints for closed shifts. Both paths
+require active hierarchy, membership scope and persisted `shifts.view` authority,
+execute under forced tenant RLS and expose the immutable closing reconciliation:
+opening cash, sales, refunds, cash-in/out, expected cash, counted cash and variance.
+History uses strict 1–100 page sizing, UUID keyset pagination and a branch-scoped
+partial index from migration 026. Unknown query parameters and malformed cursors
+fail with a bounded 400 response; cross-branch detail remains undiscoverable.
+
+Native CI passes all structure, architecture, secret, dependency, formatting and
+migration/restore checks, 167 unit/configuration/HTTP tests and 70 integration tests
+with zero failures or skips. Next begin the offline client transaction and
+synchronization foundation: durable device identity, monotonic client operations,
+idempotent server admission and an authorized sync boundary before building local
+sale capture.
+
 ## September 10, 2026 — shift reconciliation and authoritative closing
 
 Returns and sale voids now copy the original completed sale's persisted shift and

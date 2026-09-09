@@ -9,3 +9,4 @@ public sealed record ClosedShiftResponse(Guid Id, Guid BranchId, Guid RegisterId
     decimal OpeningBalance, decimal CashSales, decimal CashRefunds, decimal CashIn, decimal CashOut,
     decimal ExpectedCash, decimal CountedCash, decimal Variance, DateTimeOffset OpenedAt, DateTimeOffset ClosedAt,
     string OpenedBy, string ClosedBy);
+public sealed record ClosedShiftPage(IReadOnlyList<ClosedShiftResponse> Items, Guid? NextCursor);
