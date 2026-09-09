@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "salekhpos.devices.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Devices.Contracts": "[1.0.0, )",
+          "SalekhPos.Devices.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.devices.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.devices.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}

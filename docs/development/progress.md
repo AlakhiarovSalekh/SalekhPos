@@ -1,5 +1,23 @@
 # Implementation progress
 
+## September 10, 2026 — durable registered-device identity
+
+Implemented Devices as five module projects and established the durable device
+identity required by offline synchronization. Authorized operators can register,
+retrieve and list active desktop, mobile and kiosk devices bound to an existing
+tenant branch register. Registration snapshots the supported sync protocol version,
+database time and authenticated operator; operation-ID replay is stable and changed
+replay or an unsupported protocol is rejected.
+
+Migration 027 adds tenant-composite register ownership, unique branch device codes,
+forced RLS, bounded cursor access and insert/select-only runtime privileges. Reads
+require `devices.view`; writes require `devices.manage`, both after active hierarchy
+and membership-scope validation. Native CI passes structure and architecture for 61
+projects, secrets, dependencies, formatting, migration/restore, 167 unit/configuration/
+HTTP tests and 71 integration tests with zero failures or skips. Next implement the
+versioned Sync ingestion envelope with monotonic per-device sequence admission,
+payload-digest replay validation and durable acknowledgement checkpoints.
+
 ## September 10, 2026 — authorized closed-shift reconciliation reads
 
 Added authorized detail and bounded history endpoints for closed shifts. Both paths

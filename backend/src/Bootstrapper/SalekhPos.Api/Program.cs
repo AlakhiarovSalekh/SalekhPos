@@ -42,6 +42,9 @@ using SalekhPos.Stores.Infrastructure.Registers;
 using SalekhPos.ShiftManagement.Api.Shifts;
 using SalekhPos.ShiftManagement.Application.Shifts;
 using SalekhPos.ShiftManagement.Infrastructure.Shifts;
+using SalekhPos.Devices.Api.Devices;
+using SalekhPos.Devices.Application.Devices;
+using SalekhPos.Devices.Infrastructure.Devices;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -89,6 +92,8 @@ builder.Services.AddSingleton<IReturnReader>(provider => new PostgresReturnReade
 builder.Services.AddSingleton<IRegisterCatalog>(provider => new PostgresRegisterCatalog(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IShiftService>(provider => new PostgresShiftService(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IDeviceRegistry>(provider => new PostgresDeviceRegistry(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -158,6 +163,7 @@ app.MapSuspendedCartEndpoints();
 app.MapSaleVoidEndpoints();
 app.MapRegisterEndpoints();
 app.MapShiftEndpoints();
+app.MapDeviceEndpoints();
 app.MapReceiptEndpoints();
 app.MapPaymentEndpoints();
 app.MapReturnEndpoints();

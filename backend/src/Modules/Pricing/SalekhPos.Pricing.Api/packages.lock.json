@@ -13,12 +13,6 @@
         "type": "Project"
       },
       "salekhpos.pricing.domain": {
-        "type": "Project",
-        "dependencies": {
-          "SalekhPos.SharedKernel": "[1.0.0, )"
-        }
-      },
-      "salekhpos.sharedkernel": {
         "type": "Project"
       }
     }

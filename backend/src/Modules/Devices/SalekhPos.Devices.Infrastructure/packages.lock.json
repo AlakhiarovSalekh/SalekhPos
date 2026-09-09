@@ -24,17 +24,17 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0"
         }
       },
-      "salekhpos.pricing.application": {
+      "salekhpos.devices.application": {
         "type": "Project",
         "dependencies": {
-          "SalekhPos.Pricing.Contracts": "[1.0.0, )",
-          "SalekhPos.Pricing.Domain": "[1.0.0, )"
+          "SalekhPos.Devices.Contracts": "[1.0.0, )",
+          "SalekhPos.Devices.Domain": "[1.0.0, )"
         }
       },
-      "salekhpos.pricing.contracts": {
+      "salekhpos.devices.contracts": {
         "type": "Project"
       },
-      "salekhpos.pricing.domain": {
+      "salekhpos.devices.domain": {
         "type": "Project"
       }
     }

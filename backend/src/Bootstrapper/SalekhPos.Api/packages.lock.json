@@ -120,6 +120,35 @@
           "SalekhPos.Catalog.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.devices.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Devices.Application": "[1.0.0, )",
+          "SalekhPos.Devices.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.devices.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Devices.Contracts": "[1.0.0, )",
+          "SalekhPos.Devices.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.devices.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.devices.domain": {
+        "type": "Project"
+      },
+      "salekhpos.devices.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Devices.Application": "[1.0.0, )",
+          "SalekhPos.Devices.Contracts": "[1.0.0, )",
+          "SalekhPos.Devices.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.identity.api": {
         "type": "Project",
         "dependencies": {
