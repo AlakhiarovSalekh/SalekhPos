@@ -176,6 +176,23 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.Created, second.StatusCode);
         using var secondBody = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
         Assert.Equal(16m, secondBody.RootElement.GetProperty("amount").GetDecimal());
+        var secondReturnId = secondBody.RootElement.GetProperty("id").GetGuid();
+
+        using var listed = await client.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, listed.StatusCode);
+        using var listedBody = JsonDocument.Parse(await listed.Content.ReadAsStringAsync());
+        Assert.Single(listedBody.RootElement.GetProperty("items").EnumerateArray());
+        Assert.True(listedBody.RootElement.TryGetProperty("nextCursor", out _));
+        using var read = await client.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns/{secondReturnId:D}");
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
+        Assert.Equal(2m, Assert.Single(readBody.RootElement.GetProperty("lines").EnumerateArray())
+            .GetProperty("quantity").GetDecimal());
+        using var invalidList = await client.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidList.StatusCode);
 
         using var excessiveRequest = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
@@ -191,6 +208,9 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         deniedRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var denied = await deniedClient.SendAsync(deniedRequest);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        using var deniedList = await deniedClient.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedList.StatusCode);
     }
 
     private async Task<Guid> PrepareProduct(decimal amount, decimal stock)

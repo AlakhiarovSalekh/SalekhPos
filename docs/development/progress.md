@@ -1,5 +1,18 @@
 # Implementation progress
 
+## September 9, 2026 — authorized return retrieval and history slice
+
+Added branch-scoped retrieval of one immutable return and a bounded return-history
+endpoint with UUID keyset pagination and a strict 100-item maximum. Both operations
+require active hierarchy, membership and persisted `sales.refund` authority before
+reading tenant-isolated return data. Unknown records return 404 only after authority
+is established; malformed or unknown query inputs return a bounded 400 response.
+Migration 015 adds the tenant/branch/cursor index used by history reads.
+
+Focused native PostgreSQL verification passes 167 unit/configuration/HTTP tests and
+66 integration tests. Coverage now reads returned line quantities, exercises bounded
+history, rejects invalid page sizes and denies unauthorized history access. Next
+implement suspended sale carts with explicit expiry and safe resume ownership.
 ## September 9, 2026 — quantity-bounded partial-return slice
 
 Extended the atomic Returns workflow to accept an explicit bounded set of product

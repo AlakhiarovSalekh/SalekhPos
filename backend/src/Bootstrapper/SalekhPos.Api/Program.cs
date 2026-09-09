@@ -66,6 +66,8 @@ builder.Services.AddSingleton<IPaymentReader>(provider => new PostgresPaymentRea
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IReturnCompletion>(provider => new PostgresReturnCompletion(
     provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IReturnReader>(provider => new PostgresReturnReader(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);

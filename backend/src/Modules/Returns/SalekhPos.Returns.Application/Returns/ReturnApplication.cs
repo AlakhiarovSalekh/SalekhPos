@@ -11,6 +11,13 @@ public interface IReturnCompletion
     Task<ReturnWriteResult> CompleteAsync(ReturnIdentity identity, CompleteReturnCommand command,
         CancellationToken cancellationToken);
 }
+public interface IReturnReader
+{
+    Task<CompletedReturnResponse?> ReadAsync(ReturnIdentity identity, Guid organizationId, Guid branchId,
+        Guid returnId, CancellationToken cancellationToken);
+    Task<ReturnPage> ListAsync(ReturnIdentity identity, Guid organizationId, Guid branchId, int pageSize,
+        Guid? after, CancellationToken cancellationToken);
+}
 public sealed class ReturnDeniedException : Exception;
 public sealed class ReturnConflictException : Exception;
 public sealed class ReturnSaleNotFoundException : Exception;
