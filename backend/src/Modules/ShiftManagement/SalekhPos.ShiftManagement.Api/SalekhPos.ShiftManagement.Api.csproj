@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /><ProjectReference Include="../SalekhPos.ShiftManagement.Application/SalekhPos.ShiftManagement.Application.csproj" /><ProjectReference Include="../SalekhPos.ShiftManagement.Contracts/SalekhPos.ShiftManagement.Contracts.csproj" /></ItemGroup></Project>

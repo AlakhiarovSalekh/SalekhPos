@@ -481,6 +481,10 @@
           "SalekhPos.Sales.Api": "[1.0.0, )",
           "SalekhPos.Sales.Infrastructure": "[1.0.0, )",
           "SalekhPos.SharedKernel": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Api": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Stores.Api": "[1.0.0, )",
+          "SalekhPos.Stores.Infrastructure": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )"
         }
@@ -686,6 +690,64 @@
       },
       "salekhpos.sharedkernel": {
         "type": "Project"
+      },
+      "salekhpos.shiftmanagement.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.ShiftManagement.Application": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.shiftmanagement.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.shiftmanagement.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.shiftmanagement.domain": {
+        "type": "Project"
+      },
+      "salekhpos.shiftmanagement.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.ShiftManagement.Application": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.stores.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Stores.Application": "[1.0.0, )",
+          "SalekhPos.Stores.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.stores.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Stores.Contracts": "[1.0.0, )",
+          "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.stores.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.stores.domain": {
+        "type": "Project"
+      },
+      "salekhpos.stores.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Stores.Application": "[1.0.0, )",
+          "SalekhPos.Stores.Contracts": "[1.0.0, )",
+          "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
       },
       "salekhpos.systemadministration.api": {
         "type": "Project",

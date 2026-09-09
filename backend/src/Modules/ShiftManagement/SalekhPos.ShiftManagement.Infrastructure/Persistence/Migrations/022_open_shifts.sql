@@ -1,0 +1,12 @@
+BEGIN;
+DO $$ BEGIN IF current_user='salekhpos_runtime' THEN RAISE EXCEPTION 'Runtime role must not run migrations'; END IF; END $$;
+ALTER TABLE stores.registers ADD CONSTRAINT uq_registers_tenant_branch_id UNIQUE(organization_id,branch_id,register_id);
+CREATE SCHEMA shifts; REVOKE ALL ON SCHEMA shifts FROM PUBLIC;
+CREATE TABLE shifts.shifts(organization_id uuid NOT NULL,shift_id uuid NOT NULL,operation_id uuid NOT NULL,branch_id uuid NOT NULL,register_id uuid NOT NULL,status text NOT NULL CHECK(status IN('open','closed')),currency char(3) NOT NULL CHECK(currency~'^[A-Z]{3}$'),opening_balance numeric(20,6) NOT NULL CHECK(opening_balance>=0),opened_at timestamptz NOT NULL,opened_by text NOT NULL,issuer text NOT NULL,closed_at timestamptz NULL,PRIMARY KEY(organization_id,shift_id),UNIQUE(organization_id,operation_id),FOREIGN KEY(organization_id,branch_id,register_id) REFERENCES stores.registers(organization_id,branch_id,register_id));
+CREATE UNIQUE INDEX uq_shifts_one_open_per_register ON shifts.shifts(organization_id,register_id) WHERE status='open';
+CREATE INDEX ix_shifts_branch_register ON shifts.shifts(organization_id,branch_id,register_id,shift_id);
+ALTER TABLE shifts.shifts ENABLE ROW LEVEL SECURITY; ALTER TABLE shifts.shifts FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON shifts.shifts USING(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid) WITH CHECK(organization_id=nullif(current_setting('app.organization_id',true),'')::uuid);
+GRANT USAGE ON SCHEMA shifts TO salekhpos_runtime; GRANT SELECT ON shifts.shifts TO salekhpos_runtime;
+GRANT INSERT(organization_id,shift_id,operation_id,branch_id,register_id,status,currency,opening_balance,opened_at,opened_by,issuer,closed_at) ON shifts.shifts TO salekhpos_runtime;
+COMMIT;

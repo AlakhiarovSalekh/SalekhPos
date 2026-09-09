@@ -1,5 +1,23 @@
 # Implementation progress
 
+## September 9, 2026 — authorized shift-opening slice
+
+Implemented ShiftManagement as five module projects with versioned endpoints to open
+and retrieve the current register shift. Opening snapshots the register, currency,
+opening cash balance, database timestamp and authenticated operator. Operation-ID
+replay returns the original shift, changed replay is rejected, and a transaction
+advisory lock plus a PostgreSQL partial unique index enforce at most one open shift
+per tenant register under concurrency.
+
+Migration 022 establishes the tenant-composite register reference, forced RLS and
+insert/select-only runtime grants. Both paths validate the active organization,
+business, branch, membership scope and persisted `shifts.open` or `shifts.view`
+authority before accessing shift data. Native CI passes structure, architecture
+coverage for 56 projects, secrets, dependencies, formatting, migration/restore,
+167 unit/configuration/HTTP tests and 70 integration tests with zero failures or
+skips. Next add immutable cash drawer movements and authorized shift closing with
+expected-versus-actual balance and variance evidence.
+
 ## September 9, 2026 — tenant-safe register catalog slice
 
 Implemented Stores as five module projects and established persisted register identity

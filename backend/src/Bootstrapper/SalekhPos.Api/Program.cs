@@ -39,6 +39,9 @@ using SalekhPos.SystemAdministration.Infrastructure;
 using SalekhPos.Stores.Api.Registers;
 using SalekhPos.Stores.Application.Registers;
 using SalekhPos.Stores.Infrastructure.Registers;
+using SalekhPos.ShiftManagement.Api.Shifts;
+using SalekhPos.ShiftManagement.Application.Shifts;
+using SalekhPos.ShiftManagement.Infrastructure.Shifts;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -84,6 +87,8 @@ builder.Services.AddSingleton<IReturnCompletion>(provider => new PostgresReturnC
 builder.Services.AddSingleton<IReturnReader>(provider => new PostgresReturnReader(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IRegisterCatalog>(provider => new PostgresRegisterCatalog(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IShiftService>(provider => new PostgresShiftService(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -152,6 +157,7 @@ app.MapCashSaleEndpoints();
 app.MapSuspendedCartEndpoints();
 app.MapSaleVoidEndpoints();
 app.MapRegisterEndpoints();
+app.MapShiftEndpoints();
 app.MapReceiptEndpoints();
 app.MapPaymentEndpoints();
 app.MapReturnEndpoints();

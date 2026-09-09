@@ -9,6 +9,47 @@ namespace SalekhPos.IntegrationTests;
 public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>
 {
     [Fact]
+    public async Task ShiftOpeningIsIdempotentPermissionCheckedAndLimitedToOnePerRegister()
+    {
+        using var owner = Client("owner");
+        var registerOperation = Guid.NewGuid();
+        using var registerRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        { Content = JsonContent.Create(new { code = "SHIFT-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), name = "Shift Test Register" }) };
+        registerRequest.Headers.Add("Idempotency-Key", registerOperation.ToString("D"));
+        using var registerResponse = await owner.SendAsync(registerRequest);
+        registerResponse.EnsureSuccessStatusCode();
+        using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
+        var registerId = registerBody.RootElement.GetProperty("id").GetGuid();
+
+        var operationId = Guid.NewGuid();
+        using var created = await OpenShift(owner, registerId, operationId, 100m);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        using var createdBody = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var shiftId = createdBody.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal("open", createdBody.RootElement.GetProperty("status").GetString());
+        Assert.Equal("GEL", createdBody.RootElement.GetProperty("currency").GetString());
+        Assert.Equal(100m, createdBody.RootElement.GetProperty("openingBalance").GetDecimal());
+        Assert.Equal("owner", createdBody.RootElement.GetProperty("openedBy").GetString());
+
+        using var replay = await OpenShift(owner, registerId, operationId, 100m);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        using var replayBody = JsonDocument.Parse(await replay.Content.ReadAsStringAsync());
+        Assert.Equal(shiftId, replayBody.RootElement.GetProperty("id").GetGuid());
+        using var changedReplay = await OpenShift(owner, registerId, operationId, 101m);
+        Assert.Equal(HttpStatusCode.Conflict, changedReplay.StatusCode);
+        using var second = await OpenShift(owner, registerId, Guid.NewGuid(), 100m);
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+
+        using var read = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open?registerId={registerId:D}");
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
+        Assert.Equal(shiftId, readBody.RootElement.GetProperty("id").GetGuid());
+        using var denied = await Client("alice").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open?registerId={registerId:D}");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
+    [Fact]
     public async Task RegisterCreationIsIdempotentAndBranchScoped()
     {
         using var owner = Client("owner");
@@ -421,6 +462,15 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
         { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> OpenShift(HttpClient client, Guid registerId, Guid operationId, decimal openingBalance)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open")
+        { Content = JsonContent.Create(new { registerId, currency = "GEL", openingBalance }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         return await client.SendAsync(request);
     }

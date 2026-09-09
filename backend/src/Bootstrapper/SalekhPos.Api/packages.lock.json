@@ -283,6 +283,35 @@
       "salekhpos.sharedkernel": {
         "type": "Project"
       },
+      "salekhpos.shiftmanagement.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.ShiftManagement.Application": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.shiftmanagement.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.shiftmanagement.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.shiftmanagement.domain": {
+        "type": "Project"
+      },
+      "salekhpos.shiftmanagement.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.ShiftManagement.Application": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.ShiftManagement.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.stores.api": {
         "type": "Project",
         "dependencies": {
