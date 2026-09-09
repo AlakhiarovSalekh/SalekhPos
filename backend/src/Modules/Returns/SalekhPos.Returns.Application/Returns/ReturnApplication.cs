@@ -4,7 +4,7 @@ namespace SalekhPos.Returns.Application.Returns;
 
 public sealed record ReturnIdentity(string Issuer, string Subject);
 public sealed record CompleteReturnCommand(Guid OrganizationId, Guid BranchId, Guid ReturnId, Guid OperationId,
-    Guid SaleId, string Reason);
+    Guid SaleId, string Reason, IReadOnlyList<CompleteReturnLineRequest> Lines);
 public sealed record ReturnWriteResult(CompletedReturnResponse Return, bool Created);
 public interface IReturnCompletion
 {

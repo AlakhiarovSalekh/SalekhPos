@@ -15,3 +15,17 @@ public sealed record CompletedReturn
         Id = id; SaleId = saleId; Reason = reason; Amount = amount; CompletedAt = completedAt;
     }
 }
+
+public sealed record ReturnItem
+{
+    public Guid ProductId { get; }
+    public decimal Quantity { get; }
+
+    public ReturnItem(Guid productId, decimal quantity)
+    {
+        if (productId == Guid.Empty || quantity <= 0 || decimal.Round(quantity, 6) != quantity)
+            throw new ArgumentException("Return item is invalid.");
+        ProductId = productId;
+        Quantity = quantity;
+    }
+}

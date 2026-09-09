@@ -20,7 +20,7 @@ public static class ReturnEndpoints
                 {
                     var result = await completion.CompleteAsync(new(context.User.FindFirst("iss")!.Value,
                         context.User.FindFirst("sub")!.Value), new(organizationId, branchId, Guid.NewGuid(),
-                        operationId, request.SaleId, request.Reason), cancellationToken);
+                        operationId, request.SaleId, request.Reason, request.Lines), cancellationToken);
                     return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/returns/{result.Return.Id:D}", result.Return)
                         : Results.Ok(result.Return);
                 }

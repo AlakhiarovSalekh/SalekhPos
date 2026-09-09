@@ -128,17 +128,17 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     }
 
     [Fact]
-    public async Task FullReturnRestocksOnceAndCreatesCashRefundAtomically()
+    public async Task PartialReturnsAreQuantityBoundedAndRefundAtomically()
     {
-        var productId = await PrepareProduct(8m, 1m);
-        using var saleResponse = await Complete(productId, 1m, 10m, Guid.NewGuid());
+        var productId = await PrepareProduct(8m, 3m);
+        using var saleResponse = await Complete(productId, 3m, 30m, Guid.NewGuid());
         using var saleBody = JsonDocument.Parse(await saleResponse.Content.ReadAsStringAsync());
         var saleId = saleBody.RootElement.GetProperty("id").GetGuid();
         var operationId = Guid.NewGuid();
         using var client = Client("owner");
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
-        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item", lines = new[] { new { productId, quantity = 1m } } }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         using var created = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
@@ -148,7 +148,7 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
 
         using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
-        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item", lines = new[] { new { productId, quantity = 1m } } }) };
         replayRequest.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         using var replay = await client.SendAsync(replayRequest);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
@@ -168,10 +168,26 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
             "SELECT count(*) FROM inventory.stock_movements WHERE organization_id=$1 AND product_id=$2 AND kind='return'",
             fixture.OrganizationA, productId));
 
+        using var secondRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned remaining items", lines = new[] { new { productId, quantity = 2m } } }) };
+        secondRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var second = await client.SendAsync(secondRequest);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        using var secondBody = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
+        Assert.Equal(16m, secondBody.RootElement.GetProperty("amount").GetDecimal());
+
+        using var excessiveRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
+        { Content = JsonContent.Create(new { saleId, reason = "Return beyond sold quantity", lines = new[] { new { productId, quantity = 1m } } }) };
+        excessiveRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var excessive = await client.SendAsync(excessiveRequest);
+        Assert.Equal(HttpStatusCode.Conflict, excessive.StatusCode);
+
         using var deniedClient = Client("alice");
         using var deniedRequest = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")
-        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item" }) };
+        { Content = JsonContent.Create(new { saleId, reason = "Customer returned item", lines = new[] { new { productId, quantity = 1m } } }) };
         deniedRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var denied = await deniedClient.SendAsync(deniedRequest);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);

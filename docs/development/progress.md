@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 9, 2026 — quantity-bounded partial-return slice
+
+Extended the atomic Returns workflow to accept an explicit bounded set of product
+quantities. Multiple returns can now reference one sale, while a transaction-scoped
+sale lock and persisted prior-return totals prevent cumulative quantity or money
+from exceeding each immutable sale-line snapshot. Intermediate refund amounts use
+the shared six-decimal half-even policy; the final remaining quantity receives the
+exact unrefunded balance so split returns reconcile to the original gross amount.
+
+Migration 014 removes the former one-return-per-sale restriction and adds the
+indexes and per-return product uniqueness needed for safe cumulative checks. Each
+partial return still records its refund, stock restoration and immutable return
+lines in one transaction. Operation-ID replay now compares the requested product
+set and quantities before returning an existing result. Native PostgreSQL coverage
+passes 167 unit/configuration/HTTP tests and 66 integration tests, including two
+successive partial returns and rejection beyond sold quantity. Next add authorized,
+bounded return history and individual return retrieval from the immutable records.
 ## September 9, 2026 — atomic full-sale return slice
 
 Implemented Returns as five module projects in the supplied Returns structure.
