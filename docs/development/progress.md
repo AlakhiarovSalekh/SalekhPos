@@ -1,5 +1,23 @@
 # Implementation progress
 
+## September 9, 2026 — unified branch payment-event history
+
+Added a bounded, branch-scoped reconciliation feed that projects completed cash
+captures, return refunds and sale-void refunds into one versioned Payments API.
+Every event retains its source kind and identifier, original payment identifier,
+currency, exact amount, status and database completion time. A URL-safe opaque cursor
+encodes the complete `(completed_at, kind, id)` ordering key so heterogeneous events
+with equal timestamps remain stable across pages. Unknown parameters, malformed
+cursors and page sizes outside 1–100 fail with a bounded 400 response.
+
+Migration 020 adds branch/time access-path indexes for all three persisted sources.
+Reads require active hierarchy, membership and persisted `payments.view` authority
+and remain protected by each source table's forced tenant RLS. Native CI passes all
+structure, architecture, secret, dependency, formatting and migration/restore checks,
+167 unit/configuration/HTTP tests and 68 integration tests with zero failures or skips.
+Next establish register identity and an authorized shift-opening boundary as the
+prerequisite for cash drawer reconciliation.
+
 ## September 9, 2026 — authorized refund payment retrieval
 
 Extended the Payments boundary with immutable refund projections for both partial/full

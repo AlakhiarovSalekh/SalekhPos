@@ -23,6 +23,8 @@ public interface IPaymentReader
         Guid returnId, CancellationToken cancellationToken);
     Task<RefundResponse?> ReadForVoidAsync(PaymentIdentity identity, Guid organizationId, Guid branchId,
         Guid voidId, CancellationToken cancellationToken);
+    Task<PaymentEventPage> ListEventsAsync(PaymentIdentity identity, Guid organizationId, Guid branchId,
+        int pageSize, string? after, CancellationToken cancellationToken);
 }
 
 public sealed class PaymentDeniedException : Exception;

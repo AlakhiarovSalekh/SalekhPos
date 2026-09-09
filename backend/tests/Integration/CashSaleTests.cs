@@ -192,6 +192,21 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal("void", voidRefundBody.RootElement.GetProperty("sourceKind").GetString());
         Assert.Equal(voidId, voidRefundBody.RootElement.GetProperty("sourceId").GetGuid());
         Assert.Equal(6m, voidRefundBody.RootElement.GetProperty("amount").GetDecimal());
+        using var events = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/payment-events?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, events.StatusCode);
+        using var eventsBody = JsonDocument.Parse(await events.Content.ReadAsStringAsync());
+        Assert.Single(eventsBody.RootElement.GetProperty("items").EnumerateArray());
+        var eventCursor = eventsBody.RootElement.GetProperty("nextCursor").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(eventCursor));
+        using var nextEvents = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/payment-events?pageSize=1&after={Uri.EscapeDataString(eventCursor!)}");
+        Assert.Equal(HttpStatusCode.OK, nextEvents.StatusCode);
+        using var nextEventsBody = JsonDocument.Parse(await nextEvents.Content.ReadAsStringAsync());
+        Assert.Single(nextEventsBody.RootElement.GetProperty("items").EnumerateArray());
+        using var invalidEvents = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/payment-events?after=not-a-cursor");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidEvents.StatusCode);
         using var history = await owner.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids?pageSize=1");
         Assert.Equal(HttpStatusCode.OK, history.StatusCode);
