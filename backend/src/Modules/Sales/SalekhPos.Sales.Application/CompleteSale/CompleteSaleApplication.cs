@@ -17,7 +17,7 @@ public sealed record SalesIdentity
 }
 
 public sealed record CompleteCashSaleCommand(Guid OrganizationId, Guid BranchId, Guid SaleId, Guid OperationId,
-    IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived);
+    IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived, Guid? SuspendedCartId = null);
 public sealed record CashSaleWriteResult(CompletedSaleResponse Sale, bool Created);
 public interface ICashSaleCompletion
 {

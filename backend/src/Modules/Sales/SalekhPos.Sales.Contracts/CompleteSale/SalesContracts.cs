@@ -1,7 +1,8 @@
 namespace SalekhPos.Sales.Contracts.CompleteSale;
 
 public sealed record CompleteCashSaleLineRequest(Guid ProductId, decimal Quantity);
-public sealed record CompleteCashSaleRequest(IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived);
+public sealed record CompleteCashSaleRequest(IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived,
+    Guid? SuspendedCartId = null);
 public sealed record CompletedSaleLineResponse(int LineNumber, Guid ProductId, Guid PriceId, decimal Quantity,
     decimal UnitAmount, string Currency, string TaxMode, decimal TaxRate, decimal NetAmount,
     decimal TaxAmount, decimal GrossAmount);

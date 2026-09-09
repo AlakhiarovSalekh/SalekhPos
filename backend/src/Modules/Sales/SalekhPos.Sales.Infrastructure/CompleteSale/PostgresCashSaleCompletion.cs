@@ -77,10 +77,14 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
         var replay = await ReadByOperation(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
         if (replay is not null)
         {
-            if (!SameRequest(replay, command)) throw new SalesConflictException();
+            if (!SameRequest(replay, command) || !await SameCart(connection, transaction, command,
+                replay.Id, cancellationToken)) throw new SalesConflictException();
             await transaction.CommitAsync(cancellationToken);
             return new(replay, false);
         }
+
+        if (command.SuspendedCartId is Guid cartId)
+            await ConsumeCart(connection, transaction, identity, command, cartId, cancellationToken);
 
         foreach (var productId in command.Lines.Select(line => line.ProductId).Order())
             await Lock(connection, transaction, $"stock:{command.OrganizationId:D}:{command.BranchId:D}:{productId:D}", cancellationToken);
@@ -110,8 +114,43 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             responses.Add(Response(line, index + 1));
         }
         await InsertOutbox(connection, transaction, sale, responses, cancellationToken);
+        if (command.SuspendedCartId is Guid consumedCartId)
+            await LinkCart(connection, transaction, command.OrganizationId, consumedCartId, sale.Id, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return new(ToResponse(sale, responses), true);
+    }
+
+    private static async Task ConsumeCart(NpgsqlConnection connection, NpgsqlTransaction transaction,
+        SalesIdentity identity, CompleteCashSaleCommand command, Guid cartId, CancellationToken cancellationToken)
+    {
+        await Lock(connection, transaction, $"cart:{command.OrganizationId:D}:{cartId:D}", cancellationToken);
+        var lines = new Dictionary<Guid, decimal>();
+        await using (var query = new NpgsqlCommand("SELECT l.product_id,l.quantity FROM sales.suspended_carts c JOIN sales.suspended_cart_lines l ON l.organization_id=c.organization_id AND l.cart_id=c.cart_id WHERE c.organization_id=$1 AND c.branch_id=$2 AND c.cart_id=$3 AND c.issuer=$4 AND c.subject=$5 AND c.resumed_at IS NULL AND c.expires_at>statement_timestamp()", connection, transaction))
+        {
+            query.Parameters.AddWithValue(command.OrganizationId); query.Parameters.AddWithValue(command.BranchId);
+            query.Parameters.AddWithValue(cartId); query.Parameters.AddWithValue(identity.Issuer); query.Parameters.AddWithValue(identity.Subject);
+            await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken)) lines.Add(reader.GetGuid(0), reader.GetDecimal(1));
+        }
+        if (lines.Count != command.Lines.Count || command.Lines.Any(x => !lines.TryGetValue(x.ProductId, out var quantity)
+            || quantity != x.Quantity)) throw new SalesConflictException();
+    }
+
+    private static async Task LinkCart(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid organizationId,
+        Guid cartId, Guid saleId, CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("UPDATE sales.suspended_carts SET resumed_at=statement_timestamp(),completed_sale_id=$3 WHERE organization_id=$1 AND cart_id=$2 AND resumed_at IS NULL", connection, transaction);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(cartId); query.Parameters.AddWithValue(saleId);
+        if (await query.ExecuteNonQueryAsync(cancellationToken) != 1) throw new SalesConflictException();
+    }
+
+    private static async Task<bool> SameCart(NpgsqlConnection connection, NpgsqlTransaction transaction,
+        CompleteCashSaleCommand command, Guid saleId, CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("SELECT cart_id FROM sales.suspended_carts WHERE organization_id=$1 AND completed_sale_id=$2", connection, transaction);
+        query.Parameters.AddWithValue(command.OrganizationId); query.Parameters.AddWithValue(saleId);
+        var value = await query.ExecuteScalarAsync(cancellationToken);
+        return command.SuspendedCartId is Guid cartId ? value is Guid persisted && persisted == cartId : value is null;
     }
 
     private static void Validate(CompleteCashSaleCommand command)
@@ -120,7 +159,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             || command.OperationId == Guid.Empty || command.Lines is null || command.Lines.Count is < 1 or > 500
             || command.Lines.Any(line => line.ProductId == Guid.Empty || line.Quantity <= 0
                 || decimal.Round(line.Quantity, 6) != line.Quantity)
-            || command.Lines.Select(line => line.ProductId).Distinct().Count() != command.Lines.Count)
+            || command.Lines.Select(line => line.ProductId).Distinct().Count() != command.Lines.Count
+            || command.SuspendedCartId == Guid.Empty)
             throw new ArgumentException("Sale request is invalid.");
     }
 

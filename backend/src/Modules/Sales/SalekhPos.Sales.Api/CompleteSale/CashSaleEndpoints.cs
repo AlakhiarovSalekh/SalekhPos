@@ -47,7 +47,7 @@ public static class CashSaleEndpoints
                 {
                     var command = new CompleteCashSaleCommand(organizationId, branchId, Guid.NewGuid(), operationId,
                         request.Lines,
-                        request.CashReceived);
+                        request.CashReceived, request.SuspendedCartId);
                     var result = await completion.CompleteAsync(Identity(context), command, cancellationToken);
                     return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/sales/{result.Sale.Id:D}", result.Sale)
                         : Results.Ok(result.Sale);

@@ -1,5 +1,20 @@
 # Implementation progress
 
+## September 9, 2026 — atomic suspended-cart completion slice
+
+Cash-sale completion can now consume an owner-bound suspended cart in the same
+database transaction that writes the immutable sale, payment, inventory movements
+and outbox event. The supplied cart must be active, unexpired, owned by the caller
+and have exactly the same product quantities as the completion request. A cart is
+linked to one completed sale and cannot be consumed again. Failed pricing, stock or
+payment work rolls back the cart transition with every other write.
+
+Migration 017 adds the tenant-composite completed-sale link and restricts runtime
+mutation to the state-transition columns. Operation-ID sale replay verifies the
+persisted cart association. Focused native PostgreSQL verification passes 167 unit/
+configuration/HTTP tests and 67 integration tests, including the persisted sale link
+and second-consumption rejection. Next implement controlled sale voids before payment
+settlement boundaries expand.
 ## September 9, 2026 — owner-bound suspended cart slice
 
 Implemented suspended sale carts in the existing Sales module. An authorized cashier

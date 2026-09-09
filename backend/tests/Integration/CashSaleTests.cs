@@ -139,6 +139,22 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var secondResume = await owner.PostAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended/{cartId:D}/resume", null);
         Assert.Equal(HttpStatusCode.NotFound, secondResume.StatusCode);
+
+        using var atomicSuspendRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/suspended")
+        { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity = 1m } }, note = "Pay now" }) };
+        atomicSuspendRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var atomicSuspended = await owner.SendAsync(atomicSuspendRequest);
+        using var atomicBody = JsonDocument.Parse(await atomicSuspended.Content.ReadAsStringAsync());
+        var atomicCartId = atomicBody.RootElement.GetProperty("id").GetGuid();
+        using var completed = await Complete(productId, 1m, 4m, Guid.NewGuid(), suspendedCartId: atomicCartId);
+        Assert.Equal(HttpStatusCode.Created, completed.StatusCode);
+        using var completedBody = JsonDocument.Parse(await completed.Content.ReadAsStringAsync());
+        Assert.Equal(completedBody.RootElement.GetProperty("id").GetGuid(), await fixture.ScalarAsync<Guid>(
+            "SELECT completed_sale_id FROM sales.suspended_carts WHERE organization_id=$1 AND cart_id=$2",
+            fixture.OrganizationA, atomicCartId));
+        using var consumedAgain = await Complete(productId, 1m, 4m, Guid.NewGuid(), suspendedCartId: atomicCartId);
+        Assert.Equal(HttpStatusCode.Conflict, consumedAgain.StatusCode);
     }
 
     [Fact]
@@ -270,12 +286,12 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
     }
 
     private async Task<HttpResponseMessage> Complete(Guid productId, decimal quantity, decimal cashReceived,
-        Guid operationId, string subject = "owner")
+        Guid operationId, string subject = "owner", Guid? suspendedCartId = null)
     {
         using var client = Client(subject);
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
-        { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity } }, cashReceived }) };
+        { Content = JsonContent.Create(new { lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
         request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
         return await client.SendAsync(request);
     }
