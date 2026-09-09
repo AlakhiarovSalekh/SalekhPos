@@ -1,5 +1,22 @@
 # Implementation progress
 
+## September 9, 2026 — authorized refund payment retrieval
+
+Extended the Payments boundary with immutable refund projections for both partial/full
+returns and completed-sale voids. Authorized callers can retrieve the cash refund by
+its owning return or void within an explicit organization and branch scope. Responses
+preserve the original payment identifier, source kind and identifier, method, status,
+currency, exact amount and database completion timestamp without exposing provider or
+cardholder data.
+
+Both query paths require persisted `payments.view` authority after active hierarchy
+and membership checks and execute under the existing forced tenant RLS policies.
+Integration coverage verifies the exact return and void refund projections. Native CI
+passes all structure, architecture, secret, dependency, migration/restore and formatting
+checks, 167 unit/configuration/HTTP tests and 68 integration tests with zero failures or
+skips. Next add a bounded branch payment-event history that consistently represents
+captures, return refunds and void refunds for reconciliation consumers.
+
 ## September 9, 2026 — authorized sale-void retrieval and reversal exclusion
 
 Added branch-scoped retrieval of one immutable sale void and bounded void history

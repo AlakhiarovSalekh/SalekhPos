@@ -185,6 +185,13 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var detailBody = JsonDocument.Parse(await detail.Content.ReadAsStringAsync());
         Assert.Equal(saleId, detailBody.RootElement.GetProperty("saleId").GetGuid());
         Assert.Single(detailBody.RootElement.GetProperty("lines").EnumerateArray());
+        using var voidRefund = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids/{voidId:D}/refund");
+        Assert.Equal(HttpStatusCode.OK, voidRefund.StatusCode);
+        using var voidRefundBody = JsonDocument.Parse(await voidRefund.Content.ReadAsStringAsync());
+        Assert.Equal("void", voidRefundBody.RootElement.GetProperty("sourceKind").GetString());
+        Assert.Equal(voidId, voidRefundBody.RootElement.GetProperty("sourceId").GetGuid());
+        Assert.Equal(6m, voidRefundBody.RootElement.GetProperty("amount").GetDecimal());
         using var history = await owner.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids?pageSize=1");
         Assert.Equal(HttpStatusCode.OK, history.StatusCode);
@@ -268,6 +275,13 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var body = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
         var returnId = body.RootElement.GetProperty("id").GetGuid();
         Assert.Equal(8m, body.RootElement.GetProperty("amount").GetDecimal());
+        using var refund = await client.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns/{returnId:D}/refund");
+        Assert.Equal(HttpStatusCode.OK, refund.StatusCode);
+        using var refundBody = JsonDocument.Parse(await refund.Content.ReadAsStringAsync());
+        Assert.Equal("return", refundBody.RootElement.GetProperty("sourceKind").GetString());
+        Assert.Equal(returnId, refundBody.RootElement.GetProperty("sourceId").GetGuid());
+        Assert.Equal(8m, refundBody.RootElement.GetProperty("amount").GetDecimal());
 
         using var replayRequest = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns")

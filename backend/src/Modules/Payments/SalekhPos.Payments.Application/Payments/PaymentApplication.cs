@@ -19,6 +19,10 @@ public interface IPaymentReader
 {
     Task<PaymentResponse?> ReadForSaleAsync(PaymentIdentity identity, Guid organizationId, Guid branchId,
         Guid saleId, CancellationToken cancellationToken);
+    Task<RefundResponse?> ReadForReturnAsync(PaymentIdentity identity, Guid organizationId, Guid branchId,
+        Guid returnId, CancellationToken cancellationToken);
+    Task<RefundResponse?> ReadForVoidAsync(PaymentIdentity identity, Guid organizationId, Guid branchId,
+        Guid voidId, CancellationToken cancellationToken);
 }
 
 public sealed class PaymentDeniedException : Exception;
