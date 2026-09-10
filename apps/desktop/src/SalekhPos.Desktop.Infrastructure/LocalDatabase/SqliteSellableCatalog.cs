@@ -20,6 +20,17 @@ public sealed class SqliteSellableCatalog(string databasePath) : ILocalSellableC
         await using var connection = await Open(cancellationToken);
         await using var transaction = connection.BeginTransaction(deferred: false);
         await Schema(connection, transaction, cancellationToken);
+        await using (var table = Command(connection, transaction,
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='local_stock_reservations'"))
+            if ((long)(await table.ExecuteScalarAsync(cancellationToken) ?? 0L) == 1)
+            {
+                await using var pending = Command(connection, transaction, """
+                SELECT count(*) FROM local_stock_reservations
+                WHERE organization_id=$1 AND branch_id=$2 AND status='pending'
+                """, ("$1", snapshot.OrganizationId), ("$2", snapshot.BranchId));
+                if ((long)(await pending.ExecuteScalarAsync(cancellationToken) ?? 0L) != 0)
+                    throw new InvalidOperationException("Pending sales must be reconciled before replacing stock.");
+            }
 
         await using (var state = Command(connection, transaction,
             "SELECT captured_at,digest FROM sellable_catalog_state WHERE organization_id=$1 AND branch_id=$2",

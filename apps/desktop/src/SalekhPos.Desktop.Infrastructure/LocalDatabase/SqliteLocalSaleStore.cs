@@ -76,10 +76,41 @@ public sealed class SqliteLocalSaleStore
                 || (status == "applied") != (resultCode == "applied") || resultCode is not ("applied" or "shift_conflict" or "price_conflict" or "insufficient_stock" or "sale_conflict") || acceptedAt == default || acceptedAt.Offset != TimeSpan.Zero) throw new ArgumentException("Sync result is invalid.");
             await using var connection = await Open(connectionString, ct); await using var transaction = connection.BeginTransaction(deferred: false);
             await using var update = Command(connection, transaction, "UPDATE outbox_messages SET status=$3,result_code=$4,accepted_at=$5 WHERE message_id=$1 AND payload_digest=$2 AND status='pending'", ("$1", messageId.ToString("D")), ("$2", payloadDigest), ("$3", status), ("$4", resultCode), ("$5", acceptedAt.ToString("O")));
-            if (await update.ExecuteNonQueryAsync(ct) != 1)
+            var transitioned = await update.ExecuteNonQueryAsync(ct) == 1;
+            if (!transitioned)
             {
                 await using var replay = Command(connection, transaction, "SELECT count(*) FROM outbox_messages WHERE message_id=$1 AND payload_digest=$2 AND status=$3 AND result_code=$4 AND accepted_at=$5", ("$1", messageId.ToString("D")), ("$2", payloadDigest), ("$3", status), ("$4", resultCode), ("$5", acceptedAt.ToString("O")));
                 if ((long)(await replay.ExecuteScalarAsync(ct) ?? 0L) != 1) throw new InvalidOperationException("Changed or unknown sync result.");
+            }
+            if (transitioned)
+            {
+                await using var reservationTable = Command(connection, transaction, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='local_stock_reservations'");
+                if ((long)(await reservationTable.ExecuteScalarAsync(ct) ?? 0L) == 1)
+                {
+                    var reservationStatus = status == "applied" ? "committed" : "released";
+                    if (status == "rejected")
+                    {
+                        await using var reservations = Command(connection, transaction, """
+                            SELECT r.organization_id,r.branch_id,r.product_id,r.quantity,i.stock_quantity
+                            FROM local_stock_reservations r JOIN local_sellable_items i
+                              ON i.organization_id=r.organization_id AND i.branch_id=r.branch_id AND i.product_id=r.product_id
+                            JOIN outbox_messages o ON o.sale_id=r.sale_id
+                            WHERE o.message_id=$1 AND r.status='pending'
+                            """, ("$1", messageId.ToString("D")));
+                        var restores = new List<(string Organization, string Branch, string Product, decimal Quantity, decimal Stock)>();
+                        await using (var reader = await reservations.ExecuteReaderAsync(ct))
+                            while (await reader.ReadAsync(ct)) restores.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2), decimal.Parse(reader.GetString(3), CultureInfo.InvariantCulture), decimal.Parse(reader.GetString(4), CultureInfo.InvariantCulture)));
+                        foreach (var (organization, branch, product, quantity, currentStock) in restores)
+                        {
+                            await using var stock = Command(connection, transaction, "UPDATE local_sellable_items SET stock_quantity=$4 WHERE organization_id=$1 AND branch_id=$2 AND product_id=$3 AND stock_quantity=$5", ("$1", organization), ("$2", branch), ("$3", product), ("$4", Number(currentStock + quantity)), ("$5", Number(currentStock)));
+                            if (await stock.ExecuteNonQueryAsync(ct) != 1) throw new InvalidOperationException("Reserved stock changed before reconciliation.");
+                        }
+                    }
+                    await using var finish = Command(connection, transaction, """
+                        UPDATE local_stock_reservations SET status=$2 WHERE sale_id=(SELECT sale_id FROM outbox_messages WHERE message_id=$1) AND status='pending'
+                        """, ("$1", messageId.ToString("D")), ("$2", reservationStatus));
+                    await finish.ExecuteNonQueryAsync(ct);
+                }
             }
             await transaction.CommitAsync(ct);
         }

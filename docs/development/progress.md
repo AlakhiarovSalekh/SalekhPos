@@ -1,5 +1,29 @@
 # Implementation progress
 
+## September 10, 2026 — atomic projected-stock offline checkout
+
+Desktop checkout now accepts product/quantity intent rather than caller-supplied
+financial snapshots. Inside one immediate SQLite transaction it resolves the exact
+tenant/branch product, effective price, currency and tax evidence from the local
+sellable projection; validates six-decimal quantity and available stock; calculates
+receipt totals; conditionally deducts projected stock; persists per-product reservation
+evidence; and writes the immutable sale, lines, gap-free device outbox message and
+payload digest. Any missing, expired, duplicate or insufficient item rolls the entire
+checkout back without a sale, reservation, sequence advance or stock change.
+
+Concurrent checkouts against one available unit can produce exactly one sale. Exact
+sale replay returns the original message without reserving twice, while changed replay
+is rejected. Server-applied acknowledgement commits the local reservation; deterministic
+server rejection releases it and restores stock exactly once, including acknowledgement
+replay. A catalog refresh cannot replace projected stock while unresolved reservations
+exist, avoiding loss of offline deductions. The earlier desktop price projection was
+also corrected to the backend's exact 0–100 percent, four-decimal tax contract.
+Native CI passes structure and architecture for 70 projects, secret and dependency
+scanning, formatting, all PostgreSQL migrations and backup/restore, 187 unit/
+configuration/HTTP/desktop tests and 72 integration tests with zero failures or skips.
+Next add durable local shift/register assignment and cash-session controls, then expose
+the verified checkout workflow through the desktop presentation boundary.
+
 ## September 10, 2026 — atomic offline sellable-catalog projection
 
 Desktop can now download active products and branch stock through bounded keyset

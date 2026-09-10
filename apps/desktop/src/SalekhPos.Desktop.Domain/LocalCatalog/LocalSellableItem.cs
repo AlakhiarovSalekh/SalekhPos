@@ -13,8 +13,8 @@ public sealed record LocalSellableItem
             || name.Length > 256 || string.IsNullOrWhiteSpace(unitCode) || unitCode.Length > 16
             || barcode?.Length > 64 || barcode is not null && string.IsNullOrWhiteSpace(barcode))
             throw new ArgumentException("Sellable item identity is invalid.");
-        if (Scale(stockQuantity) > 6 || Scale(unitAmount) > 6 || Scale(taxRate) > 6
-            || unitAmount < 0 || taxRate is < 0 or > 1)
+        if (Scale(stockQuantity) > 6 || Scale(unitAmount) > 6 || Scale(taxRate) > 4
+            || unitAmount <= 0 || taxRate is < 0 or > 100)
             throw new ArgumentException("Sellable item financial values are invalid.");
         if (currency.Length != 3 || currency.Any(c => c is < 'A' or > 'Z')
             || taxMode is not ("inclusive" or "exclusive"))

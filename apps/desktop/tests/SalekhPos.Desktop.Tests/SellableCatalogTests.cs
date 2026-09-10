@@ -74,7 +74,7 @@ public sealed class SellableCatalogTests : IDisposable
                     amount = 3.5m,
                     currency = "GEL",
                     taxMode = "inclusive",
-                    taxRate = 0.18m,
+                    taxRate = 18m,
                     validFrom = DateTimeOffset.UtcNow.AddDays(-1),
                     validUntil = (DateTimeOffset?)null
                 },
@@ -104,7 +104,7 @@ public sealed class SellableCatalogTests : IDisposable
 
     private static LocalSellableItem Item(Guid organizationId, Guid branchId) => new(organizationId, branchId,
         Guid.NewGuid(), Guid.NewGuid(), "SKU-1", "Tea", "EA", "12345", 8m, 3.5m, "GEL", "inclusive",
-        0.18m, DateTimeOffset.UtcNow.AddDays(-1), null);
+        18m, DateTimeOffset.UtcNow.AddDays(-1), null);
     private static HttpResponseMessage Json(object body) => new(HttpStatusCode.OK)
     {
         Content = new StringContent(JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json"),

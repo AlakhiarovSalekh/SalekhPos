@@ -4,6 +4,10 @@ namespace SalekhPos.Desktop.Application.Offline;
 
 public sealed record CompleteLocalSaleCommand(Guid OrganizationId, Guid BranchId, Guid DeviceId, Guid SaleId,
     Guid ShiftId, Guid RegisterId, DateTimeOffset CompletedAt, decimal CashReceived, IReadOnlyList<LocalSaleLine> Lines);
+public sealed record ProjectedSaleItem(Guid ProductId, decimal Quantity);
+public sealed record CompleteProjectedSaleCommand(Guid OrganizationId, Guid BranchId, Guid DeviceId, Guid SaleId,
+    Guid ShiftId, Guid RegisterId, DateTimeOffset CompletedAt, decimal CashReceived,
+    IReadOnlyList<ProjectedSaleItem> Items);
 public sealed record LocalOutboxMessage(Guid MessageId, Guid SaleId, Guid DeviceId, long Sequence, string MessageType,
     string Payload, string PayloadDigest, string Status, string? ResultCode, DateTimeOffset CreatedAt);
 public sealed record LocalSaleWriteResult(LocalSale Sale, LocalOutboxMessage Message, bool Created);
@@ -12,6 +16,12 @@ public interface ILocalSaleStore
     Task<LocalSaleWriteResult> CompleteAsync(CompleteLocalSaleCommand command, CancellationToken cancellationToken);
     Task<IReadOnlyList<LocalOutboxMessage>> ReadPendingAsync(Guid deviceId, int limit, CancellationToken cancellationToken);
     Task MarkResultAsync(Guid messageId, string payloadDigest, string status, string resultCode, DateTimeOffset acceptedAt, CancellationToken cancellationToken);
+}
+
+public interface IProjectedSaleCheckout
+{
+    Task<LocalSaleWriteResult> CompleteAsync(CompleteProjectedSaleCommand command,
+        CancellationToken cancellationToken);
 }
 
 public sealed record RemoteSyncAcknowledgement(Guid MessageId, Guid DeviceId, Guid? SaleId, long Sequence,
