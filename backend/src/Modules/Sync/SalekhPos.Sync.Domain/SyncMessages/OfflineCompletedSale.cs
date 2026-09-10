@@ -71,8 +71,8 @@ public sealed record OfflineCompletedSale(Guid SaleId, Guid ShiftId, Guid Regist
     private static string Text(JsonElement element, string name) => element.GetProperty(name).ValueKind == JsonValueKind.String
         ? element.GetProperty(name).GetString()! : throw InvalidException();
     private static DateTimeOffset UtcTime(JsonElement element, string name) => element.GetProperty(name).ValueKind == JsonValueKind.String
-        && DateTimeOffset.TryParseExact(element.GetProperty(name).GetString(), "O", CultureInfo.InvariantCulture,
-            DateTimeStyles.None, out var value) && value.Offset == TimeSpan.Zero ? value : throw InvalidException();
+        && DateTimeOffset.TryParse(element.GetProperty(name).GetString(), CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind, out var value) && value.Offset == TimeSpan.Zero ? value : throw InvalidException();
     private static decimal Positive(JsonElement element, string name, int scale) { var value = Amount(element, name, scale); if (value <= 0) Invalid(); return value; }
     private static decimal Amount(JsonElement element, string name, int scale = 6)
     {

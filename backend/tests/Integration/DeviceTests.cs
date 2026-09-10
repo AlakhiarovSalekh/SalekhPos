@@ -55,11 +55,22 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         Assert.Equal(HttpStatusCode.OK, history.StatusCode); using var historyBody = JsonDocument.Parse(await history.Content.ReadAsStringAsync()); Assert.Single(historyBody.RootElement.GetProperty("items").EnumerateArray());
         using var invalidPage = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=0"); Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
         using var foreignHistory = await Client("manager").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages"); Assert.Empty((await foreignHistory.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray());
+        var (productId, priceId) = await PrepareProduct(owner);
+        using var shift = await OpenShift(owner, registerId); shift.EnsureSuccessStatusCode();
+        using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
+        var saleId = Guid.NewGuid(); var appliedPayload = OfflinePayload(saleId: saleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId);
+        var appliedMessageId = Guid.NewGuid(); using var applied = await Sync(owner, id, appliedMessageId, 2, appliedPayload);
+        Assert.Equal(HttpStatusCode.OK, applied.StatusCode); using var appliedBody = JsonDocument.Parse(await applied.Content.ReadAsStringAsync()); Assert.Equal("applied", appliedBody.RootElement.GetProperty("status").GetString());
+        using var appliedReplay = await Sync(owner, id, appliedMessageId, 2, appliedPayload); using var appliedReplayBody = JsonDocument.Parse(await appliedReplay.Content.ReadAsStringAsync()); Assert.True(appliedReplayBody.RootElement.GetProperty("replay").GetBoolean());
+        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
+        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM payments.payment_records WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
+        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM inventory.stock_movements WHERE organization_id=$1 AND kind='sale' AND reason='Synchronized offline cash sale' AND product_id=$2", fixture.OrganizationA, productId));
+        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.outbox_messages WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
         using var checkpoint = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/checkpoint");
         Assert.Equal(HttpStatusCode.OK, checkpoint.StatusCode);
         using var checkpointBody = JsonDocument.Parse(await checkpoint.Content.ReadAsStringAsync());
-        Assert.Equal(1, checkpointBody.RootElement.GetProperty("lastAcceptedSequence").GetInt64());
-        Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sync.ingested_messages WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
+        Assert.Equal(2, checkpointBody.RootElement.GetProperty("lastAcceptedSequence").GetInt64());
+        Assert.Equal(2L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sync.ingested_messages WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
     }
     private async Task<HttpResponseMessage> Register(HttpClient client, Guid operation, Guid registerId, string code, string name, int protocol = 1)
     { using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices") { Content = JsonContent.Create(new { registerId, code, name, platform = "desktop", syncProtocolVersion = protocol }) }; request.Headers.Add("Idempotency-Key", operation.ToString("D")); return await client.SendAsync(request); }
@@ -67,19 +78,29 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
     private Task<HttpResponseMessage> Sync(HttpClient client, Guid deviceId, Guid messageId, long sequence, string payload) =>
         client.PostAsJsonAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{deviceId:D}/sync/messages",
             new { messageId, sequence, protocolVersion = 1, messageType = "sale.completed.v1", payload });
-    private static string OfflinePayload(decimal grandTotal = 2.2m) => JsonSerializer.Serialize(new
+    private async Task<(Guid ProductId, Guid PriceId)> PrepareProduct(HttpClient owner)
     {
-        saleId = Guid.NewGuid(),
-        shiftId = Guid.NewGuid(),
-        registerId = Guid.NewGuid(),
-        completedAt = DateTimeOffset.UtcNow,
-        currency = "GEL",
-        cashReceived = 3m,
-        netTotal = 2m,
-        taxTotal = 0.2m,
-        grandTotal,
-        changeDue = 0.8m,
-        lines = new[] { new { lineNumber = 1, productId = Guid.NewGuid(), priceId = Guid.NewGuid(), quantity = 2m,
-            unitAmount = 1m, taxMode = "exclusive", taxRate = 10m, netAmount = 2m, taxAmount = 0.2m, grossAmount = 2.2m } }
-    });
+        using var productRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/products") { Content = JsonContent.Create(new { sku = "SYNC." + Guid.NewGuid().ToString("N").ToUpperInvariant(), name = "Offline Sync Item", unitCode = "EA", barcode = (string?)null }) }; productRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var product = await owner.SendAsync(productRequest); product.EnsureSuccessStatusCode(); using var productBody = JsonDocument.Parse(await product.Content.ReadAsStringAsync()); var productId = productBody.RootElement.GetProperty("id").GetGuid();
+        using var priceRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/pricing/prices") { Content = JsonContent.Create(new { productId, branchId = fixture.BranchA, amount = 2m, currency = "GEL", taxMode = "inclusive", taxRate = 0m, validFrom = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), validUntil = (DateTimeOffset?)null }) }; priceRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var price = await owner.SendAsync(priceRequest); price.EnsureSuccessStatusCode(); using var priceBody = JsonDocument.Parse(await price.Content.ReadAsStringAsync()); var priceId = priceBody.RootElement.GetProperty("id").GetGuid();
+        using var stockRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/inventory/movements") { Content = JsonContent.Create(new { productId, kind = "receipt", quantity = 5m, reason = "Offline sync test stock", occurredAt = DateTimeOffset.UtcNow }) }; stockRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D")); using var stock = await owner.SendAsync(stockRequest); stock.EnsureSuccessStatusCode(); return (productId, priceId);
+    }
+    private async Task<HttpResponseMessage> OpenShift(HttpClient owner, Guid registerId) { using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open") { Content = JsonContent.Create(new { registerId, currency = "GEL", openingBalance = 0m }) }; request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D")); return await owner.SendAsync(request); }
+    private static string OfflinePayload(decimal grandTotal = 2m, Guid? saleId = null, Guid? shiftId = null,
+        Guid? registerId = null, Guid? productId = null, Guid? priceId = null) => JsonSerializer.Serialize(new
+        {
+            saleId = saleId ?? Guid.NewGuid(),
+            shiftId = shiftId ?? Guid.NewGuid(),
+            registerId = registerId ?? Guid.NewGuid(),
+            completedAt = DateTimeOffset.UtcNow,
+            currency = "GEL",
+            cashReceived = 3m,
+            netTotal = 2m,
+            taxTotal = 0m,
+            grandTotal,
+            changeDue = 1m,
+            lines = new[] { new { lineNumber = 1, productId = productId ?? Guid.NewGuid(), priceId = priceId ?? Guid.NewGuid(), quantity = 1m,
+            unitAmount = 2m, taxMode = "inclusive", taxRate = 0m, netAmount = 2m, taxAmount = 0m, grossAmount = 2m } }
+        });
 }

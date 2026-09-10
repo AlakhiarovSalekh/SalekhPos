@@ -1,5 +1,25 @@
 # Implementation progress
 
+## September 10, 2026 — atomic offline cash-sale materialization
+
+Validated `sale.completed.v1` messages now produce their immutable completed sale,
+cash payment trigger record, stock-ledger movements, line snapshots, sale outbox event
+and durable sync result in one PostgreSQL transaction. Admission serializes device,
+shift and product stock decisions; requires both `sync.ingest` and `sales.complete`;
+binds the payload register to the device and still-open shift; verifies the historical
+price/tax snapshot and current stock; and rejects future, duplicate or conflicting
+financial evidence without partial writes.
+
+Migration 029 adds append-only forced-RLS applied/rejected result evidence. Deterministic
+business rejection advances the device checkpoint with a bounded result code so one
+conflict cannot permanently block later messages; exact replay returns the persisted
+decision without duplicating sale, payment, inventory or outbox records. Existing
+pre-migration accepted evidence remains readable. Native CI passes structure and
+architecture for 66 projects, secrets, dependencies, formatting, all migrations and
+backup/restore, 167 unit/configuration/HTTP tests and 71 integration tests with zero
+failures or skips. Next expand rejection/concurrency coverage and expose the linked
+sale ID in result reads before beginning the durable desktop local-sale/outbox slice.
+
 ## September 10, 2026 — strict offline-sale financial envelope
 
 Protocol-v1 `sale.completed.v1` admission now requires the complete immutable local
