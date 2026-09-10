@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 10, 2026 — durable desktop sale outbox and sync dispatch
+
+Established the first functional desktop persistence boundary as separate Domain,
+Application, Infrastructure and test projects. Cash-sale completion validates exact
+six-decimal price, tax, quantity, currency and receipt arithmetic, then stores the
+immutable sale, ordered line snapshots, canonical protocol-v1 payload, SHA-256 digest
+and gap-free per-device outbox sequence in one immediate SQLite transaction. WAL,
+full synchronous durability, foreign keys, busy timeout, strict tables and immutable
+sale/line triggers protect crash recovery and evidence integrity. Exact completion
+replay returns the original message; changed replay is rejected.
+
+Pending messages are dispatched in device-sequence order through the versioned,
+tenant-scoped HTTP endpoint. Local state changes only after the acknowledgement's
+message, device, sale, sequence, protocol, type, digest, status and UTC acceptance
+time match the pending evidence. Applied and deterministic rejected outcomes are
+persisted idempotently; mismatched or unknown results remain pending. Native CI passes
+structure and architecture for 70 projects, secret and dependency scanning, formatting,
+all PostgreSQL migrations and backup/restore, 172 unit/configuration/HTTP/desktop tests
+and 72 integration tests with zero failures or skips. Next wire authenticated desktop
+composition and bounded retry scheduling, then add durable catalog/price/stock
+projections required to build offline sale lines from synchronized server evidence.
+
 ## September 10, 2026 — atomic offline cash-sale materialization
 
 Validated `sale.completed.v1` messages now produce their immutable completed sale,

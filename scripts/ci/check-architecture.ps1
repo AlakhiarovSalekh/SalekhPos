@@ -4,7 +4,7 @@ param([string] $RepositoryRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $taskRoot = [IO.Path]::GetFullPath($RepositoryRoot)
-$taskProjects = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'backend'), (Join-Path $taskRoot 'tools/cli') -Filter '*.csproj' -Recurse)
+$taskProjects = @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'backend'), (Join-Path $taskRoot 'tools/cli'), (Join-Path $taskRoot 'apps/desktop') -Filter '*.csproj' -Recurse)
 if ($taskProjects.Count -eq 0) { throw 'No .NET projects were found.' }
 $taskSolution = Get-Content -LiteralPath (Join-Path $taskRoot 'SalekhPos.sln') -Raw
 $taskSolutionPaths = @([regex]::Matches($taskSolution, '"([^"\r\n]+\.csproj)"') | ForEach-Object {
@@ -18,6 +18,10 @@ function Get-ProjectLayer([string] $Path) {
         '^backend/src/Modules/([^/]+)/' { return ('Module:' + $Matches[1]) }
         '^backend/src/Bootstrapper/SalekhPos\.(Api|Worker|Migrations)/' { return 'Host' }
         '^tools/cli/SalekhPos.Cli/' { return 'Host' }
+        '^apps/desktop/src/SalekhPos\.Desktop\.Domain/' { return 'DesktopDomain' }
+        '^apps/desktop/src/SalekhPos\.Desktop\.Application/' { return 'DesktopApplication' }
+        '^apps/desktop/src/SalekhPos\.Desktop\.Infrastructure/' { return 'DesktopInfrastructure' }
+        '^apps/desktop/tests/' { return 'Tests' }
         '^backend/tests/' { return 'Tests' }
         default { throw "Unclassified project location: $taskRelative. Extend the architecture rule explicitly." }
     }

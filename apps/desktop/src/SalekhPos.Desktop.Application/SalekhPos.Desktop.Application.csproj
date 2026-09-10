@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../SalekhPos.Desktop.Domain/SalekhPos.Desktop.Domain.csproj" /></ItemGroup></Project>
