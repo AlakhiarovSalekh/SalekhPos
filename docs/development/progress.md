@@ -1,5 +1,28 @@
 # Implementation progress
 
+## September 10, 2026 — atomic offline sellable-catalog projection
+
+Desktop can now download active products and branch stock through bounded keyset
+pagination, resolve every product's effective branch price at one captured UTC instant,
+and reject duplicate pages, stalled cursors, unknown products, inconsistent catalog/
+inventory identity or incorrectly scoped prices. The authenticated HTTP composition
+from the prior milestone supplies authorization for every request; products without
+an effective price are intentionally excluded from the sellable projection.
+
+The validated product, barcode, unit, stock, price, currency, tax and validity evidence
+is replaced atomically per organization and branch in strict SQLite tables. A canonical
+digest makes exact snapshot replay a no-op while changed same-time or older snapshots
+are rejected. Product and barcode lookup is tenant/branch scoped, validates the parsed
+price interval rather than relying on textual timestamp ordering, survives database
+reopen and cannot observe a partially replaced snapshot. Invalid duplicate products or
+barcodes are rejected before the transaction and preserve the existing projection.
+Native CI passes structure and architecture for 70 projects, secret and dependency
+scanning, formatting, all PostgreSQL migrations and backup/restore, 182 unit/
+configuration/HTTP/desktop tests and 72 integration tests with zero failures or skips.
+Next atomically reserve projected stock while composing offline sale lines, persist the
+reservation with the sale/outbox transaction and reconcile it when the server applies
+or rejects the message.
+
 ## September 10, 2026 — authenticated bounded desktop sync execution
 
 Desktop synchronization now obtains a bearer access token for every HTTP request,
