@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 10, 2026 — authenticated bounded desktop sync execution
+
+Desktop synchronization now obtains a bearer access token for every HTTP request,
+allowing the token provider to refresh credentials without persisting tokens in the
+sale outbox. A bounded runner retries only network, timeout, rate-limit and server
+failures with capped exponential backoff. Authentication and other deterministic
+client failures surface immediately; cancellation remains honored. Because every
+attempt rereads pending evidence, a partially successful batch safely resumes after
+the last durably acknowledged message.
+
+Acknowledgement validation and SQLite result transitions now require status/result
+semantic agreement: only `applied/applied` is successful and bounded conflict codes
+must be rejected. Contradictory, altered or unknown responses cannot remove pending
+evidence. Focused tests cover per-request authorization, transient recovery, no retry
+for unauthorized responses, mismatch retention, semantic contradictions and durable
+pending-state preservation. Native CI passes structure and architecture for 70
+projects, secret and dependency scanning, formatting, all PostgreSQL migrations and
+backup/restore, 178 unit/configuration/HTTP/desktop tests and 72 integration tests
+with zero failures or skips. Next add atomic local catalog/price/stock projections
+and authenticated download orchestration so offline sale lines are constructed only
+from synchronized server evidence.
+
 ## September 10, 2026 — durable desktop sale outbox and sync dispatch
 
 Established the first functional desktop persistence boundary as separate Domain,

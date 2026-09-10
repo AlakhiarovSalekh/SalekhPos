@@ -22,6 +22,19 @@ public sealed class LocalSaleStoreTests : IDisposable
         Assert.Empty(await reopened.ReadPendingAsync(command.DeviceId, 10, default));
         await Assert.ThrowsAsync<InvalidOperationException>(() => reopened.CompleteAsync(command with { CashReceived = 4m }, default));
     }
+
+    [Fact]
+    public async Task ContradictorySyncResultCannotChangePendingEvidence()
+    {
+        var command = Sale(Guid.NewGuid());
+        var store = await new SqliteLocalSaleStore(Path.Combine(directory, "result.db")).OpenAsync();
+        var pending = (await store.CompleteAsync(command, default)).Message;
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.MarkResultAsync(pending.MessageId,
+            pending.PayloadDigest, "rejected", "applied", DateTimeOffset.UtcNow, default));
+
+        Assert.Equal(pending.MessageId, Assert.Single(await store.ReadPendingAsync(command.DeviceId, 10, default)).MessageId);
+    }
     [Fact]
     public async Task ConcurrentCompletionsReceiveGapFreeDeviceSequences()
     {

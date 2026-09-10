@@ -35,6 +35,21 @@ public sealed class PendingSaleSyncDispatcherTests
         Assert.Empty(store.Marked);
     }
 
+    [Theory]
+    [InlineData("applied", "shift_conflict")]
+    [InlineData("rejected", "applied")]
+    public async Task ContradictoryStatusAndResultCodeLeaveMessagePending(string status, string resultCode)
+    {
+        var message = Message(Guid.NewGuid(), 1);
+        var store = new Store([message]);
+        var dispatcher = new PendingSaleSyncDispatcher(store,
+            new Transport(value => Ack(value) with { Status = status, ResultCode = resultCode }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dispatcher.DispatchAsync(
+            Guid.NewGuid(), Guid.NewGuid(), message.DeviceId, 10, default));
+        Assert.Empty(store.Marked);
+    }
+
     [Fact]
     public async Task HttpTransportUsesVersionedScopedContract()
     {

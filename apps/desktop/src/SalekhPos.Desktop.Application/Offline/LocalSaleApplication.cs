@@ -24,6 +24,16 @@ public interface IRemoteSyncTransport
         CancellationToken cancellationToken);
 }
 
+public interface IAccessTokenProvider
+{
+    Task<string> GetAccessTokenAsync(CancellationToken cancellationToken);
+}
+
+public interface ISyncRetryDelay
+{
+    Task WaitAsync(TimeSpan delay, CancellationToken cancellationToken);
+}
+
 public sealed class PendingSaleSyncDispatcher(ILocalSaleStore store, IRemoteSyncTransport transport)
 {
     public async Task<int> DispatchAsync(Guid organizationId, Guid branchId, Guid deviceId, int limit,
@@ -53,7 +63,41 @@ public sealed class PendingSaleSyncDispatcher(ILocalSaleStore store, IRemoteSync
             || acknowledgement.ProtocolVersion != 1 || acknowledgement.MessageType != message.MessageType
             || !string.Equals(acknowledgement.PayloadDigest, message.PayloadDigest, StringComparison.OrdinalIgnoreCase)
             || acknowledgement.Status is not ("applied" or "rejected")
+            || (acknowledgement.Status == "applied") != (acknowledgement.ResultCode == "applied")
+            || acknowledgement.ResultCode is not ("applied" or "shift_conflict" or "price_conflict"
+                or "insufficient_stock" or "sale_conflict")
             || acknowledgement.AcceptedAt == default || acknowledgement.AcceptedAt.Offset != TimeSpan.Zero)
             throw new InvalidOperationException("The sync acknowledgement does not match the pending message.");
     }
+}
+
+public sealed class PendingSaleSyncRunner(PendingSaleSyncDispatcher dispatcher, ISyncRetryDelay delay)
+{
+    public async Task<int> RunAsync(Guid organizationId, Guid branchId, Guid deviceId, int batchSize,
+        int maximumAttempts, TimeSpan initialDelay, CancellationToken cancellationToken)
+    {
+        if (maximumAttempts is < 1 or > 6 || initialDelay < TimeSpan.FromMilliseconds(100)
+            || initialDelay > TimeSpan.FromSeconds(30))
+            throw new ArgumentException("Sync retry policy is invalid.");
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await dispatcher.DispatchAsync(organizationId, branchId, deviceId, batchSize,
+                    cancellationToken);
+            }
+            catch (HttpRequestException exception) when (attempt < maximumAttempts && IsTransient(exception))
+            {
+                var backoff = TimeSpan.FromMilliseconds(Math.Min(initialDelay.TotalMilliseconds
+                    * Math.Pow(2, attempt - 1), 30_000));
+                await delay.WaitAsync(backoff, cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsTransient(HttpRequestException exception) => exception.StatusCode is null
+        or System.Net.HttpStatusCode.RequestTimeout
+        or System.Net.HttpStatusCode.TooManyRequests
+        || (int)exception.StatusCode >= 500;
 }

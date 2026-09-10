@@ -73,7 +73,7 @@ public sealed class SqliteLocalSaleStore
         public async Task MarkResultAsync(Guid messageId, string payloadDigest, string status, string resultCode, DateTimeOffset acceptedAt, CancellationToken ct)
         {
             if (messageId == Guid.Empty || payloadDigest?.Length != 64 || payloadDigest.Any(c => !Uri.IsHexDigit(c)) || status is not ("applied" or "rejected")
-                || resultCode is not ("applied" or "shift_conflict" or "price_conflict" or "insufficient_stock" or "sale_conflict") || acceptedAt == default || acceptedAt.Offset != TimeSpan.Zero) throw new ArgumentException("Sync result is invalid.");
+                || (status == "applied") != (resultCode == "applied") || resultCode is not ("applied" or "shift_conflict" or "price_conflict" or "insufficient_stock" or "sale_conflict") || acceptedAt == default || acceptedAt.Offset != TimeSpan.Zero) throw new ArgumentException("Sync result is invalid.");
             await using var connection = await Open(connectionString, ct); await using var transaction = connection.BeginTransaction(deferred: false);
             await using var update = Command(connection, transaction, "UPDATE outbox_messages SET status=$3,result_code=$4,accepted_at=$5 WHERE message_id=$1 AND payload_digest=$2 AND status='pending'", ("$1", messageId.ToString("D")), ("$2", payloadDigest), ("$3", status), ("$4", resultCode), ("$5", acceptedAt.ToString("O")));
             if (await update.ExecuteNonQueryAsync(ct) != 1)
