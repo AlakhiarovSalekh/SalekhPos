@@ -13,12 +13,15 @@ financial evidence without partial writes.
 Migration 029 adds append-only forced-RLS applied/rejected result evidence. Deterministic
 business rejection advances the device checkpoint with a bounded result code so one
 conflict cannot permanently block later messages; exact replay returns the persisted
-decision without duplicating sale, payment, inventory or outbox records. Existing
-pre-migration accepted evidence remains readable. Native CI passes structure and
+decision and linked local sale ID without duplicating sale, payment, inventory or
+outbox records. Integration coverage proves applied, shift-conflict, price-conflict
+and duplicate-sale decisions, rejected-sale absence and replay stability. Existing
+pre-migration accepted evidence remains readable. A simultaneous two-device test
+proves the shared product lock permits exactly one sale against one available unit
+and durably rejects the other as insufficient stock. Native CI passes structure and
 architecture for 66 projects, secrets, dependencies, formatting, all migrations and
-backup/restore, 167 unit/configuration/HTTP tests and 71 integration tests with zero
-failures or skips. Next expand rejection/concurrency coverage and expose the linked
-sale ID in result reads before beginning the durable desktop local-sale/outbox slice.
+backup/restore, 167 unit/configuration/HTTP tests and 72 integration tests with zero
+failures or skips. Next begin the durable desktop local-sale/outbox slice.
 
 ## September 10, 2026 — strict offline-sale financial envelope
 
