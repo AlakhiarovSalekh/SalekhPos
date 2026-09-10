@@ -1,4 +1,3 @@
-using System.Text.Json;
 namespace SalekhPos.Sync.Domain.SyncMessages;
 
 public sealed record SyncEnvelope
@@ -9,8 +8,7 @@ public sealed record SyncEnvelope
         if (protocolVersion != 1) throw new ArgumentException("Sync protocol version is unsupported.");
         if (messageType is not "sale.completed.v1") throw new ArgumentException("Sync message type is unsupported.");
         if (string.IsNullOrWhiteSpace(payload) || payload.Length > 49152) throw new ArgumentException("Sync payload is invalid.");
-        try { using var document = JsonDocument.Parse(payload, new JsonDocumentOptions { MaxDepth = 16 }); if (document.RootElement.ValueKind != JsonValueKind.Object) throw new ArgumentException("Sync payload is invalid."); }
-        catch (JsonException exception) { throw new ArgumentException("Sync payload is invalid.", exception); }
+        Sale = OfflineCompletedSale.Parse(payload);
         MessageId = messageId; DeviceId = deviceId; Sequence = sequence; ProtocolVersion = protocolVersion; MessageType = messageType; Payload = payload;
     }
     public Guid MessageId { get; }
@@ -19,4 +17,5 @@ public sealed record SyncEnvelope
     public int ProtocolVersion { get; }
     public string MessageType { get; }
     public string Payload { get; }
+    public OfflineCompletedSale Sale { get; }
 }

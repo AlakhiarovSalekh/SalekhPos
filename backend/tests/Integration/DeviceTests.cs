@@ -29,22 +29,25 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var invalidProtocol = await Register(owner, Guid.NewGuid(), registerId, "BAD-" + code, "Bad Protocol", 2); Assert.Equal(HttpStatusCode.BadRequest, invalidProtocol.StatusCode);
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.registered_devices WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
         var messageId = Guid.NewGuid();
-        using var accepted = await Sync(owner, id, messageId, 1, "{\"saleId\":\"local-1\"}");
+        var payload = OfflinePayload();
+        using var accepted = await Sync(owner, id, messageId, 1, payload);
         Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
         using var acceptedBody = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync());
         Assert.False(acceptedBody.RootElement.GetProperty("replay").GetBoolean());
         Assert.Equal(64, acceptedBody.RootElement.GetProperty("payloadDigest").GetString()!.Length);
-        using var replayed = await Sync(owner, id, messageId, 1, "{\"saleId\":\"local-1\"}");
+        using var replayed = await Sync(owner, id, messageId, 1, payload);
         Assert.Equal(HttpStatusCode.OK, replayed.StatusCode);
         using var replayedBody = JsonDocument.Parse(await replayed.Content.ReadAsStringAsync());
         Assert.True(replayedBody.RootElement.GetProperty("replay").GetBoolean());
-        using var changedMessage = await Sync(owner, id, messageId, 1, "{\"saleId\":\"changed\"}");
+        using var changedMessage = await Sync(owner, id, messageId, 1, OfflinePayload());
         Assert.Equal(HttpStatusCode.Conflict, changedMessage.StatusCode);
-        using var gap = await Sync(owner, id, Guid.NewGuid(), 3, "{\"saleId\":\"gap\"}");
+        using var gap = await Sync(owner, id, Guid.NewGuid(), 3, OfflinePayload());
         Assert.Equal(HttpStatusCode.Conflict, gap.StatusCode);
         using var malformed = await Sync(owner, id, Guid.NewGuid(), 2, "not-json");
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
-        using var otherOperator = await Sync(Client("manager"), id, Guid.NewGuid(), 2, "{\"saleId\":\"foreign-device\"}");
+        using var invalidFinancials = await Sync(owner, id, Guid.NewGuid(), 2, OfflinePayload(grandTotal: 10m));
+        Assert.Equal(HttpStatusCode.BadRequest, invalidFinancials.StatusCode);
+        using var otherOperator = await Sync(Client("manager"), id, Guid.NewGuid(), 2, OfflinePayload());
         Assert.Equal(HttpStatusCode.Conflict, otherOperator.StatusCode);
         using var message = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages/{messageId:D}");
         Assert.Equal(HttpStatusCode.OK, message.StatusCode);
@@ -64,4 +67,19 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
     private Task<HttpResponseMessage> Sync(HttpClient client, Guid deviceId, Guid messageId, long sequence, string payload) =>
         client.PostAsJsonAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{deviceId:D}/sync/messages",
             new { messageId, sequence, protocolVersion = 1, messageType = "sale.completed.v1", payload });
+    private static string OfflinePayload(decimal grandTotal = 2.2m) => JsonSerializer.Serialize(new
+    {
+        saleId = Guid.NewGuid(),
+        shiftId = Guid.NewGuid(),
+        registerId = Guid.NewGuid(),
+        completedAt = DateTimeOffset.UtcNow,
+        currency = "GEL",
+        cashReceived = 3m,
+        netTotal = 2m,
+        taxTotal = 0.2m,
+        grandTotal,
+        changeDue = 0.8m,
+        lines = new[] { new { lineNumber = 1, productId = Guid.NewGuid(), priceId = Guid.NewGuid(), quantity = 2m,
+            unitAmount = 1m, taxMode = "exclusive", taxRate = 10m, netAmount = 2m, taxAmount = 0.2m, grossAmount = 2.2m } }
+    });
 }

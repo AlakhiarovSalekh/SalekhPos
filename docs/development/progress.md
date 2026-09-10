@@ -1,5 +1,21 @@
 # Implementation progress
 
+## September 10, 2026 — strict offline-sale financial envelope
+
+Protocol-v1 `sale.completed.v1` admission now requires the complete immutable local
+receipt snapshot: sale, shift and register IDs, UTC completion time, currency, cash,
+totals and ordered price/tax line evidence. The parser rejects missing, duplicate or
+unknown fields; noncanonical IDs/timestamps; invalid precision/ranges; duplicate
+products; nonsequential lines; and any line, total or change arithmetic mismatch.
+Invalid financial evidence cannot enter the durable sync ledger or advance its
+device checkpoint.
+
+Native CI passes structure and architecture for 66 projects, secrets, dependencies,
+formatting, migration/restore, 167 unit/configuration/HTTP tests and 71 integration
+tests with zero failures or skips. Next atomically persist the validated snapshot as
+the existing immutable sale/payment/inventory/outbox records, check the recorded
+shift/register relationship and add durable applied-or-rejected sync result evidence.
+
 ## September 10, 2026 — actor-bound sync evidence reads
 
 Hardened protocol-v1 ingestion so only the authenticated issuer/subject that
