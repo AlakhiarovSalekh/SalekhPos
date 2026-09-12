@@ -6,13 +6,14 @@
         Title="SalekhPos" Width="1180" Height="760" MinWidth="900" MinHeight="600">
   <Grid RowDefinitions="Auto,*" Background="#F3F5F7">
     <Border Background="#17202A" Padding="20,14">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="18">
         <StackPanel>
           <TextBlock Text="SalekhPos" FontSize="24" FontWeight="SemiBold" Foreground="White" />
           <TextBlock Text="{Binding SessionStatus}" Foreground="#C9D4DE" />
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding SyncStatus}" VerticalAlignment="Center" Foreground="White" />
         <Button Grid.Column="2" Content="Synchronize" Click="SynchronizeClick" IsEnabled="{Binding IsReady}" />
+        <Button Grid.Column="3" Content="Sign out" Click="SignOutClick" />
       </Grid>
     </Border>
     <Grid Grid.Row="1" ColumnDefinitions="2*,*" Margin="20" ColumnSpacing="20">

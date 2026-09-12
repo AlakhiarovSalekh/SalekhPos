@@ -20,14 +20,16 @@ public sealed class DesktopAuthenticatedRuntime : IDisposable
 {
     private InMemoryAccessTokenProvider? tokens;
     private HttpClient? authenticatedClient;
+    private Action? released;
 
     internal DesktopAuthenticatedRuntime(IPosWorkspace workspace, string subject,
-        InMemoryAccessTokenProvider tokens, HttpClient authenticatedClient)
+        InMemoryAccessTokenProvider tokens, HttpClient authenticatedClient, Action released)
     {
         Workspace = workspace;
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
+        this.released = released;
     }
 
     public IPosWorkspace Workspace { get; }
@@ -37,6 +39,7 @@ public sealed class DesktopAuthenticatedRuntime : IDisposable
     {
         Interlocked.Exchange(ref tokens, null)?.Clear();
         Interlocked.Exchange(ref authenticatedClient, null)?.Dispose();
+        Interlocked.Exchange(ref released, null)?.Invoke();
     }
 }
 
@@ -93,7 +96,8 @@ public sealed class DesktopRuntimeBootstrap : IDisposable
         {
             var session = await oidcClient.SignInAsync(settings.Oidc, cancellationToken);
             ValidateSession(session);
-            tokens.SetSession(session);
+            tokens.SetSession(session, (refreshToken, subject, token) =>
+                oidcClient.RefreshAsync(settings.Oidc, refreshToken, subject, token));
             authenticatedClient = new HttpClient(new BearerTokenHandler(tokens)
             {
                 InnerHandler = handlerFactory(),
@@ -104,7 +108,8 @@ public sealed class DesktopRuntimeBootstrap : IDisposable
             };
             var workspace = await workspaceFactory.CreateAsync(settings.Scope, settings.DatabasePath,
                 authenticatedClient, cancellationToken);
-            var runtime = new DesktopAuthenticatedRuntime(workspace, session.Subject, tokens, authenticatedClient);
+            var runtime = new DesktopAuthenticatedRuntime(workspace, session.Subject, tokens, authenticatedClient,
+                () => Interlocked.Exchange(ref signInStarted, 0));
             authenticatedClient = null;
             return runtime;
         }
@@ -121,7 +126,7 @@ public sealed class DesktopRuntimeBootstrap : IDisposable
     {
         if (disposed) return;
         disposed = true;
-        tokens.Clear();
+        tokens.Dispose();
         ownedOidcResources?.Dispose();
     }
 
@@ -131,6 +136,8 @@ public sealed class DesktopRuntimeBootstrap : IDisposable
         if (string.IsNullOrWhiteSpace(session.AccessToken) || session.AccessToken.Length > 16384
             || session.AccessToken.Any(char.IsWhiteSpace) || string.IsNullOrWhiteSpace(session.Subject)
             || session.Subject.Length > 512 || session.Subject.Any(char.IsControl)
+            || string.IsNullOrWhiteSpace(session.RefreshToken) || session.RefreshToken.Length > 32768
+            || session.RefreshToken.Any(character => char.IsWhiteSpace(character) || char.IsControl(character))
             || session.ExpiresAt <= DateTimeOffset.UtcNow.AddSeconds(30))
             throw new InvalidOperationException("The authenticated session is invalid.");
     }

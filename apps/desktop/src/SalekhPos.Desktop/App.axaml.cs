@@ -21,10 +21,7 @@ public sealed partial class App : Avalonia.Application
             {
                 var settings = DesktopRuntimeSettings.FromEnvironment();
                 bootstrap = DesktopRuntimeBootstrap.CreateDefault(settings);
-                var signIn = new SignInWindow(
-                    cancellationToken => bootstrap.SignInAsync(cancellationToken),
-                    runtime => CompleteSignIn(desktop, runtime));
-                desktop.MainWindow = signIn;
+                desktop.MainWindow = CreateSignInWindow(desktop);
             }
             catch (InvalidOperationException)
             {
@@ -38,10 +35,28 @@ public sealed partial class App : Avalonia.Application
         DesktopAuthenticatedRuntime runtime)
     {
         authenticatedRuntime = runtime;
-        var cashier = new MainWindow(runtime.Workspace);
+        var cashier = new MainWindow(runtime.Workspace, () => SignOut(desktop));
         var previous = desktop.MainWindow;
         desktop.MainWindow = cashier;
         cashier.Show();
+        previous?.Close();
+    }
+
+    private SignInWindow CreateSignInWindow(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var activeBootstrap = bootstrap
+            ?? throw new InvalidOperationException("Desktop authentication is unavailable.");
+        return new SignInWindow(activeBootstrap.SignInAsync, runtime => CompleteSignIn(desktop, runtime));
+    }
+
+    private void SignOut(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        authenticatedRuntime?.Dispose();
+        authenticatedRuntime = null;
+        var signIn = CreateSignInWindow(desktop);
+        var previous = desktop.MainWindow;
+        desktop.MainWindow = signIn;
+        signIn.Show();
         previous?.Close();
     }
 

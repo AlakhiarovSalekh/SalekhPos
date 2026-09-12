@@ -1,5 +1,13 @@
 # Implementation progress
 
+## September 12, 2026 — renewable desktop OIDC sessions and explicit sign-out
+
+The native desktop public OIDC client now requests refresh capability only during interactive authorization, retains access and refresh credentials exclusively in process memory, and renews expiring access tokens transparently. Refresh responses are bounded and fail closed, rotated refresh tokens must be new, optional identity tokens remain issuer/audience/signature/subject validated, and no client secret or raw token is persisted or logged.
+
+Concurrent API requests share one refresh operation. Caller cancellation cancels only that caller's wait, while sign-out, disposal, or session replacement cancels the underlying in-flight refresh and stale refreshes cannot publish into a replacement session. Invalid or rejected renewal clears credentials and requires re-authentication. The cashier now exposes explicit local sign-out and can return to a fresh sign-in flow repeatedly in the same process; provider-side global logout/revocation is not claimed.
+
+Focused desktop verification passes 56/56 tests. The complete Native PostgreSQL CI gate also passes requirement/structure/architecture checks, Gitleaks, locked restore, Release build with zero warnings/errors, formatting/dependency checks, PostgreSQL migration/isolation and logical backup/restore, 167 unit/configuration/HTTP tests, 56 desktop tests and 72 integration tests, with zero failures or skips. Exact next slice: controlled terminal provisioning/device trust — authenticate, choose a permitted branch/register, register the terminal idempotently, establish non-clonable local device identity/trust, then perform resumable initial sync.
+
 ## September 12, 2026 — secure desktop runtime bootstrap and native sign-in
 
 Added explicit fail-closed desktop runtime settings for the HTTPS API and OIDC authority,

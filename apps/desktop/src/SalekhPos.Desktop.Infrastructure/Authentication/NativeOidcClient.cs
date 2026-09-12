@@ -73,34 +73,41 @@ public sealed class LoopbackAuthorizationCallbackReceiver : IAuthorizationCallba
     }
 }
 
-public sealed record NativeOidcSession(string AccessToken, DateTimeOffset ExpiresAt, string Subject);
+public sealed record NativeOidcSession(string AccessToken, DateTimeOffset ExpiresAt, string Subject,
+    string? RefreshToken = null)
+{
+    public override string ToString() => nameof(NativeOidcSession);
+}
+
+public sealed class ReauthenticationRequiredException : InvalidOperationException
+{
+    public ReauthenticationRequiredException() : base("Re-authentication is required.")
+    {
+    }
+}
 
 public interface INativeOidcClient
 {
     Task<NativeOidcSession> SignInAsync(NativeOidcSettings settings,
         CancellationToken cancellationToken = default);
+
+    Task<NativeOidcSession> RefreshAsync(NativeOidcSettings settings, string refreshToken,
+        string expectedSubject, CancellationToken cancellationToken = default) =>
+        Task.FromException<NativeOidcSession>(new ReauthenticationRequiredException());
 }
 
 public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser browser,
     IAuthorizationCallbackReceiver callbackReceiver, TimeProvider? timeProvider = null)
     : INativeOidcClient
 {
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private const long MaxTokenResponseBytes = 64 * 1024;
+    private readonly TimeProvider timeProvider = timeProvider ?? TimeProvider.System;
 
     public async Task<NativeOidcSession> SignInAsync(NativeOidcSettings settings,
         CancellationToken cancellationToken = default)
     {
         settings.Validate();
-        var authority = settings.Authority.TrimEnd('/');
-        var manager = new ConfigurationManager<OpenIdConnectConfiguration>(
-            authority + "/.well-known/openid-configuration",
-            new OpenIdConnectConfigurationRetriever(), new HttpDocumentRetriever(backchannel)
-            {
-                RequireHttps = true,
-            });
-        var configuration = await manager.GetConfigurationAsync(cancellationToken);
-        ValidateMetadata(authority, configuration);
-
+        var configuration = await GetConfigurationAsync(settings, cancellationToken);
         var state = RandomUrlSafe(32);
         var nonce = RandomUrlSafe(32);
         var verifier = RandomUrlSafe(64);
@@ -128,22 +135,80 @@ public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser brow
                 ["code_verifier"] = verifier,
             }),
         };
-        using var response = await backchannel.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var tokens = await JsonSerializer.DeserializeAsync<TokenResponse>(stream, cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException("The token response is empty.");
-        if (string.IsNullOrWhiteSpace(tokens.AccessToken) || tokens.AccessToken.Length > 16384
-            || tokens.AccessToken.Any(char.IsWhiteSpace) || string.IsNullOrWhiteSpace(tokens.IdToken)
-            || tokens.IdToken.Length > 32768 || tokens.ExpiresIn is < 60 or > 86400
-            || !string.Equals(tokens.TokenType, "Bearer", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("The token response is invalid.");
+        var tokens = await SendTokenRequestAsync(request, cancellationToken);
+        ValidateTokenResponse(tokens, requireIdToken: true, previousRefreshToken: null);
+        var subject = await ValidateIdentityTokenAsync(tokens.IdToken!, settings.ClientId,
+            configuration, nonce, expectedSubject: null);
 
-        var validation = await new JsonWebTokenHandler().ValidateTokenAsync(tokens.IdToken,
+        return new NativeOidcSession(tokens.AccessToken!, timeProvider.GetUtcNow().AddSeconds(tokens.ExpiresIn!.Value),
+            subject, tokens.RefreshToken);
+    }
+
+    public async Task<NativeOidcSession> RefreshAsync(NativeOidcSettings settings, string refreshToken,
+        string expectedSubject, CancellationToken cancellationToken = default)
+    {
+        settings.Validate();
+        if (InvalidToken(refreshToken, 32768) || string.IsNullOrWhiteSpace(expectedSubject)
+            || expectedSubject.Length > 512 || expectedSubject.Any(char.IsControl))
+            throw new ReauthenticationRequiredException();
+
+        var configuration = await GetConfigurationAsync(settings, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Post, configuration.TokenEndpoint)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["client_id"] = settings.ClientId,
+                ["refresh_token"] = refreshToken,
+            }),
+        };
+        var tokens = await SendTokenRequestAsync(request, cancellationToken);
+        ValidateTokenResponse(tokens, requireIdToken: false, previousRefreshToken: refreshToken);
+        if (!string.IsNullOrEmpty(tokens.IdToken))
+            await ValidateIdentityTokenAsync(tokens.IdToken, settings.ClientId, configuration,
+                expectedNonce: null, expectedSubject);
+
+        return new NativeOidcSession(tokens.AccessToken!, timeProvider.GetUtcNow().AddSeconds(tokens.ExpiresIn!.Value),
+            expectedSubject, tokens.RefreshToken);
+    }
+
+    private async Task<OpenIdConnectConfiguration> GetConfigurationAsync(
+        NativeOidcSettings settings, CancellationToken cancellationToken)
+    {
+        var authority = settings.Authority.TrimEnd('/');
+        var manager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            authority + "/.well-known/openid-configuration",
+            new OpenIdConnectConfigurationRetriever(), new HttpDocumentRetriever(backchannel)
+            {
+                RequireHttps = true,
+            });
+        var configuration = await manager.GetConfigurationAsync(cancellationToken);
+        ValidateMetadata(authority, configuration);
+        return configuration;
+    }
+
+    private async Task<TokenResponse> SendTokenRequestAsync(HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        using var response = await backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new ReauthenticationRequiredException();
+
+        await response.Content.LoadIntoBufferAsync(MaxTokenResponseBytes, cancellationToken);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return await JsonSerializer.DeserializeAsync<TokenResponse>(stream, cancellationToken: cancellationToken)
+            ?? throw new ReauthenticationRequiredException();
+    }
+
+    private static async Task<string> ValidateIdentityTokenAsync(string idToken, string clientId,
+        OpenIdConnectConfiguration configuration, string? expectedNonce, string? expectedSubject)
+    {
+        var validation = await new JsonWebTokenHandler().ValidateTokenAsync(idToken,
             new TokenValidationParameters
             {
-                ValidIssuer = authority,
-                ValidAudience = settings.ClientId,
+                ValidIssuer = configuration.Issuer,
+                ValidAudience = clientId,
                 IssuerSigningKeys = configuration.SigningKeys,
                 ValidateIssuer = true,
                 ValidateAudience = true,
@@ -155,13 +220,33 @@ public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser brow
                 ValidAlgorithms = [SecurityAlgorithms.RsaSha256, SecurityAlgorithms.RsaSsaPssSha256,
                     SecurityAlgorithms.EcdsaSha256],
             });
-        if (!validation.IsValid || validation.SecurityToken is not JsonWebToken idToken
-            || !string.Equals(idToken.GetClaim("nonce")?.Value, nonce, StringComparison.Ordinal)
-            || string.IsNullOrWhiteSpace(idToken.Subject))
-            throw new InvalidOperationException("The identity token is invalid.");
-
-        return new(tokens.AccessToken, _timeProvider.GetUtcNow().AddSeconds(tokens.ExpiresIn), idToken.Subject);
+        if (!validation.IsValid || validation.SecurityToken is not JsonWebToken token
+            || (expectedNonce is not null
+                && !string.Equals(token.GetClaim("nonce")?.Value, expectedNonce, StringComparison.Ordinal))
+            || string.IsNullOrWhiteSpace(token.Subject)
+            || (expectedSubject is not null && !string.Equals(token.Subject, expectedSubject, StringComparison.Ordinal)))
+            throw new ReauthenticationRequiredException();
+        return token.Subject;
     }
+
+    private static void ValidateTokenResponse(TokenResponse tokens, bool requireIdToken,
+        string? previousRefreshToken)
+    {
+        if (InvalidToken(tokens.AccessToken, 16384) || InvalidToken(tokens.RefreshToken, 32768)
+            || tokens.ExpiresIn is < 60 or > 86400
+            || !string.Equals(tokens.TokenType, "Bearer", StringComparison.OrdinalIgnoreCase)
+            || (requireIdToken && InvalidToken(tokens.IdToken, 32768))
+            || (!string.IsNullOrEmpty(tokens.IdToken) && InvalidToken(tokens.IdToken, 32768))
+            || (tokens.Scope is not null && (tokens.Scope.Length > 2048 || tokens.Scope.Any(char.IsControl)))
+            || (previousRefreshToken is not null
+                && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(previousRefreshToken),
+                    Encoding.UTF8.GetBytes(tokens.RefreshToken!))))
+            throw new ReauthenticationRequiredException();
+    }
+
+    private static bool InvalidToken(string? value, int maximumLength) => string.IsNullOrWhiteSpace(value)
+        || value.Length > maximumLength
+        || value.Any(character => char.IsWhiteSpace(character) || char.IsControl(character));
 
     private static void ValidateMetadata(string authority, OpenIdConnectConfiguration configuration)
     {
@@ -182,7 +267,7 @@ public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser brow
             ["client_id"] = settings.ClientId,
             ["redirect_uri"] = settings.RedirectUri.AbsoluteUri,
             ["response_type"] = "code",
-            ["scope"] = string.Join(' ', settings.Scopes),
+            ["scope"] = string.Join(' ', settings.Scopes.Append("offline_access")),
             ["state"] = state,
             ["nonce"] = nonce,
             ["code_challenge"] = challenge,
@@ -195,28 +280,189 @@ public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser brow
     private static string RandomUrlSafe(int bytes) => Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(bytes));
 
     private sealed record TokenResponse(
-        [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken,
-        [property: System.Text.Json.Serialization.JsonPropertyName("id_token")] string IdToken,
-        [property: System.Text.Json.Serialization.JsonPropertyName("token_type")] string TokenType,
-        [property: System.Text.Json.Serialization.JsonPropertyName("expires_in")] int ExpiresIn);
+        [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string? AccessToken,
+        [property: System.Text.Json.Serialization.JsonPropertyName("id_token")] string? IdToken,
+        [property: System.Text.Json.Serialization.JsonPropertyName("refresh_token")] string? RefreshToken,
+        [property: System.Text.Json.Serialization.JsonPropertyName("token_type")] string? TokenType,
+        [property: System.Text.Json.Serialization.JsonPropertyName("expires_in")] int? ExpiresIn,
+        [property: System.Text.Json.Serialization.JsonPropertyName("scope")] string? Scope);
 }
 
 public sealed class InMemoryAccessTokenProvider(TimeProvider? timeProvider = null) : IAccessTokenProvider, IDisposable
 {
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-    private NativeOidcSession? _session;
+    private readonly Lock sync = new();
+    private readonly TimeProvider timeProvider = timeProvider ?? TimeProvider.System;
+    private NativeOidcSession? session;
+    private Func<string, string, CancellationToken, Task<NativeOidcSession>>? renew;
+    private CancellationTokenSource? sessionLifetime;
+    private Task<string>? refreshTask;
+    private long generation;
+    private bool disposed;
 
-    public void SetSession(NativeOidcSession session) => _session = session;
-    public void Clear() => _session = null;
+    public void SetSession(NativeOidcSession value) => SetSession(value, null);
 
-    public void Dispose() => Clear();
+    public void SetSession(NativeOidcSession value,
+        Func<string, string, CancellationToken, Task<NativeOidcSession>>? renewal)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ValidateSession(value, requireRefreshToken: false);
+        var replacementLifetime = new CancellationTokenSource();
+        CancellationTokenSource? previousLifetime;
+        lock (sync)
+        {
+            if (disposed)
+            {
+                replacementLifetime.Dispose();
+                ObjectDisposedException.ThrowIf(disposed, this);
+            }
 
-    public Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+            previousLifetime = sessionLifetime;
+            session = value;
+            renew = renewal;
+            sessionLifetime = replacementLifetime;
+            refreshTask = null;
+            generation++;
+        }
+
+        CancelAndDispose(previousLifetime);
+    }
+
+    public void Clear()
+    {
+        CancellationTokenSource? lifetime;
+        lock (sync) lifetime = ClearLocked();
+        CancelAndDispose(lifetime);
+    }
+
+    public void Dispose()
+    {
+        CancellationTokenSource? lifetime;
+        lock (sync)
+        {
+            if (disposed) return;
+            disposed = true;
+            lifetime = ClearLocked();
+        }
+
+        CancelAndDispose(lifetime);
+    }
+
+    public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var session = _session;
-        if (session is null || session.ExpiresAt <= _timeProvider.GetUtcNow().AddSeconds(30))
-            throw new InvalidOperationException("An active sign-in is required.");
-        return Task.FromResult(session.AccessToken);
+        Task<string>? pendingRefresh = null;
+        CancellationTokenSource? lifetimeToCancel = null;
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (session is null) throw new ReauthenticationRequiredException();
+            if (session.ExpiresAt > timeProvider.GetUtcNow().AddSeconds(30)) return session.AccessToken;
+            if (refreshTask is not null)
+            {
+                pendingRefresh = refreshTask;
+            }
+            else
+            {
+                if (InvalidRefreshState(session, renew))
+                {
+                    lifetimeToCancel = ClearLocked();
+                }
+                else
+                {
+                    var capturedSession = session;
+                    var capturedRenewal = renew!;
+                    var capturedGeneration = generation;
+                    var capturedLifetime = sessionLifetime!.Token;
+                    pendingRefresh = RefreshCoreAsync(capturedSession, capturedRenewal, capturedGeneration,
+                        capturedLifetime);
+                    refreshTask = pendingRefresh;
+                }
+            }
+        }
+
+        if (lifetimeToCancel is not null)
+        {
+            CancelAndDispose(lifetimeToCancel);
+            throw new ReauthenticationRequiredException();
+        }
+
+        return await pendingRefresh!.WaitAsync(cancellationToken);
+    }
+
+    private async Task<string> RefreshCoreAsync(NativeOidcSession previous,
+        Func<string, string, CancellationToken, Task<NativeOidcSession>> renewal, long capturedGeneration,
+        CancellationToken sessionCancellationToken)
+    {
+        await Task.Yield();
+        try
+        {
+            var refreshed = await renewal(previous.RefreshToken!, previous.Subject, sessionCancellationToken);
+            ValidateSession(refreshed, requireRefreshToken: true);
+            if (!string.Equals(refreshed.Subject, previous.Subject, StringComparison.Ordinal)
+                || CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(previous.RefreshToken!),
+                    Encoding.UTF8.GetBytes(refreshed.RefreshToken!)))
+                throw new ReauthenticationRequiredException();
+
+            lock (sync)
+            {
+                if (disposed || generation != capturedGeneration || !ReferenceEquals(session, previous))
+                    throw new ReauthenticationRequiredException();
+                session = refreshed;
+                generation++;
+                refreshTask = null;
+                return refreshed.AccessToken;
+            }
+        }
+        catch
+        {
+            CancellationTokenSource? lifetimeToCancel = null;
+            lock (sync)
+            {
+                if (generation == capturedGeneration) lifetimeToCancel = ClearLocked();
+            }
+            CancelAndDispose(lifetimeToCancel);
+            throw new ReauthenticationRequiredException();
+        }
+    }
+
+    private static bool InvalidRefreshState(NativeOidcSession value,
+        Func<string, string, CancellationToken, Task<NativeOidcSession>>? renewal) => renewal is null
+        || InvalidToken(value.RefreshToken, 32768);
+
+    private static void ValidateSession(NativeOidcSession value, bool requireRefreshToken)
+    {
+        if (InvalidToken(value.AccessToken, 16384) || string.IsNullOrWhiteSpace(value.Subject)
+            || value.Subject.Length > 512 || value.Subject.Any(char.IsControl) || value.ExpiresAt == default
+            || (requireRefreshToken && InvalidToken(value.RefreshToken, 32768))
+            || (!string.IsNullOrEmpty(value.RefreshToken) && InvalidToken(value.RefreshToken, 32768)))
+            throw new ReauthenticationRequiredException();
+    }
+
+    private static bool InvalidToken(string? value, int maximumLength) => string.IsNullOrWhiteSpace(value)
+        || value.Length > maximumLength
+        || value.Any(character => char.IsWhiteSpace(character) || char.IsControl(character));
+
+    private CancellationTokenSource? ClearLocked()
+    {
+        var lifetime = sessionLifetime;
+        session = null;
+        renew = null;
+        sessionLifetime = null;
+        refreshTask = null;
+        generation++;
+        return lifetime;
+    }
+
+    private static void CancelAndDispose(CancellationTokenSource? lifetime)
+    {
+        if (lifetime is null) return;
+        try
+        {
+            lifetime.Cancel();
+        }
+        finally
+        {
+            lifetime.Dispose();
+        }
     }
 }

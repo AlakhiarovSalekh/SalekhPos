@@ -60,7 +60,7 @@ public sealed class DesktopRuntimeBootstrapTests
     {
         var settings = Settings();
         var oidc = new OidcClient(new NativeOidcSession("access-token", DateTimeOffset.UtcNow.AddMinutes(5),
-            "cashier-1"));
+            "cashier-1", "refresh-token"));
         var workspace = new Workspace(settings.Scope);
         var factory = new WorkspaceFactory(workspace, () => oidc.Completed);
         var terminal = new CapturingHandler();
@@ -81,6 +81,28 @@ public sealed class DesktopRuntimeBootstrapTests
     }
 
     [Fact]
+    public async Task AuthenticatedApiRequestTransparentlyUsesRenewedBearerToken()
+    {
+        var settings = Settings();
+        var now = DateTimeOffset.UtcNow;
+        var clock = new AdjustableTimeProvider(now);
+        var oidc = new OidcClient(
+            new NativeOidcSession("old-access", now.AddMinutes(1), "cashier-1", "old-refresh"),
+            new NativeOidcSession("new-access", now.AddMinutes(10), "cashier-1", "new-refresh"));
+        var factory = new WorkspaceFactory(new Workspace(settings.Scope));
+        var terminal = new CapturingHandler();
+        var tokens = new InMemoryAccessTokenProvider(clock);
+        using var bootstrap = new DesktopRuntimeBootstrap(settings, oidc, tokens, factory, () => terminal);
+        using var runtime = await bootstrap.SignInAsync();
+        clock.Advance(TimeSpan.FromSeconds(31));
+
+        using var response = await factory.Client!.GetAsync("api/v1/probe");
+
+        Assert.Equal("new-access", terminal.AuthorizationParameter);
+        Assert.Equal(1, oidc.RefreshCalls);
+    }
+
+    [Fact]
     public async Task FailedSignInDoesNotConstructWorkspaceOrRetainCredentials()
     {
         var settings = Settings();
@@ -91,7 +113,7 @@ public sealed class DesktopRuntimeBootstrapTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => bootstrap.SignInAsync());
 
         Assert.Equal(0, factory.Calls);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => tokens.GetAccessTokenAsync(default));
+        await Assert.ThrowsAsync<ReauthenticationRequiredException>(() => tokens.GetAccessTokenAsync(default));
     }
 
     [Fact]
@@ -100,12 +122,12 @@ public sealed class DesktopRuntimeBootstrapTests
         var settings = Settings();
         var tokens = new InMemoryAccessTokenProvider();
         var oidc = new OidcClient(new NativeOidcSession("access-token", DateTimeOffset.UtcNow.AddMinutes(5),
-            "cashier-1"));
+            "cashier-1", "refresh-token"));
         using (var failedBootstrap = new DesktopRuntimeBootstrap(settings, oidc, tokens,
                    new ThrowingWorkspaceFactory()))
         {
             await Assert.ThrowsAsync<InvalidOperationException>(() => failedBootstrap.SignInAsync());
-            await Assert.ThrowsAsync<InvalidOperationException>(() => tokens.GetAccessTokenAsync(default));
+            await Assert.ThrowsAsync<ReauthenticationRequiredException>(() => tokens.GetAccessTokenAsync(default));
         }
 
         var successfulTokens = new InMemoryAccessTokenProvider();
@@ -116,7 +138,31 @@ public sealed class DesktopRuntimeBootstrapTests
 
         runtime.Dispose();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => successfulTokens.GetAccessTokenAsync(default));
+        await Assert.ThrowsAsync<ReauthenticationRequiredException>(() =>
+            successfulTokens.GetAccessTokenAsync(default));
+    }
+
+    [Fact]
+    public async Task RuntimeSignOutClearsCredentialsAndAllowsFreshAuthentication()
+    {
+        var settings = Settings();
+        var tokens = new InMemoryAccessTokenProvider();
+        var oidc = new SequencedOidcClient(
+            new NativeOidcSession("access-1", DateTimeOffset.UtcNow.AddMinutes(5), "cashier-1", "refresh-1"),
+            new NativeOidcSession("access-2", DateTimeOffset.UtcNow.AddMinutes(5), "cashier-2", "refresh-2"));
+        using var bootstrap = new DesktopRuntimeBootstrap(settings, oidc, tokens,
+            new WorkspaceFactory(new Workspace(settings.Scope)));
+
+        var first = await bootstrap.SignInAsync();
+        Assert.Equal("cashier-1", first.Subject);
+        first.Dispose();
+        await Assert.ThrowsAsync<ReauthenticationRequiredException>(() =>
+            tokens.GetAccessTokenAsync(default));
+
+        using var second = await bootstrap.SignInAsync();
+        Assert.Equal("cashier-2", second.Subject);
+        Assert.Equal("access-2", await tokens.GetAccessTokenAsync(default));
+        Assert.Equal(2, oidc.SignInCalls);
     }
 
     private static Dictionary<string, string?> ValidValues() => new(StringComparer.Ordinal)
@@ -138,9 +184,11 @@ public sealed class DesktopRuntimeBootstrapTests
         return DesktopRuntimeSettings.Load(name => values.GetValueOrDefault(name));
     }
 
-    private sealed class OidcClient(NativeOidcSession? session) : INativeOidcClient
+    private sealed class OidcClient(NativeOidcSession? session, NativeOidcSession? refreshed = null)
+        : INativeOidcClient
     {
         public bool Completed { get; private set; }
+        public int RefreshCalls { get; private set; }
         public Task<NativeOidcSession> SignInAsync(NativeOidcSettings settings,
             CancellationToken cancellationToken = default)
         {
@@ -148,6 +196,33 @@ public sealed class DesktopRuntimeBootstrapTests
             Completed = true;
             return Task.FromResult(session);
         }
+
+        public Task<NativeOidcSession> RefreshAsync(NativeOidcSettings settings, string refreshToken,
+            string expectedSubject, CancellationToken cancellationToken = default)
+        {
+            RefreshCalls++;
+            if (refreshed is null) throw new NotSupportedException();
+            Assert.Equal(session!.RefreshToken, refreshToken);
+            Assert.Equal(session.Subject, expectedSubject);
+            return Task.FromResult(refreshed);
+        }
+    }
+
+    private sealed class SequencedOidcClient(params NativeOidcSession[] sessions) : INativeOidcClient
+    {
+        private int next;
+        public int SignInCalls { get; private set; }
+
+        public Task<NativeOidcSession> SignInAsync(NativeOidcSettings settings,
+            CancellationToken cancellationToken = default)
+        {
+            SignInCalls++;
+            return Task.FromResult(sessions[next++]);
+        }
+
+        public Task<NativeOidcSession> RefreshAsync(NativeOidcSettings settings, string refreshToken,
+            string expectedSubject, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class WorkspaceFactory(Workspace workspace, Func<bool>? signInCompleted = null)
@@ -188,6 +263,12 @@ public sealed class DesktopRuntimeBootstrapTests
             AuthorizationParameter = request.Headers.Authorization?.Parameter;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         }
+    }
+
+    private sealed class AdjustableTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+        public void Advance(TimeSpan amount) => now = now.Add(amount);
     }
 
     private sealed class Workspace(PosWorkspaceScope scope) : IPosWorkspace
