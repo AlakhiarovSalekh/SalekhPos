@@ -45,6 +45,7 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             StoreConflictException => (409, "register_operation_conflict", "The register operation conflicts with current state"),
             ShiftDeniedException => (403, "shift_access_denied", "Shift access is not permitted"),
             DeviceDeniedException => (403, "device_access_denied", "Device access is not permitted"),
+            DeviceProofException => (400, "invalid_device_proof", "The device proof is invalid"),
             DeviceConflictException => (409, "device_operation_conflict", "The device operation conflicts with current state"),
             SyncDeniedException => (403, "sync_access_denied", "Synchronization access is not permitted"),
             SyncConflictException => (409, "sync_operation_conflict", "The synchronization message conflicts with current state"),
