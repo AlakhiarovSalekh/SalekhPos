@@ -1,5 +1,26 @@
 # Implementation progress
 
+## September 12, 2026 — native OIDC authorization-code/PKCE client
+
+Added a provider-neutral native OIDC client for the desktop application. It discovers
+provider metadata only over HTTPS, verifies the configured issuer and HTTPS authorization
+and token endpoints, opens the system browser, receives a bounded loopback callback and
+exchanges an authorization code with an S256 PKCE verifier. Cryptographically random
+state and nonce values bind the response; mismatched state, provider errors, malformed or
+oversized tokens and unsafe configuration are rejected.
+
+The returned ID token is signature-, algorithm-, issuer-, audience-, lifetime- and
+nonce-validated against the provider signing keys before a session is accepted. Access
+tokens remain in memory, expire with a safety margin and are never persisted or logged;
+no client secret is embedded in the public desktop client. Focused tests cover the PKCE
+request, callback-state rejection, unsafe settings, missing/expiring sessions and explicit
+session clearing. Native CI passes structure and architecture, secret and dependency
+scanning, formatting, all PostgreSQL migrations and backup/restore, 204
+unit/configuration/HTTP/desktop tests and 72 integration tests with zero failures or skips.
+Next wire explicit runtime settings and the sign-in experience to construct the
+authenticated `IPosWorkspace`; provider registration, secure refresh-token storage and
+device enrollment remain incomplete.
+
 ## September 12, 2026 — buildable desktop cashier shell
 
 Converted the reserved desktop presentation directory into a real .NET 10/Avalonia 12
