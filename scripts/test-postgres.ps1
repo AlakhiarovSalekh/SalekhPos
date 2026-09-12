@@ -3,6 +3,7 @@ param(
     [int] $Port = 55438,
     [switch] $RunDotnetTests,
     [switch] $RunWebIdentityTests,
+    [string] $DotnetTestFilter,
     [string] $Configuration = 'Release'
 )
 
@@ -61,7 +62,11 @@ try {
         & (Join-Path $PSScriptRoot 'dotnet.ps1') build (Join-Path $taskRoot 'tools/cli/SalekhPos.Cli') --configuration $Configuration --no-restore
         if ($LASTEXITCODE -ne 0) { throw 'Bootstrap tool build failed.' }
         & (Join-Path $PSScriptRoot 'ci/test-bootstrap.ps1') -Configuration $Configuration
-        & (Join-Path $PSScriptRoot 'dotnet.ps1') test SalekhPos.sln --configuration $Configuration --no-restore
+        $taskTestArguments = @('test', 'SalekhPos.sln', '--configuration', $Configuration, '--no-restore')
+        if (-not [string]::IsNullOrWhiteSpace($DotnetTestFilter)) {
+            $taskTestArguments += @('--filter', $DotnetTestFilter)
+        }
+        & (Join-Path $PSScriptRoot 'dotnet.ps1') @taskTestArguments
         if ($LASTEXITCODE -ne 0) { throw '.NET tests failed against disposable PostgreSQL.' }
         if ($RunWebIdentityTests) { & (Join-Path $PSScriptRoot 'ci/test-web-identity.ps1') }
     }

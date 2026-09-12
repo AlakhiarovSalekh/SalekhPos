@@ -4,11 +4,15 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using SalekhPos.Devices.Application.Devices;
 using Xunit;
 namespace SalekhPos.IntegrationTests;
 
 public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFixture>
 {
+    private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'";
+    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
+
     [Fact]
     public async Task RegistrationIsAuthorizedIdempotentAndTenantScoped()
     {
@@ -38,7 +42,7 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.device_credentials WHERE organization_id=$1 AND device_id=$2 AND status='pending'", fixture.OrganizationA, id));
         Assert.Equal(32, await fixture.ScalarAsync<int>("SELECT octet_length(public_key_fingerprint) FROM devices.device_credentials WHERE organization_id=$1 AND device_id=$2", fixture.OrganizationA, id));
         Assert.Equal(0L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.registered_devices WHERE organization_id=$1 AND operation_id=$2", fixture.OrganizationA, duplicateKeyOperation));
-        using var pendingSync = await Sync(owner, id, Guid.NewGuid(), 1, OfflinePayload()); Assert.Equal(HttpStatusCode.Conflict, pendingSync.StatusCode);
+        using var pendingSync = await UnsignedSync(owner, id, Guid.NewGuid(), 1, OfflinePayload()); Assert.Equal(HttpStatusCode.Unauthorized, pendingSync.StatusCode);
         using var deniedTrust = await Trust(Client("alice"), id, credentialId, challenge, deviceKey, Guid.NewGuid()); Assert.Equal(HttpStatusCode.Forbidden, deniedTrust.StatusCode);
         var operationBoundHeader = Guid.NewGuid(); using var operationBoundProof = await Trust(owner, id, credentialId, challenge, deviceKey, operationBoundHeader, proofOperation: Guid.NewGuid()); Assert.Equal(HttpStatusCode.BadRequest, operationBoundProof.StatusCode);
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.device_credentials WHERE organization_id=$1 AND device_id=$2 AND status='pending'", fixture.OrganizationA, id));
@@ -53,7 +57,7 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var trustConflict = await Trust(owner, id, credentialId, challenge, deviceKey, Guid.NewGuid()); Assert.Equal(HttpStatusCode.Conflict, trustConflict.StatusCode);
         var messageId = Guid.NewGuid();
         var rejectedSaleId = Guid.NewGuid(); var payload = OfflinePayload(saleId: rejectedSaleId);
-        using var accepted = await Sync(owner, id, messageId, 1, payload);
+        using var accepted = await Sync(owner, id, credentialId, deviceKey, messageId, 1, payload);
         Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
         using var acceptedBody = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync());
         Assert.False(acceptedBody.RootElement.GetProperty("replay").GetBoolean());
@@ -62,45 +66,45 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         Assert.Equal("shift_conflict", acceptedBody.RootElement.GetProperty("resultCode").GetString());
         Assert.Equal(64, acceptedBody.RootElement.GetProperty("payloadDigest").GetString()!.Length);
         Assert.Equal(0L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, rejectedSaleId));
-        using var replayed = await Sync(owner, id, messageId, 1, payload);
+        using var replayed = await Sync(owner, id, credentialId, deviceKey, messageId, 1, payload);
         Assert.Equal(HttpStatusCode.OK, replayed.StatusCode);
         using var replayedBody = JsonDocument.Parse(await replayed.Content.ReadAsStringAsync());
         Assert.True(replayedBody.RootElement.GetProperty("replay").GetBoolean());
-        using var changedMessage = await Sync(owner, id, messageId, 1, OfflinePayload());
+        using var changedMessage = await Sync(owner, id, credentialId, deviceKey, messageId, 1, OfflinePayload());
         Assert.Equal(HttpStatusCode.Conflict, changedMessage.StatusCode);
-        using var gap = await Sync(owner, id, Guid.NewGuid(), 3, OfflinePayload());
+        using var gap = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 3, OfflinePayload());
         Assert.Equal(HttpStatusCode.Conflict, gap.StatusCode);
-        using var malformed = await Sync(owner, id, Guid.NewGuid(), 2, "not-json");
+        using var malformed = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 2, "not-json");
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
-        using var invalidFinancials = await Sync(owner, id, Guid.NewGuid(), 2, OfflinePayload(grandTotal: 10m));
+        using var invalidFinancials = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 2, OfflinePayload(grandTotal: 10m));
         Assert.Equal(HttpStatusCode.BadRequest, invalidFinancials.StatusCode);
-        using var otherOperator = await Sync(Client("manager"), id, Guid.NewGuid(), 2, OfflinePayload());
-        Assert.Equal(HttpStatusCode.Conflict, otherOperator.StatusCode);
-        using var message = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages/{messageId:D}");
+        using var otherOperator = await Sync(Client("manager"), id, credentialId, deviceKey, Guid.NewGuid(), 2, OfflinePayload());
+        Assert.Equal(HttpStatusCode.Forbidden, otherOperator.StatusCode);
+        using var message = await ProvenGet(owner, id, credentialId, deviceKey, $"sync/messages/{messageId:D}", $"message:{messageId:D}");
         Assert.Equal(HttpStatusCode.OK, message.StatusCode);
-        using var history = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=1");
+        using var history = await ProvenGet(owner, id, credentialId, deviceKey, "sync/messages?pageSize=1", "history:1:-");
         Assert.Equal(HttpStatusCode.OK, history.StatusCode); using var historyBody = JsonDocument.Parse(await history.Content.ReadAsStringAsync()); Assert.Single(historyBody.RootElement.GetProperty("items").EnumerateArray());
         using var invalidPage = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=0"); Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
-        using var foreignHistory = await Client("manager").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages"); Assert.Empty((await foreignHistory.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray());
+        using var foreignHistory = await ProvenGet(Client("manager"), id, credentialId, deviceKey, "sync/messages", "history:50:-"); Assert.Single((await foreignHistory.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray());
         var (productId, priceId) = await PrepareProduct(owner);
         using var shift = await OpenShift(owner, registerId); shift.EnsureSuccessStatusCode();
         using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
         var saleId = Guid.NewGuid(); var appliedPayload = OfflinePayload(saleId: saleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId);
-        var appliedMessageId = Guid.NewGuid(); using var applied = await Sync(owner, id, appliedMessageId, 2, appliedPayload);
+        var appliedMessageId = Guid.NewGuid(); using var applied = await Sync(owner, id, credentialId, deviceKey, appliedMessageId, 2, appliedPayload);
         Assert.Equal(HttpStatusCode.OK, applied.StatusCode); using var appliedBody = JsonDocument.Parse(await applied.Content.ReadAsStringAsync()); Assert.Equal("applied", appliedBody.RootElement.GetProperty("status").GetString());
-        using var appliedReplay = await Sync(owner, id, appliedMessageId, 2, appliedPayload); using var appliedReplayBody = JsonDocument.Parse(await appliedReplay.Content.ReadAsStringAsync()); Assert.True(appliedReplayBody.RootElement.GetProperty("replay").GetBoolean());
+        using var appliedReplay = await Sync(owner, id, credentialId, deviceKey, appliedMessageId, 2, appliedPayload); using var appliedReplayBody = JsonDocument.Parse(await appliedReplay.Content.ReadAsStringAsync()); Assert.True(appliedReplayBody.RootElement.GetProperty("replay").GetBoolean());
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM payments.payment_records WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM inventory.stock_movements WHERE organization_id=$1 AND kind='sale' AND reason='Synchronized offline cash sale' AND product_id=$2", fixture.OrganizationA, productId));
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.outbox_messages WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
         var priceConflictSaleId = Guid.NewGuid(); var priceConflictPayload = OfflinePayload(saleId: priceConflictSaleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: Guid.NewGuid());
-        var priceConflictMessageId = Guid.NewGuid(); using var priceConflict = await Sync(owner, id, priceConflictMessageId, 3, priceConflictPayload);
+        var priceConflictMessageId = Guid.NewGuid(); using var priceConflict = await Sync(owner, id, credentialId, deviceKey, priceConflictMessageId, 3, priceConflictPayload);
         using var priceConflictBody = JsonDocument.Parse(await priceConflict.Content.ReadAsStringAsync()); Assert.Equal("price_conflict", priceConflictBody.RootElement.GetProperty("resultCode").GetString());
-        using var priceConflictReplay = await Sync(owner, id, priceConflictMessageId, 3, priceConflictPayload); using var priceConflictReplayBody = JsonDocument.Parse(await priceConflictReplay.Content.ReadAsStringAsync()); Assert.True(priceConflictReplayBody.RootElement.GetProperty("replay").GetBoolean());
-        using var duplicateSale = await Sync(owner, id, Guid.NewGuid(), 4, OfflinePayload(saleId: saleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId));
+        using var priceConflictReplay = await Sync(owner, id, credentialId, deviceKey, priceConflictMessageId, 3, priceConflictPayload); using var priceConflictReplayBody = JsonDocument.Parse(await priceConflictReplay.Content.ReadAsStringAsync()); Assert.True(priceConflictReplayBody.RootElement.GetProperty("replay").GetBoolean());
+        using var duplicateSale = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 4, OfflinePayload(saleId: saleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId));
         using var duplicateSaleBody = JsonDocument.Parse(await duplicateSale.Content.ReadAsStringAsync()); Assert.Equal("sale_conflict", duplicateSaleBody.RootElement.GetProperty("resultCode").GetString());
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM sales.completed_sales WHERE organization_id=$1 AND sale_id=$2", fixture.OrganizationA, saleId));
-        using var checkpoint = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/checkpoint");
+        using var checkpoint = await ProvenGet(owner, id, credentialId, deviceKey, "sync/checkpoint", "checkpoint");
         Assert.Equal(HttpStatusCode.OK, checkpoint.StatusCode);
         using var checkpointBody = JsonDocument.Parse(await checkpoint.Content.ReadAsStringAsync());
         Assert.Equal(4, checkpointBody.RootElement.GetProperty("lastAcceptedSequence").GetInt64());
@@ -110,9 +114,104 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         var revokeOperation = Guid.NewGuid(); using var revoked = await Revoke(owner, id, revokeOperation, "Device retired"); Assert.Equal(HttpStatusCode.OK, revoked.StatusCode); using var revokedBody = JsonDocument.Parse(await revoked.Content.ReadAsStringAsync()); Assert.Equal("revoked", revokedBody.RootElement.GetProperty("status").GetString()); Assert.Equal("owner", revokedBody.RootElement.GetProperty("revokedBy").GetString());
         using var revokeReplay = await Revoke(owner, id, revokeOperation, "Device retired"); Assert.Equal(HttpStatusCode.OK, revokeReplay.StatusCode);
         using var revokeConflict = await Revoke(owner, id, revokeOperation, "Different reason"); Assert.Equal(HttpStatusCode.Conflict, revokeConflict.StatusCode);
-        using var revokedSync = await Sync(owner, id, Guid.NewGuid(), 5, OfflinePayload()); Assert.Equal(HttpStatusCode.Conflict, revokedSync.StatusCode);
+        using var revokedSync = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 5, OfflinePayload()); Assert.Equal(HttpStatusCode.Unauthorized, revokedSync.StatusCode);
         Assert.Equal(1L, await fixture.ScalarAsync<long>("SELECT count(*) FROM devices.device_credentials WHERE organization_id=$1 AND device_id=$2 AND status='revoked' AND revocation_operation_id=$3", fixture.OrganizationA, id, revokeOperation));
     }
+    [Fact]
+    public async Task CredentialBackedSyncRequiresBoundProofAndAllowsAnotherAuthorizedOperator()
+    {
+        using var owner = Client("owner");
+        using var registerRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        { Content = JsonContent.Create(new { code = "POP-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), name = "Proof Register" }) };
+        registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var registerResponse = await owner.SendAsync(registerRequest); registerResponse.EnsureSuccessStatusCode();
+        using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
+        var registerId = registerBody.RootElement.GetProperty("id").GetGuid();
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var registration = await Register(owner, Guid.NewGuid(), registerId,
+            "POP-DEVICE-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(), "Proof Device", key: key);
+        registration.EnsureSuccessStatusCode();
+        using var registrationBody = JsonDocument.Parse(await registration.Content.ReadAsStringAsync());
+        var deviceId = registrationBody.RootElement.GetProperty("id").GetGuid();
+        var credential = registrationBody.RootElement.GetProperty("credential");
+        var credentialId = credential.GetProperty("id").GetGuid();
+        var challenge = credential.GetProperty("proofChallenge").GetString()!;
+
+        var pendingMessage = Guid.NewGuid();
+        using var pending = await Sync(owner, deviceId, credentialId, key, pendingMessage, 1, OfflinePayload());
+        Assert.Equal(HttpStatusCode.Unauthorized, pending.StatusCode);
+        Assert.Equal(0L, await Ingested(pendingMessage));
+
+        using var trust = await Trust(owner, deviceId, credentialId, challenge, key, Guid.NewGuid());
+        trust.EnsureSuccessStatusCode();
+        using var unsigned = await UnsignedSync(owner, deviceId, Guid.NewGuid(), 1, OfflinePayload());
+        Assert.Equal(HttpStatusCode.Unauthorized, unsigned.StatusCode);
+
+        var acceptedMessage = Guid.NewGuid();
+        var acceptedPayload = OfflinePayload();
+        var proofTime = DateTimeOffset.UtcNow;
+        var replayNonce = RandomNumberGenerator.GetBytes(32);
+        var replayProof = new ProofOverrides(Timestamp: proofTime, Nonce: replayNonce);
+        using var accepted = await Sync(owner, deviceId, credentialId, key, acceptedMessage, 1, acceptedPayload, replayProof);
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        using var replay = await Sync(owner, deviceId, credentialId, key, acceptedMessage, 1, acceptedPayload, replayProof);
+        Assert.Equal(HttpStatusCode.Unauthorized, replay.StatusCode);
+        using var freshReplay = await Sync(owner, deviceId, credentialId, key, acceptedMessage, 1, acceptedPayload);
+        Assert.Equal(HttpStatusCode.OK, freshReplay.StatusCode);
+        Assert.True((await freshReplay.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("replay").GetBoolean());
+
+        using var wrongKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var invalidMessages = new List<Guid>();
+        async Task Reject(Guid messageId, ProofOverrides overrides)
+        {
+            invalidMessages.Add(messageId);
+            using var response = await Sync(owner, deviceId, credentialId, key, messageId, 2, OfflinePayload(), overrides);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        await Reject(Guid.NewGuid(), new(SigningKey: wrongKey));
+        await Reject(Guid.NewGuid(), new(SignedBody: Encoding.UTF8.GetBytes("{}")));
+        await Reject(Guid.NewGuid(), new(SignedPath: $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/devices/{deviceId:D}/sync/checkpoint"));
+        await Reject(Guid.NewGuid(), new(SignedMethod: "GET"));
+        await Reject(Guid.NewGuid(), new(Timestamp: DateTimeOffset.UtcNow.AddMinutes(-6)));
+        await Reject(Guid.NewGuid(), new(Timestamp: DateTimeOffset.UtcNow.AddMinutes(6)));
+        var wrongCredential = Guid.NewGuid();
+        await Reject(Guid.NewGuid(), new(HeaderCredentialId: wrongCredential, SignedCredentialId: wrongCredential));
+        foreach (var messageId in invalidMessages) Assert.Equal(0L, await Ingested(messageId));
+        Assert.Equal(1L, await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM sync.ingested_messages WHERE organization_id=$1 AND device_id=$2",
+            fixture.OrganizationA, deviceId));
+
+        await fixture.GrantAsync("manager", fixture.OrganizationA, "sales.complete");
+        var managerMessage = Guid.NewGuid();
+        using var managerAccepted = await Sync(Client("manager"), deviceId, credentialId, key,
+            managerMessage, 2, OfflinePayload());
+        Assert.Equal(HttpStatusCode.OK, managerAccepted.StatusCode);
+        Assert.Equal("manager", await fixture.ScalarAsync<string>(
+            "SELECT subject FROM sync.ingested_messages WHERE organization_id=$1 AND message_id=$2",
+            fixture.OrganizationA, managerMessage));
+
+        using var detail = await ProvenGet(Client("manager"), deviceId, credentialId, key,
+            $"sync/messages/{managerMessage:D}", $"message:{managerMessage:D}");
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        using var history = await ProvenGet(Client("manager"), deviceId, credentialId, key,
+            "sync/messages?pageSize=1", "history:1:-");
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode);
+        var getNonce = RandomNumberGenerator.GetBytes(32);
+        var getTime = DateTimeOffset.UtcNow;
+        var getProof = new ProofOverrides(Timestamp: getTime, Nonce: getNonce);
+        using var checkpoint = await ProvenGet(Client("manager"), deviceId, credentialId, key,
+            "sync/checkpoint", "checkpoint", getProof);
+        Assert.Equal(HttpStatusCode.OK, checkpoint.StatusCode);
+        using var checkpointReplay = await ProvenGet(Client("manager"), deviceId, credentialId, key,
+            "sync/checkpoint", "checkpoint", getProof);
+        Assert.Equal(HttpStatusCode.Unauthorized, checkpointReplay.StatusCode);
+
+        async Task<long> Ingested(Guid messageId) => await fixture.ScalarAsync<long>(
+            "SELECT count(*) FROM sync.ingested_messages WHERE organization_id=$1 AND message_id=$2",
+            fixture.OrganizationA, messageId);
+    }
+
     [Fact]
     public async Task ConcurrentDevicesCannotOversellTheSameStock()
     {
@@ -127,8 +226,8 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var shift = await OpenShift(owner, registerId); shift.EnsureSuccessStatusCode(); using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
         var (productId, priceId) = await PrepareProduct(owner, 1m);
         var responses = await Task.WhenAll(
-            Sync(owner, firstId, Guid.NewGuid(), 1, OfflinePayload(shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId)),
-            Sync(owner, secondId, Guid.NewGuid(), 1, OfflinePayload(shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId)));
+            Sync(owner, firstId, firstCredential.GetProperty("id").GetGuid(), firstKey, Guid.NewGuid(), 1, OfflinePayload(shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId)),
+            Sync(owner, secondId, secondCredential.GetProperty("id").GetGuid(), secondKey, Guid.NewGuid(), 1, OfflinePayload(shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId)));
         try
         {
             var codes = new List<string>(); foreach (var response in responses) { response.EnsureSuccessStatusCode(); using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()); codes.Add(body.RootElement.GetProperty("resultCode").GetString()!); }
@@ -146,9 +245,74 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
     private async Task<HttpResponseMessage> Revoke(HttpClient client, Guid deviceId, Guid operation, string reason)
     { using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{deviceId:D}/revoke") { Content = JsonContent.Create(new { reason }) }; request.Headers.Add("Idempotency-Key", operation.ToString("D")); return await client.SendAsync(request); }
     private HttpClient Client(string subject) { var c = fixture.Factory.CreateClient(); c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token(subject)); return c; }
-    private Task<HttpResponseMessage> Sync(HttpClient client, Guid deviceId, Guid messageId, long sequence, string payload) =>
+    private Task<HttpResponseMessage> UnsignedSync(HttpClient client, Guid deviceId, Guid messageId, long sequence, string payload) =>
         client.PostAsJsonAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{deviceId:D}/sync/messages",
             new { messageId, sequence, protocolVersion = 1, messageType = "sale.completed.v1", payload });
+    private Task<HttpResponseMessage> Sync(HttpClient client, Guid deviceId, Guid credentialId, ECDsa key,
+        Guid messageId, long sequence, string payload, ProofOverrides? overrides = null)
+    {
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            messageId,
+            sequence,
+            protocolVersion = 1,
+            messageType = "sale.completed.v1",
+            payload
+        }, WebJson);
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/devices/{deviceId:D}/sync/messages";
+        return ProvenRequest(client, HttpMethod.Post, path, $"message:{messageId:D}", credentialId, key, body, overrides);
+    }
+    private Task<HttpResponseMessage> ProvenGet(HttpClient client, Guid deviceId, Guid credentialId, ECDsa key,
+        string relativePath, string operationIdentity, ProofOverrides? overrides = null)
+    {
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/devices/{deviceId:D}/{relativePath}";
+        return ProvenRequest(client, HttpMethod.Get, path, operationIdentity, credentialId, key, null, overrides);
+    }
+    private async Task<HttpResponseMessage> ProvenRequest(HttpClient client, HttpMethod method, string path,
+        string operationIdentity, Guid credentialId, ECDsa key, byte[]? body, ProofOverrides? overrides = null)
+    {
+        overrides ??= new();
+        var timestamp = overrides.Timestamp ?? DateTimeOffset.UtcNow;
+        var timestampText = timestamp.ToUniversalTime().ToString(TimestampFormat, System.Globalization.CultureInfo.InvariantCulture);
+        var nonceBytes = overrides.Nonce ?? RandomNumberGenerator.GetBytes(32);
+        var nonce = Base64Url(nonceBytes);
+        var headerCredential = overrides.HeaderCredentialId ?? credentialId;
+        var signedCredential = overrides.SignedCredentialId ?? headerCredential;
+        var signedMethod = overrides.SignedMethod ?? method.Method.ToUpperInvariant();
+        var signedPath = overrides.SignedPath ?? path.Split('?', 2)[0];
+        var signedBody = overrides.SignedBody ?? body ?? [];
+        var digest = Convert.ToHexString(SHA256.HashData(signedBody));
+        var fingerprint = SHA256.HashData(key.ExportSubjectPublicKeyInfo());
+        var canonical = DeviceRequestProofCanonicalizer.Create(signedMethod, signedPath, fixture.OrganizationA,
+            fixture.BranchA, overrides.SignedDeviceId ?? ExtractDeviceId(path), signedCredential,
+            operationIdentity, digest, timestampText, nonce, fingerprint);
+        var signingKey = overrides.SigningKey ?? key;
+        var signature = Convert.ToBase64String(signingKey.SignData(canonical, HashAlgorithmName.SHA256,
+            DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+        using var request = new HttpRequestMessage(method, path);
+        if (body is not null)
+        {
+            request.Content = new ByteArrayContent(body);
+            request.Content.Headers.ContentType = new("application/json");
+        }
+        request.Headers.Add("X-SalekhPos-Device-Credential", headerCredential.ToString("D"));
+        request.Headers.Add("X-SalekhPos-Device-Timestamp", timestampText);
+        request.Headers.Add("X-SalekhPos-Device-Nonce", nonce);
+        request.Headers.Add("X-SalekhPos-Device-Signature", signature);
+        return await client.SendAsync(request);
+    }
+    private static Guid ExtractDeviceId(string path)
+    {
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var index = Array.IndexOf(parts, "devices");
+        return Guid.ParseExact(parts[index + 1], "D");
+    }
+    private static string Base64Url(ReadOnlySpan<byte> value) =>
+        Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private sealed record ProofOverrides(DateTimeOffset? Timestamp = null, byte[]? Nonce = null,
+        ECDsa? SigningKey = null, string? SignedMethod = null, string? SignedPath = null,
+        byte[]? SignedBody = null, Guid? HeaderCredentialId = null, Guid? SignedCredentialId = null,
+        Guid? SignedDeviceId = null);
     private async Task<(Guid ProductId, Guid PriceId)> PrepareProduct(HttpClient owner, decimal stockQuantity = 5m)
     {
         using var productRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/products") { Content = JsonContent.Create(new { sku = "SYNC." + Guid.NewGuid().ToString("N").ToUpperInvariant(), name = "Offline Sync Item", unitCode = "EA", barcode = (string?)null }) }; productRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));

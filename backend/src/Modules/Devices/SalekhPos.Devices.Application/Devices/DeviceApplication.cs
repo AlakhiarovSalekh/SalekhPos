@@ -16,7 +16,18 @@ public interface IDeviceRegistry
     Task<DeviceResponse?> ReadAsync(DeviceIdentity identity, Guid organizationId, Guid branchId, Guid deviceId, CancellationToken cancellationToken);
     Task<DevicePage> ListAsync(DeviceIdentity identity, Guid organizationId, Guid branchId, int pageSize, Guid? after, CancellationToken cancellationToken);
 }
+public sealed record DeviceRequestProofHeaders(string? CredentialId, string? Timestamp, string? Nonce, string? Signature)
+{
+    public bool IsEmpty => CredentialId is null && Timestamp is null && Nonce is null && Signature is null;
+}
+public sealed record DeviceRequestProofContext(DeviceIdentity Identity, Guid OrganizationId, Guid BranchId, Guid DeviceId,
+    string Method, string CanonicalPath, string OperationIdentity, string BodyDigest, DeviceRequestProofHeaders Headers);
+public interface IDeviceRequestProofVerifier
+{
+    Task VerifyAsync(DeviceRequestProofContext context, CancellationToken cancellationToken);
+}
 public sealed class DeviceDeniedException : Exception;
 public sealed class DeviceConflictException : Exception;
 public sealed class DeviceProofException : Exception;
+public sealed class DeviceRequestAuthenticationException : Exception;
 public sealed class DeviceUnavailableException : Exception;
