@@ -1,5 +1,6 @@
 using SalekhPos.Desktop.Application.Offline;
 using SalekhPos.Desktop.Domain.LocalCatalog;
+using SalekhPos.Desktop.Application.Shifts;
 using SalekhPos.Desktop.Infrastructure.LocalDatabase;
 using Xunit;
 
@@ -17,6 +18,7 @@ public sealed class ProjectedSaleCheckoutTests : IDisposable
         var replay = await setup.Checkout.CompleteAsync(command, default);
 
         Assert.True(created.Created); Assert.False(replay.Created); Assert.Equal(created.Message.MessageId, replay.Message.MessageId);
+        Assert.Equal(setup.ShiftId, created.Sale.ShiftId); Assert.Equal(setup.RegisterId, created.Sale.RegisterId);
         Assert.Equal(1m, (await setup.Catalog.FindByProductAsync(setup.OrganizationId, setup.BranchId,
             setup.ProductId, command.CompletedAt, default))!.StockQuantity);
         Assert.Single(await setup.Store.ReadPendingAsync(command.DeviceId, 10, default));
@@ -79,6 +81,37 @@ public sealed class ProjectedSaleCheckoutTests : IDisposable
         Assert.Single(await setup.Store.ReadPendingAsync(sale.Message.DeviceId, 10, default));
     }
 
+    [Fact]
+    public async Task CheckoutWithoutAnActiveCashSessionIsRejectedBeforeStockChanges()
+    {
+        var organizationId = Guid.NewGuid(); var branchId = Guid.NewGuid(); var productId = Guid.NewGuid();
+        var path = Path.Combine(directory, "missing-session.db"); var catalog = new SqliteSellableCatalog(path);
+        var item = new LocalSellableItem(organizationId, branchId, productId, Guid.NewGuid(), "SKU", "Tea", "EA",
+            null, 1m, 10m, "GEL", "inclusive", 18m, DateTimeOffset.UtcNow.AddDays(-1), null);
+        await catalog.ApplyAsync(new(organizationId, branchId, DateTimeOffset.UtcNow, [item]), default);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new SqliteProjectedSaleCheckout(path).CompleteAsync(
+            new(organizationId, branchId, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow, 10m,
+                [new(productId, 1m)]), default));
+        Assert.Equal(1m, (await catalog.FindByProductAsync(organizationId, branchId, productId,
+            DateTimeOffset.UtcNow, default))!.StockQuantity);
+    }
+
+    [Fact]
+    public async Task ShiftConflictInvalidatesTheCashSessionAndBlocksAnotherCheckout()
+    {
+        var setup = await Setup(2m); var command = Command(setup, 1m);
+        var first = await setup.Checkout.CompleteAsync(command, default);
+        await setup.Store.MarkResultAsync(first.Message.MessageId, first.Message.PayloadDigest, "rejected",
+            "shift_conflict", DateTimeOffset.UtcNow, default);
+
+        Assert.Null(await new SqliteCashSessionStore(PathFor(setup)).ReadActiveAsync(
+            setup.OrganizationId, setup.BranchId, setup.DeviceId, default));
+        Assert.False((await setup.Checkout.CompleteAsync(command, default)).Created);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => setup.Checkout.CompleteAsync(
+            Command(setup, 1m) with { SaleId = Guid.NewGuid() }, default));
+    }
+
     private async Task<SetupResult> Setup(decimal stock)
     {
         var organizationId = Guid.NewGuid(); var branchId = Guid.NewGuid(); var productId = Guid.NewGuid();
@@ -87,12 +120,20 @@ public sealed class ProjectedSaleCheckoutTests : IDisposable
             "12345", stock, 10m, "GEL", "inclusive", 18m, DateTimeOffset.UtcNow.AddDays(-1), null);
         await catalog.ApplyAsync(new(organizationId, branchId, DateTimeOffset.UtcNow, [item]), default);
         var store = await new SqliteLocalSaleStore(path).OpenAsync();
-        return new(organizationId, branchId, productId, item, catalog, new SqliteProjectedSaleCheckout(path), store);
+        var deviceId = Guid.NewGuid(); var registerId = Guid.NewGuid(); var shiftId = Guid.NewGuid();
+        var openedAt = DateTimeOffset.UtcNow.AddHours(-1); var capturedAt = DateTimeOffset.UtcNow;
+        await new SqliteCashSessionStore(path).ApplyAsync(organizationId, branchId, deviceId,
+            new(new(deviceId, branchId, registerId, "active", 1),
+                new(shiftId, branchId, registerId, "open", "GEL", 0m, openedAt), capturedAt), default);
+        return new(organizationId, branchId, productId, item, catalog, new SqliteProjectedSaleCheckout(path), store,
+            deviceId, registerId, shiftId, path);
     }
     private static CompleteProjectedSaleCommand Command(SetupResult setup, decimal quantity) => new(
-        setup.OrganizationId, setup.BranchId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-        DateTimeOffset.UtcNow, 100m, [new(setup.ProductId, quantity)]);
+        setup.OrganizationId, setup.BranchId, setup.DeviceId, Guid.NewGuid(), DateTimeOffset.UtcNow, 100m,
+        [new(setup.ProductId, quantity)]);
     private sealed record SetupResult(Guid OrganizationId, Guid BranchId, Guid ProductId, LocalSellableItem Item,
-        SqliteSellableCatalog Catalog, SqliteProjectedSaleCheckout Checkout, ILocalSaleStore Store);
+        SqliteSellableCatalog Catalog, SqliteProjectedSaleCheckout Checkout, ILocalSaleStore Store, Guid DeviceId,
+        Guid RegisterId, Guid ShiftId, string DatabasePath);
+    private static string PathFor(SetupResult setup) => setup.DatabasePath;
     public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 }

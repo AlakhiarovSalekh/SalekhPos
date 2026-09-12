@@ -23,7 +23,7 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
         var replay = await ReadReplay(connection, transaction, command.SaleId, cancellationToken);
         if (replay is not null)
         {
-            var replaySale = await BuildSale(connection, transaction, command, reserve: false, cancellationToken);
+            var replaySale = await ReadStoredSale(connection, transaction, command, cancellationToken);
             var replayPayload = Payload(replaySale);
             var replayDigest = Digest(replayPayload);
             if (replay.Value.Digest != replayDigest) throw new InvalidOperationException("Changed projected sale replay.");
@@ -33,7 +33,8 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
                 replay.Value.ResultCode, replay.Value.CreatedAt), false);
         }
 
-        var sale = await BuildSale(connection, transaction, command, reserve: true, cancellationToken);
+        var session = await ActiveSession(connection, transaction, command, cancellationToken);
+        var sale = await BuildSale(connection, transaction, command, session, reserve: true, cancellationToken);
         var payload = Payload(sale); var digest = Digest(payload); var messageId = Guid.NewGuid();
         var createdAt = DateTimeOffset.UtcNow;
         await Execute(connection, transaction, "INSERT INTO device_state(device_id,last_sequence) VALUES($1,0) ON CONFLICT(device_id) DO NOTHING", cancellationToken, ("$1", sale.DeviceId));
@@ -72,7 +73,8 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
     }
 
     private static async Task<LocalSale> BuildSale(SqliteConnection connection, SqliteTransaction transaction,
-        CompleteProjectedSaleCommand command, bool reserve, CancellationToken ct)
+        CompleteProjectedSaleCommand command, (Guid ShiftId, Guid RegisterId, string Currency, DateTimeOffset OpenedAt) session,
+        bool reserve, CancellationToken ct)
     {
         var lines = new List<LocalSaleLine>();
         foreach (var requested in command.Items)
@@ -92,6 +94,7 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
             var line = new LocalSaleLine(requested.ProductId, Guid.Parse(reader.GetString(0)), requested.Quantity,
                 decimal.Parse(reader.GetString(2), CultureInfo.InvariantCulture), reader.GetString(3), reader.GetString(4),
                 decimal.Parse(reader.GetString(5), CultureInfo.InvariantCulture));
+            if (line.Currency != session.Currency) throw new InvalidOperationException("Projected price currency does not match the cash session.");
             await reader.DisposeAsync(); lines.Add(line);
             if (!reserve) continue;
             var remaining = stock - requested.Quantity;
@@ -106,8 +109,59 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
                 """, ct, ("$1", command.SaleId), ("$2", command.OrganizationId), ("$3", command.BranchId),
                 ("$4", requested.ProductId), ("$5", Number(requested.Quantity)));
         }
-        return new(command.OrganizationId, command.BranchId, command.DeviceId, command.SaleId, command.ShiftId,
-            command.RegisterId, command.CompletedAt, command.CashReceived, lines);
+        return new(command.OrganizationId, command.BranchId, command.DeviceId, command.SaleId, session.ShiftId,
+            session.RegisterId, command.CompletedAt, command.CashReceived, lines);
+    }
+
+    private static async Task<(Guid ShiftId, Guid RegisterId, string Currency, DateTimeOffset OpenedAt)> ActiveSession(
+        SqliteConnection connection, SqliteTransaction transaction, CompleteProjectedSaleCommand command,
+        CancellationToken ct)
+    {
+        await using var query = Command(connection, transaction, """
+            SELECT shift_id,register_id,currency,opened_at FROM local_cash_sessions
+            WHERE organization_id=$1 AND branch_id=$2 AND device_id=$3 AND status='active'
+            """, ("$1", command.OrganizationId), ("$2", command.BranchId), ("$3", command.DeviceId));
+        await using var reader = await query.ExecuteReaderAsync(ct);
+        if (!await reader.ReadAsync(ct)) throw new InvalidOperationException("An active local cash session is required.");
+        var openedAt = DateTimeOffset.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        if (command.CompletedAt < openedAt) throw new InvalidOperationException("The sale predates the active cash session.");
+        return (Guid.Parse(reader.GetString(0)), Guid.Parse(reader.GetString(1)), reader.GetString(2), openedAt);
+    }
+
+    private static async Task<LocalSale> ReadStoredSale(SqliteConnection connection, SqliteTransaction transaction,
+        CompleteProjectedSaleCommand command, CancellationToken ct)
+    {
+        Guid organization; Guid branch; Guid device; Guid shift; Guid register; DateTimeOffset completedAt;
+        decimal cashReceived;
+        await using (var query = Command(connection, transaction, """
+            SELECT organization_id,branch_id,device_id,shift_id,register_id,completed_at,cash_received
+            FROM local_sales WHERE sale_id=$1
+            """, ("$1", command.SaleId)))
+        await using (var reader = await query.ExecuteReaderAsync(ct))
+        {
+            if (!await reader.ReadAsync(ct)) throw new InvalidOperationException("Local sale replay evidence is missing.");
+            organization = Guid.Parse(reader.GetString(0)); branch = Guid.Parse(reader.GetString(1));
+            device = Guid.Parse(reader.GetString(2)); shift = Guid.Parse(reader.GetString(3));
+            register = Guid.Parse(reader.GetString(4));
+            completedAt = DateTimeOffset.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            cashReceived = decimal.Parse(reader.GetString(6), CultureInfo.InvariantCulture);
+        }
+        var lines = new List<LocalSaleLine>();
+        await using (var query = Command(connection, transaction, """
+            SELECT product_id,price_id,quantity,unit_amount,currency,tax_mode,tax_rate
+            FROM local_sale_lines WHERE sale_id=$1 ORDER BY line_number
+            """, ("$1", command.SaleId)))
+        await using (var reader = await query.ExecuteReaderAsync(ct))
+            while (await reader.ReadAsync(ct)) lines.Add(new(Guid.Parse(reader.GetString(0)),
+                Guid.Parse(reader.GetString(1)), decimal.Parse(reader.GetString(2), CultureInfo.InvariantCulture),
+                decimal.Parse(reader.GetString(3), CultureInfo.InvariantCulture), reader.GetString(4),
+                reader.GetString(5), decimal.Parse(reader.GetString(6), CultureInfo.InvariantCulture)));
+        if (organization != command.OrganizationId || branch != command.BranchId || device != command.DeviceId
+            || completedAt != command.CompletedAt || cashReceived != command.CashReceived
+            || lines.Count != command.Items.Count || lines.Where((line, index) =>
+                line.ProductId != command.Items[index].ProductId || line.Quantity != command.Items[index].Quantity).Any())
+            throw new InvalidOperationException("Changed projected sale replay.");
+        return new(organization, branch, device, command.SaleId, shift, register, completedAt, cashReceived, lines);
     }
 
     private static void Validate(CompleteProjectedSaleCommand command)
@@ -124,7 +178,11 @@ public sealed class SqliteProjectedSaleCheckout(string databasePath) : IProjecte
         return (Guid.Parse(r.GetString(0)), r.GetInt64(1), r.GetString(2), r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4), DateTimeOffset.Parse(r.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
     }
     private async Task<SqliteConnection> Open(CancellationToken ct) { var c = new SqliteConnection(connectionString); await c.OpenAsync(ct); await Execute(c, null, "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=10000;", ct); return c; }
-    private static async Task EnsureSchema(SqliteConnection c, SqliteTransaction t, CancellationToken ct) => await Execute(c, t, Schema, ct);
+    private static async Task EnsureSchema(SqliteConnection c, SqliteTransaction t, CancellationToken ct)
+    {
+        await Execute(c, t, SqliteCashSessionStore.Schema, ct);
+        await Execute(c, t, Schema, ct);
+    }
     private static async Task<int> Execute(SqliteConnection c, SqliteTransaction? t, string sql, CancellationToken ct, params (string, object)[] values) { await using var q = Command(c, t, sql, values); return await q.ExecuteNonQueryAsync(ct); }
     private static async Task<object?> Scalar(SqliteConnection c, SqliteTransaction t, string sql, CancellationToken ct, params (string, object)[] values) { await using var q = Command(c, t, sql, values); return await q.ExecuteScalarAsync(ct); }
     private static SqliteCommand Command(SqliteConnection c, SqliteTransaction? t, string sql, params (string, object)[] values) { var q = c.CreateCommand(); q.Transaction = t; q.CommandText = sql; foreach (var (name, value) in values) q.Parameters.AddWithValue(name, value is Guid id ? id.ToString("D") : value); return q; }

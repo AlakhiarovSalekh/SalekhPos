@@ -111,6 +111,18 @@ public sealed class SqliteLocalSaleStore
                         """, ("$1", messageId.ToString("D")), ("$2", reservationStatus));
                     await finish.ExecuteNonQueryAsync(ct);
                 }
+                if (resultCode == "shift_conflict")
+                {
+                    await using var sessionTable = Command(connection, transaction, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='local_cash_sessions'");
+                    if ((long)(await sessionTable.ExecuteScalarAsync(ct) ?? 0L) == 1)
+                    {
+                        await using var invalidate = Command(connection, transaction, """
+                            UPDATE local_cash_sessions SET status='invalidated'
+                            WHERE status='active' AND shift_id=(SELECT shift_id FROM local_sales WHERE sale_id=(SELECT sale_id FROM outbox_messages WHERE message_id=$1))
+                            """, ("$1", messageId.ToString("D")));
+                        await invalidate.ExecuteNonQueryAsync(ct);
+                    }
+                }
             }
             await transaction.CommitAsync(ct);
         }

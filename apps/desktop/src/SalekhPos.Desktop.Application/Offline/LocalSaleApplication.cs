@@ -6,8 +6,7 @@ public sealed record CompleteLocalSaleCommand(Guid OrganizationId, Guid BranchId
     Guid ShiftId, Guid RegisterId, DateTimeOffset CompletedAt, decimal CashReceived, IReadOnlyList<LocalSaleLine> Lines);
 public sealed record ProjectedSaleItem(Guid ProductId, decimal Quantity);
 public sealed record CompleteProjectedSaleCommand(Guid OrganizationId, Guid BranchId, Guid DeviceId, Guid SaleId,
-    Guid ShiftId, Guid RegisterId, DateTimeOffset CompletedAt, decimal CashReceived,
-    IReadOnlyList<ProjectedSaleItem> Items);
+    DateTimeOffset CompletedAt, decimal CashReceived, IReadOnlyList<ProjectedSaleItem> Items);
 public sealed record LocalOutboxMessage(Guid MessageId, Guid SaleId, Guid DeviceId, long Sequence, string MessageType,
     string Payload, string PayloadDigest, string Status, string? ResultCode, DateTimeOffset CreatedAt);
 public sealed record LocalSaleWriteResult(LocalSale Sale, LocalOutboxMessage Message, bool Created);

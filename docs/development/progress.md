@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 12, 2026 — durable desktop cash-session assignment
+
+Desktop synchronization can now resolve the authenticated device's immutable register
+assignment and that register's currently open shift through the versioned API, validate
+the full device/branch/register/protocol and shift/currency/time relationship, and store
+the evidence durably in SQLite. Exact newer refreshes advance the captured timestamp;
+stale or changed assignment and same-shift evidence is rejected. A confirmed absence of
+an open server shift supersedes the cached session, while transport failure leaves the
+last verified offline session available.
+
+Projected checkout no longer accepts caller-supplied shift or register identifiers. It
+atomically derives them from the tenant/branch/device-scoped active cash session, rejects
+sales before shift opening or in a currency different from the shift, and makes no stock,
+sale, reservation, sequence or outbox change when a session is unavailable. A durable
+`shift_conflict` acknowledgement releases reserved stock and invalidates the local
+session so further checkout requires a successful refresh. Native CI passes structure
+and architecture for 70 projects, secret and dependency scanning, formatting, all
+PostgreSQL migrations and backup/restore, 192 unit/configuration/HTTP/desktop tests and
+72 integration tests with zero failures or skips. Next expose session refresh, catalog
+refresh, checkout and pending-sync state through the desktop composition and presentation
+boundary, then add controlled local cash movements and shift closing UX.
+
 ## September 10, 2026 — atomic projected-stock offline checkout
 
 Desktop checkout now accepts product/quantity intent rather than caller-supplied
