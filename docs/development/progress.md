@@ -1,5 +1,26 @@
 # Implementation progress
 
+## September 12, 2026 — composed desktop POS workspace
+
+Added the first presentation-facing POS workspace boundary over the verified desktop
+application and infrastructure services. Online opening first dispatches durable pending
+sales in device order, refreshes the authenticated device/register/open-shift assignment,
+then refreshes the sellable catalog only when a cash session exists. Offline opening
+reuses the last durable session and catalog without invoking network dependencies.
+
+The workspace exposes tenant-scoped product and barcode lookup, caller-stable sale IDs,
+atomic projected checkout, immutable current session state and bounded pending-sync state.
+All state-changing workspace operations are serialized so a UI cannot race checkout,
+session refresh or acknowledgement processing. The production composition root binds one
+authenticated HTTP client and one SQLite database to session, catalog, checkout, outbox
+and bounded retry services. End-to-end desktop tests prove online open → lookup → checkout
+→ sync and process-restart offline checkout. Native CI passes structure and architecture
+for 70 projects, secret and dependency scanning, formatting, all PostgreSQL migrations
+and backup/restore, 194 unit/configuration/HTTP/desktop tests and 72 integration tests with
+zero failures or skips. Next add authenticated desktop cash-movement and shift-closing
+commands with retry-stable operation IDs and refresh the presentation state after each
+server-authoritative result.
+
 ## September 12, 2026 — durable desktop cash-session assignment
 
 Desktop synchronization can now resolve the authenticated device's immutable register
