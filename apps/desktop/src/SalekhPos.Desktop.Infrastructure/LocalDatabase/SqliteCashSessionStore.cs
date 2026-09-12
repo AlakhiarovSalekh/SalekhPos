@@ -65,6 +65,30 @@ public sealed class SqliteCashSessionStore(string databasePath) : ILocalCashSess
         return await Read(connection, null, organizationId, branchId, deviceId, cancellationToken);
     }
 
+    public async Task ConfirmClosedAsync(Guid organizationId, Guid branchId, Guid deviceId, Guid shiftId,
+        CancellationToken cancellationToken)
+    {
+        ValidateScope(organizationId, branchId, deviceId);
+        if (shiftId == Guid.Empty) throw new ArgumentException("Shift identity is required.");
+        await using var connection = await Open(cancellationToken);
+        await using var transaction = connection.BeginTransaction(deferred: false);
+        await Execute(connection, transaction, Schema, cancellationToken);
+        var changed = await Execute(connection, transaction, """
+            UPDATE local_cash_sessions SET status='superseded' WHERE organization_id=$1 AND branch_id=$2
+            AND device_id=$3 AND shift_id=$4 AND status='active'
+            """, cancellationToken, ("$1", organizationId), ("$2", branchId), ("$3", deviceId), ("$4", shiftId));
+        if (changed != 1)
+        {
+            await using var replay = Command(connection, transaction, """
+                SELECT count(*) FROM local_cash_sessions WHERE organization_id=$1 AND branch_id=$2
+                AND device_id=$3 AND shift_id=$4 AND status='superseded'
+                """, ("$1", organizationId), ("$2", branchId), ("$3", deviceId), ("$4", shiftId));
+            if ((long)(await replay.ExecuteScalarAsync(cancellationToken) ?? 0L) != 1)
+                throw new InvalidOperationException("The closed cash session is unknown or changed.");
+        }
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     private static void ValidateSnapshot(Guid organizationId, Guid branchId, Guid deviceId,
         RemoteCashSessionSnapshot snapshot)
     {

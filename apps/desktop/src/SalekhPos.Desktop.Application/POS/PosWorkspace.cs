@@ -23,7 +23,8 @@ public sealed class PosWorkspace(
     ILocalSellableCatalog catalog,
     IProjectedSaleCheckout checkout,
     PendingSaleSyncRunner sync,
-    ILocalSaleStore sales)
+    ILocalSaleStore sales,
+    IRemoteCashManagement cashManagement)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private PosWorkspaceState? state;
@@ -109,11 +110,63 @@ public sealed class PosWorkspace(
         finally { gate.Release(); }
     }
 
+    public async Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount,
+        string reason, CancellationToken cancellationToken)
+    {
+        if (operationId == Guid.Empty || kind is not ("cash_in" or "cash_out") || amount <= 0
+            || decimal.Round(amount, 6) != amount || string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Cash-movement request is invalid.");
+        EnsureOnlineSession();
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var session = state!.CashSession!;
+            var result = await cashManagement.RecordMovementAsync(scope.OrganizationId, scope.BranchId,
+                session.ShiftId, operationId, kind, amount, reason, cancellationToken);
+            if (result.Currency != session.Currency)
+                throw new InvalidOperationException("The cash-movement currency does not match the session.");
+            state = await Snapshot(session, true, cancellationToken);
+            return result;
+        }
+        finally { gate.Release(); }
+    }
+
+    public async Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,
+        CancellationToken cancellationToken)
+    {
+        if (operationId == Guid.Empty || countedCash < 0 || decimal.Round(countedCash, 6) != countedCash)
+            throw new ArgumentException("Shift-closing request is invalid.");
+        EnsureOnlineSession();
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var session = state!.CashSession!;
+            if ((await sales.ReadPendingAsync(scope.DeviceId, 1, cancellationToken)).Count != 0)
+                throw new InvalidOperationException("Pending sales must synchronize before closing the cash session.");
+            var result = await cashManagement.CloseAsync(scope.OrganizationId, scope.BranchId, session.ShiftId,
+                operationId, countedCash, cancellationToken);
+            if (result.RegisterId != session.RegisterId || result.Currency != session.Currency
+                || result.OpenedAt != session.OpenedAt)
+                throw new InvalidOperationException("The closed shift does not match the active cash session.");
+            await localCashSessions.ConfirmClosedAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+                session.ShiftId, cancellationToken);
+            state = await Snapshot(null, true, cancellationToken);
+            return result;
+        }
+        finally { gate.Release(); }
+    }
+
     private async Task<PosWorkspaceState> Snapshot(LocalCashSession? session, bool online, CancellationToken ct)
     {
         var pending = await sales.ReadPendingAsync(scope.DeviceId, 100, ct);
         return new(scope, session, pending.Count, pending.Count == 100, online, DateTimeOffset.UtcNow);
     }
     private void EnsureOpened() { if (state is null) throw new InvalidOperationException("The POS workspace is not open."); }
+    private void EnsureOnlineSession()
+    {
+        EnsureOpened();
+        if (!state!.IsOnline || state.CashSession is null)
+            throw new InvalidOperationException("An online cash session is required.");
+    }
     private void ValidateScope() { if (scope.OrganizationId == Guid.Empty || scope.BranchId == Guid.Empty || scope.DeviceId == Guid.Empty) throw new ArgumentException("POS workspace scope is required."); }
 }

@@ -1,5 +1,24 @@
 # Implementation progress
 
+## September 12, 2026 — desktop cash management and authoritative closing
+
+The desktop POS workspace now records cash-in and cash-out against its verified active
+shift through authenticated, tenant/branch/shift-scoped HTTP commands. Caller-retained
+operation IDs are sent as idempotency keys, and returned movement identity, kind, amount,
+reason, currency and UTC evidence must match before the workspace accepts the result.
+
+Shift closing is online-only and refuses to run while any local sale remains pending,
+ensuring the server's reconciliation includes every completed offline receipt. The
+desktop validates the complete server-authoritative closing assignment and counted-cash
+evidence, then durably deactivates the exact local session. Crash-after-server-success is
+safe: retrying the same operation receives stable server evidence and local deactivation
+is idempotent. A closed workspace immediately blocks further checkout. Native CI passes
+structure and architecture for 70 projects, secret and dependency scanning, formatting,
+all PostgreSQL migrations and backup/restore, 197 unit/configuration/HTTP/desktop tests
+and 72 integration tests with zero failures or skips. Next implement the concrete desktop
+shell and cashier view model over the composed workspace, including scan/cart/tender,
+offline/sync/session status and safe cash-management commands.
+
 ## September 12, 2026 — composed desktop POS workspace
 
 Added the first presentation-facing POS workspace boundary over the verified desktop
