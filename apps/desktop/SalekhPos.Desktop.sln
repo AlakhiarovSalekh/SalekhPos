@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SalekhPos.Desktop.Tests", "tests\SalekhPos.Desktop.Tests\SalekhPos.Desktop.Tests.csproj", "{B673D925-2552-4626-89E3-7F9DD7C615C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SalekhPos.Desktop", "src\SalekhPos.Desktop\SalekhPos.Desktop.csproj", "{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{B673D925-2552-4626-89E3-7F9DD7C615C2}.Release|x64.Build.0 = Release|Any CPU
 		{B673D925-2552-4626-89E3-7F9DD7C615C2}.Release|x86.ActiveCfg = Release|Any CPU
 		{B673D925-2552-4626-89E3-7F9DD7C615C2}.Release|x86.Build.0 = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|x64.Build.0 = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Debug|x86.Build.0 = Debug|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|x64.ActiveCfg = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|x64.Build.0 = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|x86.ActiveCfg = Release|Any CPU
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,5 +94,6 @@ Global
 		{8672A964-9916-4557-B053-02C6153A4E27} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{CEF59B34-2335-44AA-AFCF-C3FF2AD3B480} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B673D925-2552-4626-89E3-7F9DD7C615C2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{23BA1DA0-F8CA-4D63-8EB5-158B10E3C80F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

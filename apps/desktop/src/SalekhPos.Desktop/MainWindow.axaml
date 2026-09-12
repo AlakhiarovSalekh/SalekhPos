@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SalekhPos.Desktop.ViewModels"
+        x:Class="SalekhPos.Desktop.MainWindow"
+        x:DataType="vm:CashierViewModel"
+        Title="SalekhPos" Width="1180" Height="760" MinWidth="900" MinHeight="600">
+  <Grid RowDefinitions="Auto,*" Background="#F3F5F7">
+    <Border Background="#17202A" Padding="20,14">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+        <StackPanel>
+          <TextBlock Text="SalekhPos" FontSize="24" FontWeight="SemiBold" Foreground="White" />
+          <TextBlock Text="{Binding SessionStatus}" Foreground="#C9D4DE" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding SyncStatus}" VerticalAlignment="Center" Foreground="White" />
+        <Button Grid.Column="2" Content="Synchronize" Click="SynchronizeClick" IsEnabled="{Binding IsReady}" />
+      </Grid>
+    </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="2*,*" Margin="20" ColumnSpacing="20">
+      <Border Background="White" CornerRadius="8" Padding="20">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBox Name="BarcodeBox" PlaceholderText="Scan barcode" KeyDown="BarcodeKeyDown" />
+            <Button Grid.Column="1" Content="Add" Click="AddBarcodeClick" />
+          </Grid>
+          <ListBox Grid.Row="1" ItemsSource="{Binding CartLines}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:CartLineViewModel">
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="4,8" ColumnSpacing="18">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Sku}" Foreground="#607080" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding QuantityText}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding TotalText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Grid.Row="2" Text="{Binding CartStatus}" Foreground="#607080" />
+        </Grid>
+      </Border>
+      <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="20">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Cash checkout" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding GrandTotalText}" FontSize="36" FontWeight="Bold" />
+          <TextBox Name="CashReceivedBox" PlaceholderText="Cash received" />
+          <Button Content="Complete sale" Click="CompleteSaleClick" IsEnabled="{Binding CanCompleteSale}" />
+          <Separator Margin="0,8" />
+          <TextBlock Text="Cash management" FontSize="18" FontWeight="SemiBold" />
+          <ComboBox Name="MovementKindBox" SelectedIndex="0">
+            <ComboBoxItem Content="cash_in" />
+            <ComboBoxItem Content="cash_out" />
+          </ComboBox>
+          <TextBox Name="MovementAmountBox" PlaceholderText="Amount" />
+          <TextBox Name="MovementReasonBox" PlaceholderText="Reason" />
+          <Button Content="Record movement" Click="RecordMovementClick" IsEnabled="{Binding IsOnlineSession}" />
+          <TextBox Name="CountedCashBox" PlaceholderText="Counted cash" />
+          <Button Content="Close shift" Click="CloseShiftClick" IsEnabled="{Binding IsOnlineSession}" />
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="#9C2B2B" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

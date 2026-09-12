@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 12, 2026 — buildable desktop cashier shell
+
+Converted the reserved desktop presentation directory into a real .NET 10/Avalonia 12
+Windows/macOS/Linux desktop project and added it to both solution graphs. The compiled
+cashier window presents session and sync state, barcode entry, cart lines, totals, cash
+tender, synchronization, cash-in/out and shift-closing controls over an explicit
+`IPosWorkspace` boundary. Application startup was smoke-tested as a live desktop process.
+
+The cashier view model supports online startup with bounded transient fallback to the
+last verified offline state, repeated barcode quantities, invariant-decimal tendering,
+and immutable cart totals. Sale IDs remain stable across uncertain completion retries;
+cash-movement and close operation IDs and request values also remain stable until their
+outcome is resolved, preventing retry-induced duplicate financial actions. Presentation
+tests prove scan/cart/checkout and uncertain cash retry behavior. Native CI passes
+structure and architecture for 71 projects, secret and dependency scanning, formatting,
+all PostgreSQL migrations and backup/restore, 199 unit/configuration/HTTP/desktop tests
+and 72 integration tests with zero failures or skips. The default executable deliberately
+shows that sign-in/device setup is required rather than embedding credentials. Next add
+the native OIDC authorization-code/PKCE bootstrap and runtime configuration that creates
+the authenticated workspace for this shell; hardware and broader product screens remain
+incomplete.
+
 ## September 12, 2026 — desktop cash management and authoritative closing
 
 The desktop POS workspace now records cash-in and cash-out against its verified active

@@ -21,6 +21,7 @@ function Get-ProjectLayer([string] $Path) {
         '^apps/desktop/src/SalekhPos\.Desktop\.Domain/' { return 'DesktopDomain' }
         '^apps/desktop/src/SalekhPos\.Desktop\.Application/' { return 'DesktopApplication' }
         '^apps/desktop/src/SalekhPos\.Desktop\.Infrastructure/' { return 'DesktopInfrastructure' }
+        '^apps/desktop/src/SalekhPos\.Desktop/' { return 'DesktopPresentation' }
         '^apps/desktop/tests/' { return 'Tests' }
         '^backend/tests/' { return 'Tests' }
         default { throw "Unclassified project location: $taskRelative. Extend the architecture rule explicitly." }
@@ -55,6 +56,16 @@ foreach ($taskProject in $taskProjects) {
             }
             $taskReferenceLayer = [IO.Path]::GetFileNameWithoutExtension($taskTarget).Split('.')[-1]
             if ($taskReferenceLayer -notin $taskAllowed) { throw "Forbidden module-layer dependency: $($taskProject.Name) -> $taskTarget" }
+        }
+        $taskDesktopAllowed = switch ($taskLayer) {
+            'DesktopDomain' { @() }
+            'DesktopApplication' { @('DesktopDomain') }
+            'DesktopInfrastructure' { @('DesktopDomain', 'DesktopApplication') }
+            'DesktopPresentation' { @('DesktopApplication', 'DesktopInfrastructure') }
+            default { $null }
+        }
+        if ($null -ne $taskDesktopAllowed -and $taskTargetLayer -notin $taskDesktopAllowed) {
+            throw "Forbidden desktop-layer dependency: $($taskProject.Name) ($taskLayer) -> $taskTarget ($taskTargetLayer)"
         }
         if ($taskLayer -eq 'SharedKernel' -or
             ($taskLayer -ne 'Tests' -and $taskTargetLayer -eq 'Tests') -or

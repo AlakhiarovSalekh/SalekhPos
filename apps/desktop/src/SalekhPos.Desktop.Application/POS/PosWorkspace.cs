@@ -15,6 +15,21 @@ public sealed record PosWorkspaceState(PosWorkspaceScope Scope, LocalCashSession
 public sealed record CashCheckoutRequest(Guid SaleId, DateTimeOffset CompletedAt, decimal CashReceived,
     IReadOnlyList<ProjectedSaleItem> Items);
 
+public interface IPosWorkspace
+{
+    PosWorkspaceState CurrentState { get; }
+    Task<PosWorkspaceState> OpenOnlineAsync(CancellationToken cancellationToken);
+    Task<PosWorkspaceState> OpenOfflineAsync(CancellationToken cancellationToken);
+    Task<LocalSellableItem?> FindByProductAsync(Guid productId, DateTimeOffset at, CancellationToken cancellationToken);
+    Task<LocalSellableItem?> FindByBarcodeAsync(string barcode, DateTimeOffset at, CancellationToken cancellationToken);
+    Task<LocalSaleWriteResult> CompleteCashSaleAsync(CashCheckoutRequest request, CancellationToken cancellationToken);
+    Task<PosWorkspaceState> SynchronizeAsync(CancellationToken cancellationToken);
+    Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount, string reason,
+        CancellationToken cancellationToken);
+    Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,
+        CancellationToken cancellationToken);
+}
+
 public sealed class PosWorkspace(
     PosWorkspaceScope scope,
     CashSessionCoordinator cashSessions,
@@ -24,7 +39,7 @@ public sealed class PosWorkspace(
     IProjectedSaleCheckout checkout,
     PendingSaleSyncRunner sync,
     ILocalSaleStore sales,
-    IRemoteCashManagement cashManagement)
+    IRemoteCashManagement cashManagement) : IPosWorkspace
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private PosWorkspaceState? state;
