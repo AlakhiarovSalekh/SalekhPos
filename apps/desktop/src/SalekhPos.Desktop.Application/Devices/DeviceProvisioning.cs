@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -40,6 +41,89 @@ public interface IDeviceProvisioningStateStore
         CancellationToken cancellationToken);
 }
 
+public sealed record ActiveDeviceProvisioningProofMaterial(Guid OrganizationId, Guid BranchId, Guid DeviceId,
+    Guid CredentialId, string KeyReference, string PublicKeyFingerprint);
+
+public interface IActiveDeviceProvisioningProofMaterialReader
+{
+    Task<ActiveDeviceProvisioningProofMaterial> ReadActiveAsync(CancellationToken cancellationToken);
+}
+
+public sealed record DeviceRequestProof(string CredentialId, string Timestamp, string Nonce, string Signature);
+
+public interface IDeviceRequestProofSigner
+{
+    Task<DeviceRequestProof> SignSyncMessageAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid messageId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken);
+}
+
+public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
+    IActiveDeviceProvisioningProofMaterialReader proofMaterialReader, TimeProvider? timeProvider = null)
+    : IDeviceRequestProofSigner
+{
+    private const string Domain = "salekhpos-device-request-v1";
+    private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
+
+    public async Task<DeviceRequestProof> SignSyncMessageAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid messageId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || deviceId == Guid.Empty
+            || messageId == Guid.Empty)
+            throw new ArgumentException("Device request proof identities are required.");
+        var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/devices/{deviceId:D}/sync/messages";
+        if (!string.Equals(canonicalPath, expectedPath, StringComparison.Ordinal))
+            throw new InvalidOperationException("The device request proof path is invalid.");
+
+        var material = await proofMaterialReader.ReadActiveAsync(cancellationToken);
+        if (material.OrganizationId != organizationId || material.BranchId != branchId
+            || material.DeviceId != deviceId || material.CredentialId == Guid.Empty
+            || string.IsNullOrWhiteSpace(material.KeyReference))
+            throw new InvalidOperationException("The active device provisioning assignment does not match the request.");
+
+        var persistedFingerprint = DecodeCanonicalBase64(material.PublicKeyFingerprint, 32);
+        using var key = keys.Open(material.KeyReference, createIfMissing: false);
+        var publicKey = DeviceSigningMaterial.ValidatePublicKey(key.GetSubjectPublicKeyInfo());
+        var actualFingerprint = SHA256.HashData(publicKey);
+        if (!CryptographicOperations.FixedTimeEquals(persistedFingerprint, actualFingerprint))
+            throw new InvalidOperationException("The persisted device key does not match the provisioning state.");
+
+        var timestamp = clock.GetUtcNow().UtcDateTime.ToString(
+            "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture);
+        var nonce = Base64Url(RandomNumberGenerator.GetBytes(32));
+        var bodyDigest = Convert.ToHexString(SHA256.HashData(body.Span));
+        var canonical = Encoding.UTF8.GetBytes(string.Join('\n', Domain, "POST", canonicalPath,
+            organizationId.ToString("D"), branchId.ToString("D"), deviceId.ToString("D"),
+            material.CredentialId.ToString("D"), $"message:{messageId:D}", bodyDigest, timestamp, nonce,
+            material.PublicKeyFingerprint));
+        var signature = key.Sign(canonical);
+        if (signature.Length != 64)
+            throw new InvalidOperationException("The device key returned an invalid signature.");
+        using var verifier = ECDsa.Create();
+        verifier.ImportSubjectPublicKeyInfo(publicKey, out var read);
+        if (read != publicKey.Length || !verifier.VerifyData(canonical, signature, HashAlgorithmName.SHA256,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
+            throw new InvalidOperationException("The device key returned an invalid signature.");
+        return new(material.CredentialId.ToString("D"), timestamp, nonce, Convert.ToBase64String(signature));
+    }
+
+    private static byte[] DecodeCanonicalBase64(string value, int length)
+    {
+        try
+        {
+            var bytes = Convert.FromBase64String(value);
+            if (bytes.Length != length || Convert.ToBase64String(bytes) != value) throw new FormatException();
+            return bytes;
+        }
+        catch (FormatException exception)
+        {
+            throw new InvalidOperationException("The active device provisioning proof material is invalid.", exception);
+        }
+    }
+
+    private static string Base64Url(byte[] value) =>
+        Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+}
+
 public interface IDeviceProvisioningClient
 {
     Task<ProvisionedDevice> RegisterAsync(DeviceProvisioningRequest request, Guid operationId,
@@ -58,7 +142,6 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
     IDeviceProvisioningClient client, TimeProvider? timeProvider = null) : IDeviceProvisioner
 {
     private const string Algorithm = "ecdsa-p256-sha256";
-    private const string P256Oid = "1.2.840.10045.3.1.7";
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
 
     public async Task<ProvisionedDevice> ProvisionAsync(DeviceProvisioningRequest request,
@@ -68,7 +151,7 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
         var state = await states.GetOrCreateAsync(request, Guid.NewGuid(), Guid.NewGuid(),
             keys.CreateKeyReference(), cancellationToken);
         using var key = keys.Open(state.KeyReference, state.PublicKeyFingerprint is null);
-        var publicKey = ValidatePublicKey(key.GetSubjectPublicKeyInfo());
+        var publicKey = DeviceSigningMaterial.ValidatePublicKey(key.GetSubjectPublicKeyInfo());
         var fingerprint = Convert.ToBase64String(SHA256.HashData(publicKey));
         if (state.PublicKeyFingerprint is null)
             state = await states.BindPublicKeyAsync(state, fingerprint, cancellationToken);
@@ -195,7 +278,14 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
         catch (FormatException) { return false; }
     }
 
-    private static byte[] ValidatePublicKey(byte[]? publicKey)
+    private static InvalidOperationException Changed(string message) => new(message);
+}
+
+internal static class DeviceSigningMaterial
+{
+    private const string P256Oid = "1.2.840.10045.3.1.7";
+
+    internal static byte[] ValidatePublicKey(byte[]? publicKey)
     {
         if (publicKey is null) throw Changed("The device key returned an invalid public key.");
         try

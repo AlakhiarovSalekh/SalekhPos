@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 using SalekhPos.Desktop.Application.Devices;
 using SalekhPos.Desktop.Infrastructure.Devices;
 using SalekhPos.Desktop.Infrastructure.LocalDatabase;
@@ -108,6 +109,52 @@ public sealed class DeviceProvisioningTests
             await Assert.ThrowsAsync<InvalidOperationException>(() => reopened.ProvisionAsync(request));
             Assert.Equal(1, client.RegisterCalls);
             Assert.Equal(1, client.TrustCalls);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ActiveProofMaterialReaderRejectsMissingPendingAndCorruptState()
+    {
+        var path = TempDatabase();
+        var request = Request();
+        var store = new SqliteDeviceProvisioningStateStore(path);
+        var credentialId = Guid.NewGuid();
+        var fingerprint = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray());
+        try
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadActiveAsync(default));
+            var state = await store.GetOrCreateAsync(request, Guid.NewGuid(), Guid.NewGuid(),
+                "cng-user:" + Guid.NewGuid().ToString("N"), default);
+            state = await store.BindPublicKeyAsync(state, fingerprint, default);
+            var pending = new ProvisionedDevice(Guid.NewGuid(), request.BranchId, request.RegisterId, request.Code,
+                request.Name, request.Platform, "pending", 1, ServerClient.Now, "operator-1",
+                new DeviceCredential(credentialId, "ecdsa-p256-sha256", Convert.ToBase64String(new byte[32]),
+                    ServerClient.Now.AddMinutes(15), "pending"), null, null, null);
+            state = await store.RecordRegistrationAsync(state, pending, default);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadActiveAsync(default));
+            var active = pending with
+            {
+                Status = "active",
+                Credential = pending.Credential! with { Status = "active" },
+            };
+            await store.RecordTrustAsync(state, active, default);
+
+            var material = await store.ReadActiveAsync(default);
+
+            Assert.Equal(request.OrganizationId, material.OrganizationId);
+            Assert.Equal(request.BranchId, material.BranchId);
+            Assert.Equal(active.Id, material.DeviceId);
+            Assert.Equal(credentialId, material.CredentialId);
+            Assert.Equal(fingerprint, material.PublicKeyFingerprint);
+            await using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "UPDATE device_provisioning_state SET public_key_fingerprint='corrupt'";
+                await command.ExecuteNonQueryAsync();
+            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadActiveAsync(default));
         }
         finally { File.Delete(path); }
     }

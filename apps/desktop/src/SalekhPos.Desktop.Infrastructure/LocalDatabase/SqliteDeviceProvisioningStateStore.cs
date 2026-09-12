@@ -3,9 +3,27 @@ using SalekhPos.Desktop.Application.Devices;
 
 namespace SalekhPos.Desktop.Infrastructure.LocalDatabase;
 
-public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : IDeviceProvisioningStateStore
+public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : IDeviceProvisioningStateStore,
+    IActiveDeviceProvisioningProofMaterialReader
 {
     private readonly string connectionString = BuildConnection(databasePath);
+
+    public async Task<ActiveDeviceProvisioningProofMaterial> ReadActiveAsync(
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await Open(cancellationToken);
+        await using var transaction = connection.BeginTransaction(deferred: true);
+        await Execute(connection, transaction, Schema, cancellationToken);
+        var state = await Read(connection, transaction, cancellationToken)
+            ?? throw new InvalidOperationException("The local device is not provisioned.");
+        var credential = state.Device?.Credential;
+        if (state.Device?.Status != "active" || credential?.Status != "active"
+            || credential.Algorithm != "ecdsa-p256-sha256" || state.PublicKeyFingerprint is null)
+            throw new InvalidOperationException("The local device provisioning state is not active.");
+        await transaction.CommitAsync(cancellationToken);
+        return new(state.Request.OrganizationId, state.Request.BranchId, state.Device.Id, credential.Id,
+            state.KeyReference, state.PublicKeyFingerprint);
+    }
 
     public async Task<DeviceProvisioningState> GetOrCreateAsync(DeviceProvisioningRequest request,
         Guid registrationOperationId, Guid trustOperationId, string keyReference, CancellationToken cancellationToken)
