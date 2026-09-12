@@ -8,9 +8,10 @@ namespace SalekhPos.Desktop;
 public sealed partial class MainWindow : Window
 {
     private readonly CashierViewModel viewModel;
-    public MainWindow() : this(null) { }
-    public MainWindow(IPosWorkspace? workspace)
+    public MainWindow() => throw new InvalidOperationException("An authenticated workspace is required.");
+    public MainWindow(IPosWorkspace workspace)
     {
+        ArgumentNullException.ThrowIfNull(workspace);
         InitializeComponent(); DataContext = viewModel = new(workspace);
         Opened += async (_, _) => await Execute(() => viewModel.InitializeAsync(default));
     }

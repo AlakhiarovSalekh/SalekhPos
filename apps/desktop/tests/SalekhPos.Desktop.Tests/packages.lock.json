@@ -362,7 +362,8 @@
         "dependencies": {
           "Avalonia.Desktop": "[12.1.2, )",
           "Avalonia.Themes.Fluent": "[12.1.2, )",
-          "SalekhPos.Desktop.Application": "[1.0.0, )"
+          "SalekhPos.Desktop.Application": "[1.0.0, )",
+          "SalekhPos.Desktop.Infrastructure": "[1.0.0, )"
         }
       },
       "salekhpos.desktop.application": {

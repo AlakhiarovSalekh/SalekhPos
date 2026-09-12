@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.SignInWindow"
+        Title="SalekhPos sign in" Width="480" Height="340"
+        MinWidth="420" MinHeight="300" CanResize="False">
+  <Grid Background="#F3F5F7">
+    <Border Width="380" Padding="30" Background="White" CornerRadius="10"
+            HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="16">
+        <TextBlock Text="SalekhPos" FontSize="30" FontWeight="SemiBold" />
+        <TextBlock Text="Cashier sign in" FontSize="20" />
+        <TextBlock Name="StatusText" TextWrapping="Wrap"
+                   Text="Sign in with your organization's identity provider." />
+        <Button Name="SignInButton" Content="Sign in securely" HorizontalAlignment="Stretch"
+                Click="SignInClick" />
+        <ProgressBar Name="Progress" IsIndeterminate="True" IsVisible="False" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

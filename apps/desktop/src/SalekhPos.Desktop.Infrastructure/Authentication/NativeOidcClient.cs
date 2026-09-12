@@ -24,6 +24,8 @@ public sealed record NativeOidcSettings(string Authority, string ClientId, IRead
             || string.IsNullOrWhiteSpace(ClientId) || ClientId.Length > 256 || ClientId.Any(char.IsControl)
             || CallbackPort is < 1024 or > 65535 || Scopes.Count is < 1 or > 16
             || !Scopes.Contains("openid", StringComparer.Ordinal)
+            || Scopes.Contains("offline_access", StringComparer.Ordinal)
+            || Scopes.Distinct(StringComparer.Ordinal).Count() != Scopes.Count
             || Scopes.Any(scope => string.IsNullOrWhiteSpace(scope) || scope.Length > 128
                 || scope.Any(character => char.IsControl(character) || char.IsWhiteSpace(character))))
             throw new InvalidOperationException("Native OIDC configuration is invalid.");
@@ -73,8 +75,15 @@ public sealed class LoopbackAuthorizationCallbackReceiver : IAuthorizationCallba
 
 public sealed record NativeOidcSession(string AccessToken, DateTimeOffset ExpiresAt, string Subject);
 
+public interface INativeOidcClient
+{
+    Task<NativeOidcSession> SignInAsync(NativeOidcSettings settings,
+        CancellationToken cancellationToken = default);
+}
+
 public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser browser,
     IAuthorizationCallbackReceiver callbackReceiver, TimeProvider? timeProvider = null)
+    : INativeOidcClient
 {
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
 
@@ -192,13 +201,15 @@ public sealed class NativeOidcClient(HttpClient backchannel, ISystemBrowser brow
         [property: System.Text.Json.Serialization.JsonPropertyName("expires_in")] int ExpiresIn);
 }
 
-public sealed class InMemoryAccessTokenProvider(TimeProvider? timeProvider = null) : IAccessTokenProvider
+public sealed class InMemoryAccessTokenProvider(TimeProvider? timeProvider = null) : IAccessTokenProvider, IDisposable
 {
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private NativeOidcSession? _session;
 
     public void SetSession(NativeOidcSession session) => _session = session;
     public void Clear() => _session = null;
+
+    public void Dispose() => Clear();
 
     public Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
     {

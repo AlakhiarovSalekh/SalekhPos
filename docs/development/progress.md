@@ -1,5 +1,27 @@
 # Implementation progress
 
+## September 12, 2026 — secure desktop runtime bootstrap and native sign-in
+
+Added explicit fail-closed desktop runtime settings for the HTTPS API and OIDC authority,
+public-client identity and scopes, loopback callback port, organization, branch and device
+assignment, and a fully qualified local SQLite path. Unsafe endpoints, relative/network
+database paths, empty assignments, duplicate or `offline_access` scopes, and any supplied
+desktop client secret are rejected before sign-in is available.
+
+The native sign-in window invokes the cryptographically validating `NativeOidcClient`,
+keeps the access token only in memory, and constructs the real authenticated `IPosWorkspace`
+with per-request bearer authorization. Failed bootstrap clears credentials; application
+exit clears active credentials and disposes authenticated/OIDC HTTP resources.
+
+Focused verification passes 48/48 desktop tests. The complete Native PostgreSQL CI gate
+also passes: 1,543 structure entries, architecture coverage for 71 projects, Gitleaks,
+locked restore, Release build with zero warnings/errors, formatting/dependency checks,
+PostgreSQL migration/isolation, logical backup/restore, 167 unit/configuration/HTTP tests,
+48 desktop tests and 72 integration tests, with zero failures or skips. PowerShell 7.6.6
+from the installed Windows App package was used directly for the gate. Exact next slice:
+secure refresh-token rotation/session renewal and sign-out/re-authentication without
+persisting raw tokens.
+
 ## September 12, 2026 — native OIDC authorization-code/PKCE client
 
 Added a provider-neutral native OIDC client for the desktop application. It discovers

@@ -6,5 +6,6 @@
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <ProjectReference Include="../SalekhPos.Desktop.Application/SalekhPos.Desktop.Application.csproj" />
+    <ProjectReference Include="../SalekhPos.Desktop.Infrastructure/SalekhPos.Desktop.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
