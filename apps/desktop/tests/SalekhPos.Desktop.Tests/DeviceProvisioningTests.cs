@@ -200,7 +200,7 @@ public sealed class DeviceProvisioningTests
                 privateKeys.Add(keyReference, material); CreatedKeys++;
             }
             var key = ECDsa.Create(); key.ImportPkcs8PrivateKey(material, out _);
-            return new TestKey(keyReference, key);
+            return new TestKey(key);
         }
 
         public void Dispose()
@@ -210,9 +210,8 @@ public sealed class DeviceProvisioningTests
         }
     }
 
-    private sealed class TestKey(string reference, ECDsa key) : IDeviceSigningKey
+    private sealed class TestKey(ECDsa key) : IDeviceSigningKey
     {
-        public string KeyReference => reference;
         public byte[] GetSubjectPublicKeyInfo() => key.ExportSubjectPublicKeyInfo();
         public byte[] Sign(ReadOnlySpan<byte> data) => key.SignData(data, HashAlgorithmName.SHA256,
             DSASignatureFormat.IeeeP1363FixedFieldConcatenation);

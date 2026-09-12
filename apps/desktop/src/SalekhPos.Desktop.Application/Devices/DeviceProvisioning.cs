@@ -5,7 +5,6 @@ namespace SalekhPos.Desktop.Application.Devices;
 
 public interface IDeviceSigningKey : IDisposable
 {
-    string KeyReference { get; }
     byte[] GetSubjectPublicKeyInfo();
     byte[] Sign(ReadOnlySpan<byte> data);
 }
@@ -59,6 +58,7 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
     IDeviceProvisioningClient client, TimeProvider? timeProvider = null) : IDeviceProvisioner
 {
     private const string Algorithm = "ecdsa-p256-sha256";
+    private const string P256Oid = "1.2.840.10045.3.1.7";
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
 
     public async Task<ProvisionedDevice> ProvisionAsync(DeviceProvisioningRequest request,
@@ -68,7 +68,7 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
         var state = await states.GetOrCreateAsync(request, Guid.NewGuid(), Guid.NewGuid(),
             keys.CreateKeyReference(), cancellationToken);
         using var key = keys.Open(state.KeyReference, state.PublicKeyFingerprint is null);
-        var publicKey = key.GetSubjectPublicKeyInfo();
+        var publicKey = ValidatePublicKey(key.GetSubjectPublicKeyInfo());
         var fingerprint = Convert.ToBase64String(SHA256.HashData(publicKey));
         if (state.PublicKeyFingerprint is null)
             state = await states.BindPublicKeyAsync(state, fingerprint, cancellationToken);
@@ -193,6 +193,27 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
             return a.Length == length && b.Length == length && CryptographicOperations.FixedTimeEquals(a, b);
         }
         catch (FormatException) { return false; }
+    }
+
+    private static byte[] ValidatePublicKey(byte[]? publicKey)
+    {
+        if (publicKey is null) throw Changed("The device key returned an invalid public key.");
+        try
+        {
+            using var verifier = ECDsa.Create();
+            verifier.ImportSubjectPublicKeyInfo(publicKey, out var read);
+            var parameters = verifier.ExportParameters(false);
+            if (read != publicKey.Length || verifier.KeySize != 256 || !parameters.Curve.IsNamed
+                || parameters.Curve.Oid.Value != P256Oid || parameters.Q.X?.Length != 32
+                || parameters.Q.Y?.Length != 32
+                || !publicKey.AsSpan().SequenceEqual(verifier.ExportSubjectPublicKeyInfo()))
+                throw Changed("The device key returned an invalid public key.");
+            return publicKey;
+        }
+        catch (CryptographicException exception)
+        {
+            throw new InvalidOperationException("The device key returned an invalid public key.", exception);
+        }
     }
 
     private static InvalidOperationException Changed(string message) => new(message);

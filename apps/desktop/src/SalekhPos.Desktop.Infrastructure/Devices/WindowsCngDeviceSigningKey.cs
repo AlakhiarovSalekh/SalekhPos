@@ -22,6 +22,7 @@ public sealed class UnsupportedDeviceSigningKeyProvider : IDeviceSigningKeyProvi
 public sealed class WindowsCngDeviceSigningKeyProvider : IDeviceSigningKeyProvider
 {
     private const string Prefix = "cng-user:";
+    private const int ErrorFileNotFound = unchecked((int)0x80070002);
 
     public string CreateKeyReference()
     {
@@ -34,7 +35,7 @@ public sealed class WindowsCngDeviceSigningKeyProvider : IDeviceSigningKeyProvid
         RequireWindows();
         var name = Parse(keyReference);
         CngKey key;
-        if (CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.UserKey))
+        if (Exists(name))
             key = CngKey.Open(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.UserKey);
         else if (createIfMissing)
             key = CngKey.Create(CngAlgorithm.ECDsaP256, name, new CngKeyCreationParameters
@@ -47,8 +48,20 @@ public sealed class WindowsCngDeviceSigningKeyProvider : IDeviceSigningKeyProvid
         else
             throw new InvalidOperationException("The persisted device signing key is missing.");
 
-        try { return new WindowsCngDeviceSigningKey(keyReference, key); }
+        try { return new WindowsCngDeviceSigningKey(key); }
         catch { key.Dispose(); throw; }
+    }
+
+    private static bool Exists(string name)
+    {
+        try
+        {
+            return CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.UserKey);
+        }
+        catch (CryptographicException exception) when (exception.HResult == ErrorFileNotFound)
+        {
+            return false;
+        }
     }
 
     internal static string Parse(string reference)
@@ -75,11 +88,10 @@ internal sealed class WindowsCngDeviceSigningKey : IDeviceSigningKey
     private ECDsaCng? signer;
     private readonly byte[] publicKey;
 
-    public WindowsCngDeviceSigningKey(string reference, CngKey key)
+    public WindowsCngDeviceSigningKey(CngKey key)
     {
-        KeyReference = reference;
         if (key.IsMachineKey || key.Provider != CngProvider.MicrosoftSoftwareKeyStorageProvider
-            || key.ExportPolicy != CngExportPolicies.None || (key.KeyUsage & CngKeyUsages.Signing) == 0)
+            || key.ExportPolicy != CngExportPolicies.None || key.KeyUsage != CngKeyUsages.Signing)
             throw Unsafe();
         var candidate = new ECDsaCng(key);
         try
@@ -99,7 +111,6 @@ internal sealed class WindowsCngDeviceSigningKey : IDeviceSigningKey
         catch { candidate.Dispose(); throw; }
     }
 
-    public string KeyReference { get; }
     public byte[] GetSubjectPublicKeyInfo() => (byte[])publicKey.Clone();
 
     public byte[] Sign(ReadOnlySpan<byte> data)

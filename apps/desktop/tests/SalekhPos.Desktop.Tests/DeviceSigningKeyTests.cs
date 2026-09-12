@@ -8,6 +8,8 @@ namespace SalekhPos.Desktop.Tests;
 
 public sealed class DeviceSigningKeyTests
 {
+    private const int ErrorFileNotFound = unchecked((int)0x80070002);
+
     [Fact]
     public void SigningKeyBoundaryHasNoPrivateKeyExportSurface()
     {
@@ -16,7 +18,7 @@ public sealed class DeviceSigningKeyTests
         Assert.DoesNotContain(members, name => name.Contains("Private", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain("ExportParameters", members);
         Assert.DoesNotContain("ExportPkcs8PrivateKey", members);
-        Assert.Equal(["GetSubjectPublicKeyInfo", "KeyReference", "Sign", "get_KeyReference"],
+        Assert.Equal(["GetSubjectPublicKeyInfo", "Sign"],
             members.Order(StringComparer.Ordinal).ToArray());
     }
 
@@ -111,7 +113,15 @@ public sealed class DeviceSigningKeyTests
     private static void Delete(string reference)
     {
         var name = Name(reference);
-        if (!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.UserKey)) return;
+        try
+        {
+            if (!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                    CngKeyOpenOptions.UserKey)) return;
+        }
+        catch (CryptographicException exception) when (exception.HResult == ErrorFileNotFound)
+        {
+            return;
+        }
         using var key = CngKey.Open(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.UserKey);
         key.Delete();
     }
