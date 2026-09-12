@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
-using SalekhPos.Devices.Application.Devices;
 using SalekhPos.Sync.Application.SyncMessages;
 using SalekhPos.Sync.Contracts.SyncMessages;
 namespace SalekhPos.Sync.Api.SyncMessages;
@@ -13,7 +12,7 @@ public static class SyncEndpoints
     {
         var g = app.MapGroup("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/devices/{deviceId:guid}/sync").RequireAuthorization().RequireRateLimiting("business");
         g.MapPost("/messages", async (Guid organizationId, Guid branchId, Guid deviceId, IngestSyncMessageRequest request,
-            HttpContext context, IDeviceRequestProofVerifier proof, ISyncIngestion ingestion, CancellationToken ct) =>
+            HttpContext context, ISyncDeviceRequestAuthorizer proof, ISyncIngestion ingestion, CancellationToken ct) =>
         {
             try
             {
@@ -25,7 +24,7 @@ public static class SyncEndpoints
             catch (ArgumentException) { return Invalid(); }
         });
         g.MapGet("/messages/{messageId:guid}", async (Guid organizationId, Guid branchId, Guid deviceId, Guid messageId,
-            HttpContext context, IDeviceRequestProofVerifier proof, ISyncIngestion ingestion, CancellationToken ct) =>
+            HttpContext context, ISyncDeviceRequestAuthorizer proof, ISyncIngestion ingestion, CancellationToken ct) =>
         {
             await proof.VerifyAsync(Proof(context, organizationId, branchId, deviceId, $"message:{messageId:D}",
                 $"{MessagesPath(organizationId, branchId, deviceId)}/{messageId:D}"), ct);
@@ -33,7 +32,7 @@ public static class SyncEndpoints
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
         g.MapGet("/messages", async (Guid organizationId, Guid branchId, Guid deviceId, HttpContext context,
-            IDeviceRequestProofVerifier proof, ISyncIngestion ingestion, CancellationToken ct) =>
+            ISyncDeviceRequestAuthorizer proof, ISyncIngestion ingestion, CancellationToken ct) =>
         {
             try
             {
@@ -55,7 +54,7 @@ public static class SyncEndpoints
             catch (ArgumentException) { return Invalid(); }
         });
         g.MapGet("/checkpoint", async (Guid organizationId, Guid branchId, Guid deviceId, HttpContext context,
-            IDeviceRequestProofVerifier proof, ISyncIngestion ingestion, CancellationToken ct) =>
+            ISyncDeviceRequestAuthorizer proof, ISyncIngestion ingestion, CancellationToken ct) =>
         {
             await proof.VerifyAsync(Proof(context, organizationId, branchId, deviceId, "checkpoint",
                 $"{BasePath(organizationId, branchId, deviceId)}/checkpoint"), ct);
@@ -64,21 +63,21 @@ public static class SyncEndpoints
         });
     }
 
-    private static DeviceRequestProofContext Proof(HttpContext context, Guid organizationId, Guid branchId, Guid deviceId,
+    private static SyncDeviceRequestProofContext Proof(HttpContext context, Guid organizationId, Guid branchId, Guid deviceId,
         string operationIdentity, string canonicalPath)
     {
         if (!context.Items.TryGetValue(SyncRequestBodyDigestMiddleware.DigestItemKey, out var value) || value is not string digest)
-            throw new DeviceRequestAuthenticationException();
+            throw new SyncRequestAuthenticationException();
         return new(new(Id(context).Issuer, Id(context).Subject), organizationId, branchId, deviceId,
             context.Request.Method.ToUpperInvariant(), canonicalPath, operationIdentity, digest,
-            new(Header(context, "X-SalekhPos-Device-Credential"), Header(context, "X-SalekhPos-Device-Timestamp"),
+            new SyncDeviceRequestProofHeaders(Header(context, "X-SalekhPos-Device-Credential"), Header(context, "X-SalekhPos-Device-Timestamp"),
                 Header(context, "X-SalekhPos-Device-Nonce"), Header(context, "X-SalekhPos-Device-Signature")));
     }
 
     private static string? Header(HttpContext context, string name)
     {
         StringValues values = context.Request.Headers[name];
-        return values.Count switch { 0 => null, 1 => values[0], _ => throw new DeviceRequestAuthenticationException() };
+        return values.Count switch { 0 => null, 1 => values[0], _ => throw new SyncRequestAuthenticationException() };
     }
 
     private static string BasePath(Guid organizationId, Guid branchId, Guid deviceId) =>

@@ -31,6 +31,7 @@ using SalekhPos.Sales.Infrastructure.Voids;
 using SalekhPos.Api.Authentication;
 using SalekhPos.Api.Endpoints;
 using SalekhPos.Api.ExceptionHandling;
+using SalekhPos.Api.Security;
 using SalekhPos.Identity.Api.Endpoints;
 using SalekhPos.Identity.Infrastructure.Tokens;
 using SalekhPos.SystemAdministration.Api;
@@ -100,6 +101,7 @@ builder.Services.AddSingleton<IDeviceRegistry>(provider => new PostgresDeviceReg
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IDeviceRequestProofVerifier>(provider => new PostgresDeviceRequestProofVerifier(
     provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISyncDeviceRequestAuthorizer, SyncDeviceRequestAuthorizer>();
 builder.Services.AddSingleton<ISyncIngestion>(provider => new PostgresSyncIngestion(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
