@@ -102,6 +102,7 @@ builder.Services.AddSingleton<IDeviceRegistry>(provider => new PostgresDeviceReg
 builder.Services.AddSingleton<IDeviceRequestProofVerifier>(provider => new PostgresDeviceRequestProofVerifier(
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISyncDeviceRequestAuthorizer, SyncDeviceRequestAuthorizer>();
+builder.Services.AddSingleton<IShiftDeviceRequestAuthorizer, ShiftDeviceRequestAuthorizer>();
 builder.Services.AddSingleton<ISyncIngestion>(provider => new PostgresSyncIngestion(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -155,6 +156,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSyncRequestBodyDigest();
+app.UseShiftRequestBodyDigest();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" })).AllowAnonymous();
 app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAccessReader reader,

@@ -6,9 +6,10 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>, IDisposable
 {
     private readonly SemaphoreSlim saleShiftGate = new(1, 1);
+    private readonly Dictionary<Guid, TrustedDeviceTestClient> shiftDevices = [];
     private Guid? saleShiftId;
     [Fact]
     public async Task ShiftOpeningIsIdempotentPermissionCheckedAndLimitedToOnePerRegister()
@@ -545,11 +546,12 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
 
     private async Task<HttpResponseMessage> OpenShift(HttpClient client, Guid registerId, Guid operationId, decimal openingBalance)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post,
-            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open")
-        { Content = JsonContent.Create(new { registerId, currency = "GEL", openingBalance }) };
-        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
-        return await client.SendAsync(request);
+        if (!shiftDevices.TryGetValue(registerId, out var device))
+        {
+            device = await TrustedDeviceTestClient.EnrollAsync(fixture, client, registerId);
+            shiftDevices.Add(registerId, device);
+        }
+        return await device.OpenShiftAsync(fixture, client, registerId, operationId, openingBalance);
     }
 
     private async Task<HttpResponseMessage> RecordCashMovement(HttpClient client, Guid shiftId, Guid operationId, string kind, decimal amount, string reason)
@@ -571,5 +573,11 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token(subject));
         return client;
+    }
+
+    public void Dispose()
+    {
+        foreach (var device in shiftDevices.Values) device.Dispose();
+        saleShiftGate.Dispose();
     }
 }

@@ -21,7 +21,8 @@ public sealed record DeviceRequestProofHeaders(string? CredentialId, string? Tim
     public bool IsEmpty => CredentialId is null && Timestamp is null && Nonce is null && Signature is null;
 }
 public sealed record DeviceRequestProofContext(DeviceIdentity Identity, Guid OrganizationId, Guid BranchId, Guid DeviceId,
-    string Method, string CanonicalPath, string OperationIdentity, string BodyDigest, DeviceRequestProofHeaders Headers);
+    string Method, string CanonicalPath, string OperationIdentity, string BodyDigest, DeviceRequestProofHeaders Headers,
+    Guid? ExpectedRegisterId = null, bool RequireCredential = false);
 public interface IDeviceRequestProofVerifier
 {
     Task VerifyAsync(DeviceRequestProofContext context, CancellationToken cancellationToken);

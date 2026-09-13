@@ -23,9 +23,14 @@ public sealed class PostgresDeviceRequestProofVerifier(NpgsqlDataSource? source)
 
         var credential = await ReadCredential(connection, transaction, x, ct)
             ?? throw new DeviceRequestAuthenticationException();
+        if (x.ExpectedRegisterId is Guid expectedRegisterId && credential.RegisterId != expectedRegisterId)
+        {
+            throw new DeviceRequestAuthenticationException();
+        }
+
         if (!credential.HasCredential)
         {
-            if (credential.DeviceStatus != "active" || !x.Headers.IsEmpty
+            if (x.RequireCredential || credential.DeviceStatus != "active" || !x.Headers.IsEmpty
                 || !string.Equals(credential.RegisteredIssuer, x.Identity.Issuer, StringComparison.Ordinal)
                 || !string.Equals(credential.RegisteredBy, x.Identity.Subject, StringComparison.Ordinal))
             {
@@ -96,20 +101,21 @@ public sealed class PostgresDeviceRequestProofVerifier(NpgsqlDataSource? source)
     private static async Task<CredentialRow?> ReadCredential(NpgsqlConnection connection, NpgsqlTransaction transaction,
         DeviceRequestProofContext x, CancellationToken ct)
     {
-        await using var command = new NpgsqlCommand("SELECT d.status,d.issuer,d.registered_by,c.credential_id,c.algorithm,c.public_key_spki,c.public_key_fingerprint,EXISTS(SELECT FROM devices.device_credentials c0 WHERE c0.organization_id=d.organization_id AND c0.device_id=d.device_id) FROM devices.registered_devices d LEFT JOIN LATERAL(SELECT credential_id,algorithm,public_key_spki,public_key_fingerprint FROM devices.device_credentials c1 WHERE c1.organization_id=d.organization_id AND c1.device_id=d.device_id AND c1.status='active' ORDER BY c1.created_at DESC,c1.credential_id DESC LIMIT 1)c ON true WHERE d.organization_id=$1 AND d.branch_id=$2 AND d.device_id=$3", connection, transaction);
+        await using var command = new NpgsqlCommand("SELECT d.status,d.issuer,d.registered_by,d.register_id,c.credential_id,c.algorithm,c.public_key_spki,c.public_key_fingerprint,EXISTS(SELECT FROM devices.device_credentials c0 WHERE c0.organization_id=d.organization_id AND c0.device_id=d.device_id) FROM devices.registered_devices d LEFT JOIN LATERAL(SELECT credential_id,algorithm,public_key_spki,public_key_fingerprint FROM devices.device_credentials c1 WHERE c1.organization_id=d.organization_id AND c1.device_id=d.device_id AND c1.status='active' ORDER BY c1.created_at DESC,c1.credential_id DESC LIMIT 1)c ON true WHERE d.organization_id=$1 AND d.branch_id=$2 AND d.device_id=$3", connection, transaction);
         command.Parameters.AddWithValue(x.OrganizationId);
         command.Parameters.AddWithValue(x.BranchId);
         command.Parameters.AddWithValue(x.DeviceId);
         await using var reader = await command.ExecuteReaderAsync(ct);
         if (!await reader.ReadAsync(ct)) return null;
-        return new(reader.GetString(0), reader.GetString(1), reader.GetString(2),
-            reader.IsDBNull(3) ? null : reader.GetGuid(3), reader.IsDBNull(4) ? null : reader.GetString(4),
-            reader.IsDBNull(5) ? null : (byte[])reader[5], reader.IsDBNull(6) ? null : (byte[])reader[6], reader.GetBoolean(7));
+        return new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetGuid(3),
+            reader.IsDBNull(4) ? null : reader.GetGuid(4), reader.IsDBNull(5) ? null : reader.GetString(5),
+            reader.IsDBNull(6) ? null : (byte[])reader[6], reader.IsDBNull(7) ? null : (byte[])reader[7], reader.GetBoolean(8));
     }
 
     private static void ValidateContext(DeviceRequestProofContext x)
     {
         if (x.OrganizationId == Guid.Empty || x.BranchId == Guid.Empty || x.DeviceId == Guid.Empty
+            || x.ExpectedRegisterId == Guid.Empty
             || string.IsNullOrWhiteSpace(x.Identity.Issuer) || string.IsNullOrWhiteSpace(x.Identity.Subject)
             || x.Method.Length is < 3 or > 16 || x.Method.Any(c => c is < 'A' or > 'Z')
             || string.IsNullOrWhiteSpace(x.CanonicalPath) || x.CanonicalPath[0] != '/' || x.CanonicalPath.Contains('?')
@@ -211,6 +217,6 @@ public sealed class PostgresDeviceRequestProofVerifier(NpgsqlDataSource? source)
 
     private static string Base64Url(ReadOnlySpan<byte> value) => Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
-    private sealed record CredentialRow(string DeviceStatus, string RegisteredIssuer, string RegisteredBy,
+    private sealed record CredentialRow(string DeviceStatus, string RegisteredIssuer, string RegisteredBy, Guid RegisterId,
         Guid? CredentialId, string? Algorithm, byte[]? PublicKey, byte[]? Fingerprint, bool HasCredential);
 }

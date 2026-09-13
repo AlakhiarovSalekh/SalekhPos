@@ -87,7 +87,7 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var invalidPage = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/devices/{id:D}/sync/messages?pageSize=0"); Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
         using var foreignHistory = await ProvenGet(Client("manager"), id, credentialId, deviceKey, "sync/messages", "history:50:-"); Assert.Single((await foreignHistory.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray());
         var (productId, priceId) = await PrepareProduct(owner);
-        using var shift = await OpenShift(owner, registerId); shift.EnsureSuccessStatusCode();
+        using var shift = await OpenShift(owner, registerId, id, credentialId, deviceKey); shift.EnsureSuccessStatusCode();
         using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
         var saleId = Guid.NewGuid(); var appliedPayload = OfflinePayload(saleId: saleId, shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId);
         var appliedMessageId = Guid.NewGuid(); using var applied = await Sync(owner, id, credentialId, deviceKey, appliedMessageId, 2, appliedPayload);
@@ -223,7 +223,7 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var secondDevice = await Register(owner, Guid.NewGuid(), registerId, "RACE-B-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(), "Race B", key: secondKey); using var secondBody = JsonDocument.Parse(await secondDevice.Content.ReadAsStringAsync()); var secondId = secondBody.RootElement.GetProperty("id").GetGuid(); var secondCredential = secondBody.RootElement.GetProperty("credential");
         using var firstTrust = await Trust(owner, firstId, firstCredential.GetProperty("id").GetGuid(), firstCredential.GetProperty("proofChallenge").GetString()!, firstKey, Guid.NewGuid()); firstTrust.EnsureSuccessStatusCode();
         using var secondTrust = await Trust(owner, secondId, secondCredential.GetProperty("id").GetGuid(), secondCredential.GetProperty("proofChallenge").GetString()!, secondKey, Guid.NewGuid()); secondTrust.EnsureSuccessStatusCode();
-        using var shift = await OpenShift(owner, registerId); shift.EnsureSuccessStatusCode(); using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
+        using var shift = await OpenShift(owner, registerId, firstId, firstCredential.GetProperty("id").GetGuid(), firstKey); shift.EnsureSuccessStatusCode(); using var shiftBody = JsonDocument.Parse(await shift.Content.ReadAsStringAsync()); var shiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
         var (productId, priceId) = await PrepareProduct(owner, 1m);
         var responses = await Task.WhenAll(
             Sync(owner, firstId, firstCredential.GetProperty("id").GetGuid(), firstKey, Guid.NewGuid(), 1, OfflinePayload(shiftId: shiftId, registerId: registerId, productId: productId, priceId: priceId)),
@@ -321,7 +321,29 @@ public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFix
         using var price = await owner.SendAsync(priceRequest); price.EnsureSuccessStatusCode(); using var priceBody = JsonDocument.Parse(await price.Content.ReadAsStringAsync()); var priceId = priceBody.RootElement.GetProperty("id").GetGuid();
         using var stockRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/inventory/movements") { Content = JsonContent.Create(new { productId, kind = "receipt", quantity = stockQuantity, reason = "Offline sync test stock", occurredAt = DateTimeOffset.UtcNow }) }; stockRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D")); using var stock = await owner.SendAsync(stockRequest); stock.EnsureSuccessStatusCode(); return (productId, priceId);
     }
-    private async Task<HttpResponseMessage> OpenShift(HttpClient owner, Guid registerId) { using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open") { Content = JsonContent.Create(new { registerId, currency = "GEL", openingBalance = 0m }) }; request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D")); return await owner.SendAsync(request); }
+    private async Task<HttpResponseMessage> OpenShift(HttpClient owner, Guid registerId, Guid deviceId,
+        Guid credentialId, ECDsa key)
+    {
+        var operationId = Guid.NewGuid();
+        var body = JsonSerializer.SerializeToUtf8Bytes(new { registerId, currency = "GEL", openingBalance = 0m }, WebJson);
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/open";
+        var timestamp = DateTimeOffset.UtcNow.ToUniversalTime().ToString(TimestampFormat, System.Globalization.CultureInfo.InvariantCulture);
+        var nonce = Base64Url(RandomNumberGenerator.GetBytes(32));
+        var canonical = DeviceRequestProofCanonicalizer.Create("POST", path, fixture.OrganizationA, fixture.BranchA,
+            deviceId, credentialId, $"shift-open:{operationId:D}", Convert.ToHexString(SHA256.HashData(body)),
+            timestamp, nonce, SHA256.HashData(key.ExportSubjectPublicKeyInfo()));
+        var signature = Convert.ToBase64String(key.SignData(canonical, HashAlgorithmName.SHA256,
+            DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+        using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = new ByteArrayContent(body) };
+        request.Content.Headers.ContentType = new("application/json");
+        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
+        request.Headers.Add("X-SalekhPos-Device-Id", deviceId.ToString("D"));
+        request.Headers.Add("X-SalekhPos-Device-Credential", credentialId.ToString("D"));
+        request.Headers.Add("X-SalekhPos-Device-Timestamp", timestamp);
+        request.Headers.Add("X-SalekhPos-Device-Nonce", nonce);
+        request.Headers.Add("X-SalekhPos-Device-Signature", signature);
+        return await owner.SendAsync(request);
+    }
     private static string OfflinePayload(decimal grandTotal = 2m, Guid? saleId = null, Guid? shiftId = null,
         Guid? registerId = null, Guid? productId = null, Guid? priceId = null) => JsonSerializer.Serialize(new
         {

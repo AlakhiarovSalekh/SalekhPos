@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Primitives;
 using SalekhPos.ShiftManagement.Application.Shifts;
 using SalekhPos.ShiftManagement.Contracts.Shifts;
 
@@ -12,12 +13,26 @@ public static class ShiftEndpoints
     public static void MapShiftEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/shifts").RequireAuthorization().RequireRateLimiting("business");
-        group.MapPost("/open", async (Guid organizationId, Guid branchId, OpenShiftRequest request, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        group.MapPost("/open", async (Guid organizationId, Guid branchId, OpenShiftRequest request, HttpContext context,
+            IShiftDeviceRequestAuthorizer proof, IShiftService service, CancellationToken cancellationToken) =>
         {
             if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
+            var deviceIdText = Header(context, "X-SalekhPos-Device-Id");
+            if (deviceIdText is null || !Guid.TryParseExact(deviceIdText, "D", out var deviceId) || deviceId == Guid.Empty
+                || !string.Equals(deviceIdText, deviceId.ToString("D"), StringComparison.Ordinal))
+                throw new ShiftRequestAuthenticationException();
+            if (!context.Items.TryGetValue(ShiftRequestBodyDigestMiddleware.DigestItemKey, out var digestValue)
+                || digestValue is not string digest)
+                throw new ShiftRequestAuthenticationException();
+            var identity = Identity(context);
+            await proof.VerifyAsync(new(identity, organizationId, branchId, deviceId, request.RegisterId,
+                "POST", OpenPath(organizationId, branchId), $"shift-open:{operationId:D}", digest,
+                new(Header(context, "X-SalekhPos-Device-Credential"), Header(context, "X-SalekhPos-Device-Timestamp"),
+                    Header(context, "X-SalekhPos-Device-Nonce"), Header(context, "X-SalekhPos-Device-Signature"))),
+                cancellationToken);
             try
             {
-                var result = await service.OpenAsync(Identity(context), new(organizationId, branchId, Guid.NewGuid(), operationId, request.RegisterId, request.Currency, request.OpeningBalance), cancellationToken);
+                var result = await service.OpenAsync(identity, new(organizationId, branchId, Guid.NewGuid(), operationId, request.RegisterId, request.Currency, request.OpeningBalance), cancellationToken);
                 return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/open?registerId={result.Shift.RegisterId:D}", result.Shift) : Results.Ok(result.Shift);
             }
             catch (ArgumentException) { return Invalid(); }
@@ -52,6 +67,13 @@ public static class ShiftEndpoints
             return shift is null ? Results.NotFound() : Results.Ok(shift);
         });
     }
+    private static string? Header(HttpContext context, string name)
+    {
+        StringValues values = context.Request.Headers[name];
+        return values.Count switch { 0 => null, 1 => values[0], _ => throw new ShiftRequestAuthenticationException() };
+    }
+    private static string OpenPath(Guid organizationId, Guid branchId) =>
+        $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/open";
     private static ShiftIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The shift request is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_request" });
     private static IResult InvalidQuery() => Results.Problem(statusCode: 400, title: "The shift query is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_query" });
