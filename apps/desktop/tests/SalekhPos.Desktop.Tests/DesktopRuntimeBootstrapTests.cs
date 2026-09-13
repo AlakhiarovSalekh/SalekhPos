@@ -418,7 +418,8 @@ public sealed class DesktopRuntimeBootstrapTests
 
     private sealed class Workspace(PosWorkspaceScope scope) : IPosWorkspace
     {
-        public PosWorkspaceState CurrentState { get; } = new(scope, null, 0, false, true, DateTimeOffset.UtcNow);
+        public PosWorkspaceState CurrentState { get; } = new(scope, null, true, 0, false, true,
+            DateTimeOffset.UtcNow);
         public Task<PosWorkspaceState> OpenOnlineAsync(CancellationToken cancellationToken) =>
             Task.FromResult(CurrentState);
         public Task<PosWorkspaceState> OpenOfflineAsync(CancellationToken cancellationToken) =>

@@ -15,9 +15,10 @@ public sealed class CashierViewModelTests
     public async Task ScanBuildsCartAndCompletionUsesStableSaleIntent()
     {
         var workspace = new Workspace(); var viewModel = new CashierViewModel(workspace);
-        await viewModel.InitializeAsync(default);
+        viewModel.InitializeFromPreparedState();
         await viewModel.ScanAsync("10001", default); await viewModel.ScanAsync("10001", default);
 
+        Assert.Equal(0, workspace.OpenCalls);
         Assert.Single(viewModel.CartLines); Assert.Equal(2m, viewModel.CartLines[0].Quantity);
         Assert.Equal("20.00 GEL", viewModel.GrandTotalText); Assert.True(viewModel.CanCompleteSale);
 
@@ -29,7 +30,7 @@ public sealed class CashierViewModelTests
     public async Task UncertainCashMovementRetryKeepsOperationIdAndOriginalIntent()
     {
         var workspace = new Workspace { FailFirstMovement = true }; var viewModel = new CashierViewModel(workspace);
-        await viewModel.InitializeAsync(default);
+        viewModel.InitializeFromPreparedState();
 
         await Assert.ThrowsAsync<HttpRequestException>(() => viewModel.RecordMovementAsync(
             "cash_in", "5", "Float", default));
@@ -47,6 +48,7 @@ public sealed class CashierViewModelTests
         private readonly Guid device = Guid.NewGuid(); private readonly Guid register = Guid.NewGuid();
         private readonly Guid shift = Guid.NewGuid(); private readonly Guid product = Guid.NewGuid();
         public bool FailFirstMovement { get; init; }
+        public int OpenCalls { get; private set; }
         public List<Guid> MovementOperations { get; } = [];
         public CashCheckoutRequest? Checkout { get; private set; }
         public PosWorkspaceState CurrentState { get; private set; }
@@ -54,10 +56,19 @@ public sealed class CashierViewModelTests
         {
             var scope = new PosWorkspaceScope(organization, branch, device);
             CurrentState = new(scope, new LocalCashSession(organization, branch, device, register, shift, "GEL",
-                0m, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow), 0, false, true, DateTimeOffset.UtcNow);
+                0m, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow), true, 0, false, true,
+                DateTimeOffset.UtcNow);
         }
-        public Task<PosWorkspaceState> OpenOnlineAsync(CancellationToken cancellationToken) => Task.FromResult(CurrentState);
-        public Task<PosWorkspaceState> OpenOfflineAsync(CancellationToken cancellationToken) => Task.FromResult(CurrentState with { IsOnline = false });
+        public Task<PosWorkspaceState> OpenOnlineAsync(CancellationToken cancellationToken)
+        {
+            OpenCalls++;
+            return Task.FromResult(CurrentState);
+        }
+        public Task<PosWorkspaceState> OpenOfflineAsync(CancellationToken cancellationToken)
+        {
+            OpenCalls++;
+            return Task.FromResult(CurrentState with { IsOnline = false });
+        }
         public Task<LocalSellableItem?> FindByProductAsync(Guid productId, DateTimeOffset at, CancellationToken cancellationToken) => Task.FromResult<LocalSellableItem?>(Item());
         public Task<LocalSellableItem?> FindByBarcodeAsync(string barcode, DateTimeOffset at, CancellationToken cancellationToken) => Task.FromResult<LocalSellableItem?>(Item());
         public Task<LocalSaleWriteResult> CompleteCashSaleAsync(CashCheckoutRequest request, CancellationToken cancellationToken)

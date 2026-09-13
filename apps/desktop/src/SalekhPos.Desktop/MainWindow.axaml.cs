@@ -21,7 +21,7 @@ public sealed partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(signOut);
         this.signOut = signOut;
         InitializeComponent(); DataContext = viewModel = new(workspace);
-        Opened += async (_, _) => await Execute(() => viewModel.InitializeAsync(default));
+        Opened += (_, _) => viewModel.InitializeFromPreparedState();
     }
     private async void AddBarcodeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await Scan();
     private async void BarcodeKeyDown(object? sender, KeyEventArgs e) { if (e.Key == Key.Enter) await Scan(); }

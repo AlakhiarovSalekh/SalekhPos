@@ -2,6 +2,7 @@ using SalekhPos.Desktop.Application.Offline;
 using SalekhPos.Desktop.Application.POS;
 using SalekhPos.Desktop.Application.Shifts;
 using SalekhPos.Desktop.Domain.LocalCatalog;
+using SalekhPos.Desktop.Domain.Shifts;
 using SalekhPos.Desktop.Infrastructure.LocalDatabase;
 using Xunit;
 
@@ -42,8 +43,102 @@ public sealed class PosWorkspaceTests : IDisposable
         var sale = await reopened.CompleteCashSaleAsync(new(Guid.NewGuid(), DateTimeOffset.UtcNow, 20m,
             [new(setup.ProductId, 1m)]), default);
 
-        Assert.False(state.IsOnline); Assert.True(state.CanSell); Assert.True(sale.Created);
+        Assert.False(state.IsOnline); Assert.True(state.IsCatalogProjectionReady); Assert.True(state.CanSell);
+        Assert.True(sale.Created);
         Assert.Equal(1, reopened.CurrentState.PendingSales);
+    }
+
+    [Fact]
+    public async Task OnlineFirstReadinessSeedsCatalogWithoutCashSession()
+    {
+        var setup = await Setup(hasCashSession: false);
+
+        var state = await setup.Workspace.OpenOnlineAsync(default);
+
+        Assert.True(state.IsOnline);
+        Assert.True(state.IsCatalogProjectionReady);
+        Assert.Null(state.CashSession);
+        Assert.False(state.CanSell);
+        Assert.NotNull(await setup.Workspace.FindByBarcodeAsync("10001", DateTimeOffset.UtcNow, default));
+    }
+
+    [Fact]
+    public async Task FirstRunOfflineWithoutCatalogProjectionFailsClosed()
+    {
+        var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
+        var register = Guid.NewGuid(); var shift = Guid.NewGuid();
+        var scope = new PosWorkspaceScope(organization, branch, device);
+        var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".db");
+        var capturedAt = DateTimeOffset.UtcNow;
+        var sessionStore = new SqliteCashSessionStore(path);
+        await sessionStore.ApplyAsync(organization, branch, device,
+            new(new(device, branch, register, "active", 1),
+                new(shift, branch, register, "open", "GEL", 0m, capturedAt.AddHours(-1)), capturedAt), default);
+        var workspace = await Workspace(scope, path, new ThrowingSessionSource(), new ThrowingCatalog(),
+            new Transport());
+
+        var exception = await Assert.ThrowsAsync<CatalogProjectionNotReadyException>(() =>
+            workspace.OpenOfflineAsync(default));
+
+        Assert.Equal("Verified offline catalog data is not available for this organization and branch.",
+            exception.Message);
+        Assert.Throws<InvalidOperationException>(() => workspace.CurrentState);
+    }
+
+    [Fact]
+    public async Task CatalogReadinessCannotBeReusedByAnotherBranch()
+    {
+        var setup = await Setup();
+        await setup.Workspace.OpenOnlineAsync(default);
+        var wrongBranchScope = setup.Scope with { BranchId = Guid.NewGuid() };
+        var wrongBranch = await Workspace(wrongBranchScope, setup.Path, new ThrowingSessionSource(),
+            new ThrowingCatalog(), setup.Transport);
+
+        await Assert.ThrowsAsync<CatalogProjectionNotReadyException>(() =>
+            wrongBranch.OpenOfflineAsync(default));
+    }
+
+    [Fact]
+    public void CanSellRequiresCashSessionAndCatalogReadiness()
+    {
+        var scope = new PosWorkspaceScope(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var session = new LocalCashSession(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+            Guid.NewGuid(), Guid.NewGuid(), "GEL", 0m, DateTimeOffset.UtcNow.AddHours(-1),
+            DateTimeOffset.UtcNow);
+
+        var state = new PosWorkspaceState(scope, session, false, 0, false, false, DateTimeOffset.UtcNow);
+
+        Assert.False(state.CanSell);
+    }
+
+    [Fact]
+    public async Task SynchronizeOrdersPendingSalesBeforeAuthoritativeSessionAndCatalogRefresh()
+    {
+        var calls = new List<string>();
+        var setup = await Setup(calls: calls);
+        await setup.Workspace.OpenOnlineAsync(default);
+        await setup.Workspace.CompleteCashSaleAsync(new(Guid.NewGuid(), DateTimeOffset.UtcNow, 20m,
+            [new(setup.ProductId, 1m)]), default);
+        calls.Clear();
+
+        await setup.Workspace.SynchronizeAsync(default);
+
+        Assert.Equal(["pending", "session", "catalog"], calls);
+    }
+
+    [Fact]
+    public async Task PendingSaleReservationStillBlocksCatalogReplacement()
+    {
+        var setup = await Setup();
+        await setup.Workspace.OpenOnlineAsync(default);
+        await setup.Workspace.CompleteCashSaleAsync(new(Guid.NewGuid(), DateTimeOffset.UtcNow, 20m,
+            [new(setup.ProductId, 1m)]), default);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new SqliteSellableCatalog(setup.Path).ApplyAsync(new(setup.Scope.OrganizationId,
+                setup.Scope.BranchId, DateTimeOffset.UtcNow.AddMinutes(1), []), default));
+
+        Assert.Equal("Pending sales must be reconciled before replacing stock.", exception.Message);
     }
 
     [Fact]
@@ -61,7 +156,7 @@ public sealed class PosWorkspaceTests : IDisposable
             setup.Scope.BranchId, setup.Scope.DeviceId, default));
     }
 
-    private async Task<SetupResult> Setup()
+    private async Task<SetupResult> Setup(bool hasCashSession = true, List<string>? calls = null)
     {
         var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
         var register = Guid.NewGuid(); var shift = Guid.NewGuid(); var product = Guid.NewGuid();
@@ -69,11 +164,12 @@ public sealed class PosWorkspaceTests : IDisposable
         var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".db");
         var openedAt = DateTimeOffset.UtcNow.AddHours(-1);
         var sessions = new SessionSource(new(new(device, branch, register, "active", 1),
-            new(shift, branch, register, "open", "GEL", 0m, openedAt), DateTimeOffset.UtcNow));
+            hasCashSession ? new(shift, branch, register, "open", "GEL", 0m, openedAt) : null,
+            DateTimeOffset.UtcNow), calls);
         var item = new LocalSellableItem(organization, branch, product, Guid.NewGuid(), "SKU-1", "Tea", "EA",
             "10001", 2m, 10m, "GEL", "inclusive", 18m, openedAt, null);
-        var remoteCatalog = new CatalogSource(new(organization, branch, DateTimeOffset.UtcNow, [item]));
-        var transport = new Transport(); var cash = new CashManagement(register, openedAt);
+        var remoteCatalog = new CatalogSource(new(organization, branch, DateTimeOffset.UtcNow, [item]), calls);
+        var transport = new Transport(calls); var cash = new CashManagement(register, openedAt);
         return new(scope, path, product, shift,
             await Workspace(scope, path, sessions, remoteCatalog, transport, cash), transport);
     }
@@ -90,15 +186,25 @@ public sealed class PosWorkspaceTests : IDisposable
             cashManagement ?? new CashManagement(Guid.NewGuid(), DateTimeOffset.UtcNow));
     }
 
-    private sealed class SessionSource(RemoteCashSessionSnapshot snapshot) : IRemoteCashSessionSource
+    private sealed class SessionSource(RemoteCashSessionSnapshot snapshot, List<string>? calls = null)
+        : IRemoteCashSessionSource
     {
-        public Task<RemoteCashSessionSnapshot> DownloadAsync(Guid organizationId, Guid branchId, Guid deviceId,
-            CancellationToken cancellationToken) => Task.FromResult(snapshot);
+        public Task<RemoteCashSessionSnapshot> DownloadAsync(Guid organizationId, Guid branchId,
+            Guid deviceId, CancellationToken cancellationToken)
+        {
+            calls?.Add("session");
+            return Task.FromResult(snapshot);
+        }
     }
-    private sealed class CatalogSource(SellableCatalogSnapshot snapshot) : IRemoteSellableCatalog
+    private sealed class CatalogSource(SellableCatalogSnapshot snapshot, List<string>? calls = null)
+        : IRemoteSellableCatalog
     {
         public Task<SellableCatalogSnapshot> DownloadAsync(Guid organizationId, Guid branchId,
-            CancellationToken cancellationToken) => Task.FromResult(snapshot);
+            CancellationToken cancellationToken)
+        {
+            calls?.Add("catalog");
+            return Task.FromResult(snapshot);
+        }
     }
     private sealed class ThrowingSessionSource : IRemoteCashSessionSource
     {
@@ -114,12 +220,13 @@ public sealed class PosWorkspaceTests : IDisposable
     {
         public Task WaitAsync(TimeSpan delay, CancellationToken cancellationToken) => Task.CompletedTask;
     }
-    private sealed class Transport : IRemoteSyncTransport
+    private sealed class Transport(List<string>? calls = null) : IRemoteSyncTransport
     {
         public int Sent { get; private set; }
         public Task<RemoteSyncAcknowledgement> SendAsync(Guid organizationId, Guid branchId,
             LocalOutboxMessage message, CancellationToken cancellationToken)
         {
+            calls?.Add("pending");
             Sent++;
             return Task.FromResult(new RemoteSyncAcknowledgement(message.MessageId, message.DeviceId,
                 message.SaleId, message.Sequence, 1, message.MessageType, "applied", "applied",

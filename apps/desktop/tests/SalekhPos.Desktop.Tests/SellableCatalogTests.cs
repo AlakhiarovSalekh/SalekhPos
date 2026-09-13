@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 using SalekhPos.Desktop.Application.Offline;
 using SalekhPos.Desktop.Domain.LocalCatalog;
 using SalekhPos.Desktop.Infrastructure.LocalDatabase;
@@ -44,6 +45,37 @@ public sealed class SellableCatalogTests : IDisposable
             now.AddMinutes(1), [item, item]), default));
 
         Assert.NotNull(await catalog.FindByProductAsync(organizationId, branchId, item.ProductId, now, default));
+    }
+
+    [Fact]
+    public async Task EmptySnapshotIsStillAReadyProjection()
+    {
+        var organizationId = Guid.NewGuid(); var branchId = Guid.NewGuid();
+        var catalog = new SqliteSellableCatalog(Path.Combine(directory, "empty.db"));
+
+        Assert.True(await catalog.ApplyAsync(new(organizationId, branchId, DateTimeOffset.UtcNow, []), default));
+
+        Assert.True(await catalog.IsProjectionReadyAsync(organizationId, branchId, default));
+    }
+
+    [Fact]
+    public async Task MissingOrCorruptProjectionStateFailsClosed()
+    {
+        var organizationId = Guid.NewGuid(); var branchId = Guid.NewGuid();
+        var path = Path.Combine(directory, "readiness.db");
+        var catalog = new SqliteSellableCatalog(path);
+        Assert.False(await catalog.IsProjectionReadyAsync(organizationId, branchId, default));
+        await catalog.ApplyAsync(new(organizationId, branchId, DateTimeOffset.UtcNow, []), default);
+
+        await using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE sellable_catalog_state SET digest='a'||substr(digest,2)";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        Assert.False(await catalog.IsProjectionReadyAsync(organizationId, branchId, default));
     }
 
     [Fact]

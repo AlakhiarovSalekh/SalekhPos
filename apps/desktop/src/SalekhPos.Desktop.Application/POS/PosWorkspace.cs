@@ -7,10 +7,13 @@ using SalekhPos.Desktop.Domain.Shifts;
 namespace SalekhPos.Desktop.Application.POS;
 
 public sealed record PosWorkspaceScope(Guid OrganizationId, Guid BranchId, Guid DeviceId);
-public sealed record PosWorkspaceState(PosWorkspaceScope Scope, LocalCashSession? CashSession, int PendingSales,
-    bool PendingSalesTruncated, bool IsOnline, DateTimeOffset ObservedAt)
+public sealed class CatalogProjectionNotReadyException()
+    : InvalidOperationException("Verified offline catalog data is not available for this organization and branch.");
+public sealed record PosWorkspaceState(PosWorkspaceScope Scope, LocalCashSession? CashSession,
+    bool IsCatalogProjectionReady, int PendingSales, bool PendingSalesTruncated, bool IsOnline,
+    DateTimeOffset ObservedAt)
 {
-    public bool CanSell => CashSession is not null;
+    public bool CanSell => CashSession is not null && IsCatalogProjectionReady;
 }
 public sealed record CashCheckoutRequest(Guid SaleId, DateTimeOffset CompletedAt, decimal CashReceived,
     IReadOnlyList<ProjectedSaleItem> Items);
@@ -56,8 +59,7 @@ public sealed class PosWorkspace(
                 TimeSpan.FromMilliseconds(250), cancellationToken);
             var session = await cashSessions.RefreshAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
                 cancellationToken);
-            if (session is not null)
-                await catalogRefresh.RefreshAsync(scope.OrganizationId, scope.BranchId, cancellationToken);
+            await catalogRefresh.RefreshAsync(scope.OrganizationId, scope.BranchId, cancellationToken);
             return state = await Snapshot(session, true, cancellationToken);
         }
         finally { gate.Release(); }
@@ -71,7 +73,10 @@ public sealed class PosWorkspace(
         {
             var session = await localCashSessions.ReadActiveAsync(scope.OrganizationId, scope.BranchId,
                 scope.DeviceId, cancellationToken);
-            return state = await Snapshot(session, false, cancellationToken);
+            var offlineState = await Snapshot(session, false, cancellationToken);
+            if (!offlineState.IsCatalogProjectionReady)
+                throw new CatalogProjectionNotReadyException();
+            return state = offlineState;
         }
         finally { gate.Release(); }
     }
@@ -118,8 +123,9 @@ public sealed class PosWorkspace(
         {
             await sync.RunAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId, 100, 4,
                 TimeSpan.FromMilliseconds(250), cancellationToken);
-            var session = await localCashSessions.ReadActiveAsync(scope.OrganizationId, scope.BranchId,
-                scope.DeviceId, cancellationToken);
+            var session = await cashSessions.RefreshAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+                cancellationToken);
+            await catalogRefresh.RefreshAsync(scope.OrganizationId, scope.BranchId, cancellationToken);
             return state = await Snapshot(session, true, cancellationToken);
         }
         finally { gate.Release(); }
@@ -174,7 +180,9 @@ public sealed class PosWorkspace(
     private async Task<PosWorkspaceState> Snapshot(LocalCashSession? session, bool online, CancellationToken ct)
     {
         var pending = await sales.ReadPendingAsync(scope.DeviceId, 100, ct);
-        return new(scope, session, pending.Count, pending.Count == 100, online, DateTimeOffset.UtcNow);
+        var catalogReady = await catalog.IsProjectionReadyAsync(scope.OrganizationId, scope.BranchId, ct);
+        return new(scope, session, catalogReady, pending.Count, pending.Count == 100, online,
+            DateTimeOffset.UtcNow);
     }
     private void EnsureOpened() { if (state is null) throw new InvalidOperationException("The POS workspace is not open."); }
     private void EnsureOnlineSession()

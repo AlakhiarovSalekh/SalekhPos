@@ -38,13 +38,19 @@ public sealed class SqliteSellableCatalog(string databasePath) : ILocalSellableC
         await using (var reader = await state.ExecuteReaderAsync(cancellationToken))
             if (await reader.ReadAsync(cancellationToken))
             {
-                var captured = DateTimeOffset.Parse(reader.GetString(0), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-                if (captured > snapshot.CapturedAt || captured == snapshot.CapturedAt && reader.GetString(1) != digest)
-                    throw new InvalidOperationException("The catalog snapshot is stale or changed.");
-                if (captured == snapshot.CapturedAt)
+                var capturedValue = reader.GetString(0);
+                var storedDigest = reader.GetString(1);
+                if (IsCanonicalCapturedAt(capturedValue) && IsCanonicalDigest(storedDigest))
                 {
-                    await transaction.CommitAsync(cancellationToken);
-                    return false;
+                    var captured = DateTimeOffset.ParseExact(capturedValue, "O", CultureInfo.InvariantCulture,
+                        DateTimeStyles.None);
+                    if (captured > snapshot.CapturedAt || captured == snapshot.CapturedAt && storedDigest != digest)
+                        throw new InvalidOperationException("The catalog snapshot is stale or changed.");
+                    if (captured == snapshot.CapturedAt)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                        return false;
+                    }
                 }
             }
 
@@ -77,6 +83,21 @@ public sealed class SqliteSellableCatalog(string databasePath) : ILocalSellableC
             await save.ExecuteNonQueryAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<bool> IsProjectionReadyAsync(Guid organizationId, Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty)
+            throw new ArgumentException("Catalog scope is required.");
+        await using var connection = await Open(cancellationToken);
+        await Schema(connection, null, cancellationToken);
+        await using var state = Command(connection, null,
+            "SELECT captured_at,digest FROM sellable_catalog_state WHERE organization_id=$1 AND branch_id=$2",
+            ("$1", organizationId), ("$2", branchId));
+        await using var reader = await state.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return false;
+        return IsCanonicalCapturedAt(reader.GetString(0)) && IsCanonicalDigest(reader.GetString(1));
     }
 
     public Task<LocalSellableItem?> FindByProductAsync(Guid organizationId, Guid branchId, Guid productId,
@@ -113,6 +134,27 @@ public sealed class SqliteSellableCatalog(string databasePath) : ILocalSellableC
             || snapshot.Items.Where(x => x.Barcode is not null).Select(x => x.Barcode).Distinct(StringComparer.Ordinal).Count()
                 != snapshot.Items.Count(x => x.Barcode is not null))
             throw new ArgumentException("The catalog snapshot is invalid.");
+    }
+
+    private static bool IsCanonicalCapturedAt(string value) =>
+        DateTimeOffset.TryParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out var capturedAt)
+        && capturedAt != default && capturedAt.Offset == TimeSpan.Zero
+        && value == capturedAt.ToString("O", CultureInfo.InvariantCulture);
+
+    private static bool IsCanonicalDigest(string value)
+    {
+        if (value.Length != 64 || value.Any(character => character is not (>= '0' and <= '9')
+                and not (>= 'A' and <= 'F')))
+            return false;
+        try
+        {
+            return Convert.ToHexString(Convert.FromHexString(value)) == value;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     private async Task<SqliteConnection> Open(CancellationToken cancellationToken)

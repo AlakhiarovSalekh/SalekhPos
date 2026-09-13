@@ -30,18 +30,10 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
     private decimal GrandTotal => CartLines.Sum(x => x.Total);
     private string CurrencySuffix => CartLines.Count == 0 ? "" : " " + CartLines[0].Currency;
 
-    public async Task InitializeAsync(CancellationToken cancellationToken)
+    public void InitializeFromPreparedState()
     {
         if (workspace is null) return;
-        await Run(async () =>
-        {
-            try { Apply(await workspace.OpenOnlineAsync(cancellationToken)); }
-            catch (HttpRequestException exception) when (IsTransient(exception))
-            {
-                Apply(await workspace.OpenOfflineAsync(cancellationToken));
-                Message = "Server is unavailable. Working from verified offline data.";
-            }
-        });
+        Apply(workspace.CurrentState);
     }
 
     public async Task ScanAsync(string barcode, CancellationToken cancellationToken)
@@ -130,9 +122,6 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
         SyncStatus = state.IsOnline ? $"Online · {state.PendingSales} pending" : $"Offline · {state.PendingSales} pending";
         ChangedAvailability();
     }
-    private static bool IsTransient(HttpRequestException exception) => exception.StatusCode is null
-        or System.Net.HttpStatusCode.RequestTimeout or System.Net.HttpStatusCode.TooManyRequests
-        || (int)exception.StatusCode >= 500;
     private void ChangedCart() { Changed(nameof(GrandTotalText)); Changed(nameof(CartStatus)); Changed(nameof(CanCompleteSale)); }
     private void ChangedAvailability() { Changed(nameof(IsReady)); Changed(nameof(IsOnlineSession)); Changed(nameof(CanCompleteSale)); }
     private void Set(ref string field, string value, [CallerMemberName] string? name = null) { if (field == value) return; field = value; Changed(name); }

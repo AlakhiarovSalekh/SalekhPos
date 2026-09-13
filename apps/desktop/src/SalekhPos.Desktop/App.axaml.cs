@@ -34,9 +34,9 @@ public sealed partial class App : Avalonia.Application
     private void CompleteSignIn(IClassicDesktopStyleApplicationLifetime desktop,
         IDesktopAuthenticatedFlow flow)
     {
-        authenticatedFlow = flow;
         if (flow is DesktopDeviceSetupSession setup)
         {
+            authenticatedFlow = setup;
             var setupWindow = new DeviceSetupWindow(setup,
                 runtime => CompleteSetup(desktop, setup, runtime), () => SignOut(desktop));
             var previousSignIn = desktop.MainWindow;
@@ -47,11 +47,7 @@ public sealed partial class App : Avalonia.Application
         }
         var runtime = flow as DesktopAuthenticatedRuntime
             ?? throw new InvalidOperationException("The authenticated desktop flow is invalid.");
-        var cashier = new MainWindow(runtime.Workspace, () => SignOut(desktop));
-        var previous = desktop.MainWindow;
-        desktop.MainWindow = cashier;
-        cashier.Show();
-        previous?.Close();
+        BeginReadiness(desktop, runtime);
     }
 
     private void CompleteSetup(IClassicDesktopStyleApplicationLifetime desktop,
@@ -63,8 +59,26 @@ public sealed partial class App : Avalonia.Application
             return;
         }
         setup.Dispose();
-        authenticatedFlow = runtime;
+        authenticatedFlow = null;
+        BeginReadiness(desktop, runtime);
+    }
+
+    private void BeginReadiness(IClassicDesktopStyleApplicationLifetime desktop,
+        DesktopAuthenticatedRuntime runtime)
+    {
+        var readiness = new ReadinessWindow(runtime,
+            readyRuntime => CompleteReadiness(desktop, readyRuntime), () => SignOut(desktop));
+        var previous = desktop.MainWindow;
+        desktop.MainWindow = readiness;
+        readiness.Show();
+        previous?.Close();
+    }
+
+    private void CompleteReadiness(IClassicDesktopStyleApplicationLifetime desktop,
+        DesktopAuthenticatedRuntime runtime)
+    {
         var cashier = new MainWindow(runtime.Workspace, () => SignOut(desktop));
+        authenticatedFlow = runtime;
         var previous = desktop.MainWindow;
         desktop.MainWindow = cashier;
         cashier.Show();

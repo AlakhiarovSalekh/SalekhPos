@@ -8,6 +8,8 @@ public sealed record SellableCatalogSnapshot(Guid OrganizationId, Guid BranchId,
 public interface ILocalSellableCatalog
 {
     Task<bool> ApplyAsync(SellableCatalogSnapshot snapshot, CancellationToken cancellationToken);
+    Task<bool> IsProjectionReadyAsync(Guid organizationId, Guid branchId,
+        CancellationToken cancellationToken);
     Task<LocalSellableItem?> FindByProductAsync(Guid organizationId, Guid branchId, Guid productId,
         DateTimeOffset at, CancellationToken cancellationToken);
     Task<LocalSellableItem?> FindByBarcodeAsync(Guid organizationId, Guid branchId, string barcode,
