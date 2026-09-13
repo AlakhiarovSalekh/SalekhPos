@@ -19,9 +19,9 @@ public sealed class DeviceSigningKeyTests
         Assert.DoesNotContain("ExportParameters", members);
         Assert.DoesNotContain("ExportPkcs8PrivateKey", members);
         Assert.Equal(["GetSubjectPublicKeyInfo", "Sign"],
-            members.Order(StringComparer.Ordinal).ToArray());
-        Assert.Equal(["SignSyncMessageAsync"], typeof(IDeviceRequestProofSigner).GetMethods()
-            .Select(method => method.Name).Order(StringComparer.Ordinal).ToArray());
+            [.. members.Order(StringComparer.Ordinal)]);
+        Assert.Equal(["SignSyncMessageAsync"], [.. typeof(IDeviceRequestProofSigner).GetMethods()
+            .Select(method => method.Name).Order(StringComparer.Ordinal)]);
         Assert.All(typeof(DeviceRequestProof).GetProperties(), property =>
             Assert.DoesNotContain("Private", property.Name, StringComparison.OrdinalIgnoreCase));
     }

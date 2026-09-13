@@ -116,7 +116,8 @@ public sealed class PendingSaleSyncDispatcherTests
         {
             captured = await Capture(request);
             return Response(Ack(message));
-        })) { BaseAddress = new Uri("https://pos.test/") };
+        }))
+        { BaseAddress = new Uri("https://pos.test/") };
         await new HttpRemoteSyncTransport(client, new DeviceRequestProofSigner(keys,
             new ProofMaterialReader(material))).SendAsync(organizationId, branchId, message, default);
 
@@ -150,7 +151,8 @@ public sealed class PendingSaleSyncDispatcherTests
             return captured.Count == 1
                 ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
                 : Response(Ack(message));
-        })) { BaseAddress = new Uri("https://pos.test/") };
+        }))
+        { BaseAddress = new Uri("https://pos.test/") };
         var transport = new HttpRemoteSyncTransport(client, new DeviceRequestProofSigner(keys,
             new ProofMaterialReader(material), new AdvancingTimeProvider()));
 
@@ -193,7 +195,8 @@ public sealed class PendingSaleSyncDispatcherTests
         {
             sends++;
             return Task.FromResult(Response(Ack(message)));
-        })) { BaseAddress = new Uri("https://pos.test/") };
+        }))
+        { BaseAddress = new Uri("https://pos.test/") };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => new HttpRemoteSyncTransport(client,
             new DeviceRequestProofSigner(keys, reader)).SendAsync(organizationId, branchId, message, default));

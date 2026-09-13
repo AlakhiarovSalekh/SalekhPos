@@ -11,6 +11,8 @@ namespace SalekhPos.Desktop.Tests;
 
 public sealed class DeviceProvisioningTests
 {
+    private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
+
     [Fact]
     public async Task ProvisioningSignsExactProofAndIsIdempotent()
     {
@@ -196,8 +198,7 @@ public sealed class DeviceProvisioningTests
             body = await message.Content!.ReadAsStringAsync();
             return new HttpResponseMessage(System.Net.HttpStatusCode.Created)
             {
-                Content = new StringContent(JsonSerializer.Serialize(device, new JsonSerializerOptions(
-                    JsonSerializerDefaults.Web)), Encoding.UTF8, "application/json"),
+                Content = new StringContent(JsonSerializer.Serialize(device, WebJsonOptions), Encoding.UTF8, "application/json"),
             };
         }))
         { BaseAddress = new Uri("https://pos.test/") };
