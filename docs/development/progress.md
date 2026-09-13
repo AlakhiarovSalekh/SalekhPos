@@ -1,4 +1,10 @@
-## September 13, 2026 - trusted-terminal shift opening\n- Bound shift opening to active cryptographic device credentials and the server-side device-to-register assignment while preserving independent human authorization and audit attribution.\n- Added desktop open-shift UX with exact-body device proof signing, stable idempotency intent, durable trusted register assignment, and authoritative post-open refresh before sales are enabled.\n- Verification: full Native CI PASS with 464 requirement ranges, 1,543 structure entries, 71 architecture projects, Gitleaks clean, dependency audit clean, fresh PostgreSQL/RLS and backup-restore PASS, and 378/378 tests (167 core, 133 desktop, 78 integration).\n- Next: require the same trusted-device proof and register binding for cash-in/cash-out and shift close, then continue cashier delivery hardening.\n\n# Implementation progress
+## September 13, 2026 - trusted-terminal shift opening
+- Bound shift opening to active cryptographic device credentials and the server-side device-to-register assignment while preserving independent human authorization and audit attribution.
+- Added desktop open-shift UX with exact-body device proof signing, stable idempotency intent, durable trusted register assignment, and authoritative post-open refresh before sales are enabled.
+- Verification: full Native CI PASS with 464 requirement ranges, 1,543 structure entries, 71 architecture projects, Gitleaks clean, dependency audit clean, fresh PostgreSQL/RLS and backup-restore PASS, and 378/378 tests (167 core, 133 desktop, 78 integration).
+- Next: require the same trusted-device proof and register binding for cash-in/cash-out and shift close, then continue cashier delivery hardening.
+
+# Implementation progress
 
 ## September 13, 2026 - fail-closed desktop initial synchronization and cashier readiness
 
