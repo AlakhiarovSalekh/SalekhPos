@@ -43,7 +43,9 @@ public sealed class DesktopDeviceRuntimeFactory : IDesktopDeviceRuntimeFactory
         new DesktopDeviceRuntime(databasePath, authenticatedClient, DeviceSigningKeyProvider.CreateForCurrentPlatform());
 }
 
-public sealed class DesktopDeviceRuntime : IDesktopDeviceRuntime
+public sealed class DesktopDeviceRuntime(
+    IOptionalActiveDeviceProvisioningProofMaterialReader assignmentReader,
+    IDeviceSigningKeyProvider keys, IDeviceProvisioner provisioner, HttpClient client) : IDesktopDeviceRuntime
 {
     private const int PageSize = 100;
     private const int MaximumPages = 1000;
@@ -52,26 +54,12 @@ public sealed class DesktopDeviceRuntime : IDesktopDeviceRuntime
     {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
-    private readonly IOptionalActiveDeviceProvisioningProofMaterialReader assignmentReader;
-    private readonly IDeviceSigningKeyProvider keys;
-    private readonly IDeviceProvisioner provisioner;
-    private readonly HttpClient client;
-
     public DesktopDeviceRuntime(string databasePath, HttpClient authenticatedClient,
         IDeviceSigningKeyProvider keys)
         : this(new SqliteDeviceProvisioningStateStore(databasePath), keys,
             new DeviceProvisioner(keys, new SqliteDeviceProvisioningStateStore(databasePath),
                 new HttpDeviceProvisioningClient(authenticatedClient)), authenticatedClient)
     {
-    }
-
-    public DesktopDeviceRuntime(IOptionalActiveDeviceProvisioningProofMaterialReader assignmentReader,
-        IDeviceSigningKeyProvider keys, IDeviceProvisioner provisioner, HttpClient client)
-    {
-        this.assignmentReader = assignmentReader;
-        this.keys = keys;
-        this.provisioner = provisioner;
-        this.client = client;
     }
 
     public async Task<PosWorkspaceScope?> TryResumeAsync(Guid organizationId,

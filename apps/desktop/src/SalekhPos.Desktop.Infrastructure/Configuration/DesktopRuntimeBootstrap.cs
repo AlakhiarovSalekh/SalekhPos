@@ -56,9 +56,9 @@ public sealed class DesktopDeviceSetupSession : IDesktopAuthenticatedFlow
     private readonly string databasePath;
     private readonly IDesktopPosWorkspaceFactory workspaceFactory;
     private readonly IDesktopDeviceRuntime devices;
-    private readonly IReadOnlyDictionary<Guid, DesktopBranch> permittedBranches;
+    private readonly Dictionary<Guid, DesktopBranch> permittedBranches;
     private readonly ConcurrentDictionary<Guid, IReadOnlyDictionary<Guid, DesktopRegister>> loadedRegisters = [];
-    private readonly object ownershipGate = new();
+    private readonly Lock ownershipGate = new();
     private InMemoryAccessTokenProvider? tokens;
     private HttpClient? authenticatedClient;
     private Action? released;
@@ -157,7 +157,7 @@ public sealed class DesktopDeviceSetupSession : IDesktopAuthenticatedFlow
     {
         lock (ownershipGate)
         {
-            if (authenticatedClient is null) throw new ObjectDisposedException(nameof(DesktopDeviceSetupSession));
+            ObjectDisposedException.ThrowIf(authenticatedClient is null, this);
         }
     }
 
