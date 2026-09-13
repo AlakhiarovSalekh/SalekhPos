@@ -49,22 +49,22 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
         Assert.Equal(shiftId, readBody.RootElement.GetProperty("id").GetGuid());
         var movementOperation = Guid.NewGuid();
-        using var movement = await RecordCashMovement(owner, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
+        using var movement = await RecordCashMovement(owner, registerId, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
         Assert.Equal(HttpStatusCode.Created, movement.StatusCode);
         using var movementBody = JsonDocument.Parse(await movement.Content.ReadAsStringAsync());
         var movementId = movementBody.RootElement.GetProperty("id").GetGuid();
         Assert.Equal("GEL", movementBody.RootElement.GetProperty("currency").GetString());
         Assert.Equal("owner", movementBody.RootElement.GetProperty("recordedBy").GetString());
-        using var movementReplay = await RecordCashMovement(owner, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
+        using var movementReplay = await RecordCashMovement(owner, registerId, shiftId, movementOperation, "cash_in", 25m, "Petty cash float");
         Assert.Equal(HttpStatusCode.OK, movementReplay.StatusCode);
-        using var changedMovement = await RecordCashMovement(owner, shiftId, movementOperation, "cash_out", 25m, "Petty cash float");
+        using var changedMovement = await RecordCashMovement(owner, registerId, shiftId, movementOperation, "cash_out", 25m, "Petty cash float");
         Assert.Equal(HttpStatusCode.Conflict, changedMovement.StatusCode);
         using var movements = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/cash-movements");
         Assert.Equal(HttpStatusCode.OK, movements.StatusCode);
         using var movementsBody = JsonDocument.Parse(await movements.Content.ReadAsStringAsync());
         Assert.Equal(movementId, Assert.Single(movementsBody.RootElement.EnumerateArray()).GetProperty("id").GetGuid());
         var closeOperation = Guid.NewGuid();
-        using var closed = await CloseShift(owner, shiftId, closeOperation, 124m);
+        using var closed = await CloseShift(owner, registerId, shiftId, closeOperation, 124m);
         Assert.Equal(HttpStatusCode.Created, closed.StatusCode);
         using var closedBody = JsonDocument.Parse(await closed.Content.ReadAsStringAsync());
         Assert.Equal("closed", closedBody.RootElement.GetProperty("status").GetString());
@@ -89,15 +89,15 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         Assert.Equal(HttpStatusCode.Forbidden, deniedHistory.StatusCode);
         using var wrongBranchDetail = await owner.GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA2}/shifts/{shiftId:D}");
         Assert.Equal(HttpStatusCode.NotFound, wrongBranchDetail.StatusCode);
-        using var closeReplay = await CloseShift(owner, shiftId, closeOperation, 124m);
+        using var closeReplay = await CloseShift(owner, registerId, shiftId, closeOperation, 124m);
         Assert.Equal(HttpStatusCode.OK, closeReplay.StatusCode);
-        using var changedClose = await CloseShift(owner, shiftId, closeOperation, 125m);
+        using var changedClose = await CloseShift(owner, registerId, shiftId, closeOperation, 125m);
         Assert.Equal(HttpStatusCode.Conflict, changedClose.StatusCode);
-        using var afterClose = await RecordCashMovement(owner, shiftId, Guid.NewGuid(), "cash_in", 1m, "Late movement");
+        using var afterClose = await RecordCashMovement(owner, registerId, shiftId, Guid.NewGuid(), "cash_in", 1m, "Late movement");
         Assert.Equal(HttpStatusCode.Conflict, afterClose.StatusCode);
         using var denied = await Client("alice").GetAsync($"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/open?registerId={registerId:D}");
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
-        using var deniedMovement = await RecordCashMovement(Client("alice"), shiftId, Guid.NewGuid(), "cash_in", 1m, "Denied movement");
+        using var deniedMovement = await RecordCashMovement(Client("alice"), registerId, shiftId, Guid.NewGuid(), "cash_in", 1m, "Denied movement");
         Assert.Equal(HttpStatusCode.Forbidden, deniedMovement.StatusCode);
     }
 
@@ -554,18 +554,18 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         return await device.OpenShiftAsync(fixture, client, registerId, operationId, openingBalance);
     }
 
-    private async Task<HttpResponseMessage> RecordCashMovement(HttpClient client, Guid shiftId, Guid operationId, string kind, decimal amount, string reason)
+    private async Task<HttpResponseMessage> RecordCashMovement(HttpClient client, Guid registerId, Guid shiftId,
+        Guid operationId, string kind, decimal amount, string reason)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/cash-movements") { Content = JsonContent.Create(new { kind, amount, reason }) };
-        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
-        return await client.SendAsync(request);
+        return await shiftDevices[registerId].RecordCashMovementAsync(fixture, client, registerId, shiftId,
+            operationId, kind, amount, reason);
     }
 
-    private async Task<HttpResponseMessage> CloseShift(HttpClient client, Guid shiftId, Guid operationId, decimal countedCash)
+    private async Task<HttpResponseMessage> CloseShift(HttpClient client, Guid registerId, Guid shiftId,
+        Guid operationId, decimal countedCash)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/shifts/{shiftId:D}/close") { Content = JsonContent.Create(new { countedCash }) };
-        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
-        return await client.SendAsync(request);
+        return await shiftDevices[registerId].CloseShiftAsync(fixture, client, registerId, shiftId, operationId,
+            countedCash);
     }
 
     private HttpClient Client(string subject)

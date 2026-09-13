@@ -75,8 +75,46 @@ internal sealed class TrustedDeviceTestClient(Guid deviceId, Guid credentialId, 
     public async Task<HttpResponseMessage> OpenShiftRawAsync(AccessFixture fixture, HttpClient client, Guid operationId,
         byte[] body, ShiftProofOverrides? overrides = null)
     {
-        overrides ??= new();
         var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/open";
+        return await SendShiftWriteAsync(fixture, client, path, operationId, $"shift-open:{operationId:D}", body,
+            overrides);
+    }
+
+    public async Task<HttpResponseMessage> RecordCashMovementAsync(AccessFixture fixture, HttpClient client,
+        Guid registerId, Guid shiftId, Guid operationId, string kind, decimal amount, string reason,
+        ShiftProofOverrides? overrides = null)
+    {
+        var body = JsonSerializer.SerializeToUtf8Bytes(new { registerId, kind, amount, reason }, WebJson);
+        return await RecordCashMovementRawAsync(fixture, client, shiftId, operationId, body, overrides);
+    }
+
+    public async Task<HttpResponseMessage> RecordCashMovementRawAsync(AccessFixture fixture, HttpClient client,
+        Guid shiftId, Guid operationId, byte[] body, ShiftProofOverrides? overrides = null)
+    {
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/{shiftId:D}/cash-movements";
+        return await SendShiftWriteAsync(fixture, client, path, operationId, $"cash-movement:{operationId:D}", body,
+            overrides);
+    }
+
+    public async Task<HttpResponseMessage> CloseShiftAsync(AccessFixture fixture, HttpClient client, Guid registerId,
+        Guid shiftId, Guid operationId, decimal countedCash, ShiftProofOverrides? overrides = null)
+    {
+        var body = JsonSerializer.SerializeToUtf8Bytes(new { registerId, countedCash }, WebJson);
+        return await CloseShiftRawAsync(fixture, client, shiftId, operationId, body, overrides);
+    }
+
+    public async Task<HttpResponseMessage> CloseShiftRawAsync(AccessFixture fixture, HttpClient client, Guid shiftId,
+        Guid operationId, byte[] body, ShiftProofOverrides? overrides = null)
+    {
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/{shiftId:D}/close";
+        return await SendShiftWriteAsync(fixture, client, path, operationId, $"shift-close:{operationId:D}", body,
+            overrides);
+    }
+
+    private async Task<HttpResponseMessage> SendShiftWriteAsync(AccessFixture fixture, HttpClient client, string path,
+        Guid operationId, string operationIdentity, byte[] body, ShiftProofOverrides? overrides)
+    {
+        overrides ??= new();
         var timestamp = (overrides.Timestamp ?? DateTimeOffset.UtcNow).ToUniversalTime()
             .ToString(TimestampFormat, System.Globalization.CultureInfo.InvariantCulture);
         var nonceBytes = overrides.Nonce ?? RandomNumberGenerator.GetBytes(32);
@@ -87,7 +125,7 @@ internal sealed class TrustedDeviceTestClient(Guid deviceId, Guid credentialId, 
         var canonical = DeviceRequestProofCanonicalizer.Create("POST", overrides.SignedPath ?? path,
             fixture.OrganizationA, fixture.BranchA, overrides.SignedDeviceId ?? headerDeviceId,
             overrides.SignedCredentialId ?? headerCredentialId,
-            overrides.SignedOperationIdentity ?? $"shift-open:{operationId:D}",
+            overrides.SignedOperationIdentity ?? operationIdentity,
             Convert.ToHexString(SHA256.HashData(signedBody)), timestamp, nonce,
             SHA256.HashData(Key.ExportSubjectPublicKeyInfo()));
         var signature = Convert.ToBase64String((overrides.SigningKey ?? Key).SignData(canonical,

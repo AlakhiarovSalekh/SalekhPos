@@ -17,19 +17,9 @@ public static class ShiftEndpoints
             IShiftDeviceRequestAuthorizer proof, IShiftService service, CancellationToken cancellationToken) =>
         {
             if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
-            var deviceIdText = Header(context, "X-SalekhPos-Device-Id");
-            if (deviceIdText is null || !Guid.TryParseExact(deviceIdText, "D", out var deviceId) || deviceId == Guid.Empty
-                || !string.Equals(deviceIdText, deviceId.ToString("D"), StringComparison.Ordinal))
-                throw new ShiftRequestAuthenticationException();
-            if (!context.Items.TryGetValue(ShiftRequestBodyDigestMiddleware.DigestItemKey, out var digestValue)
-                || digestValue is not string digest)
-                throw new ShiftRequestAuthenticationException();
             var identity = Identity(context);
-            await proof.VerifyAsync(new(identity, organizationId, branchId, deviceId, request.RegisterId,
-                "POST", OpenPath(organizationId, branchId), $"shift-open:{operationId:D}", digest,
-                new(Header(context, "X-SalekhPos-Device-Credential"), Header(context, "X-SalekhPos-Device-Timestamp"),
-                    Header(context, "X-SalekhPos-Device-Nonce"), Header(context, "X-SalekhPos-Device-Signature"))),
-                cancellationToken);
+            await VerifyDeviceProofAsync(context, proof, identity, organizationId, branchId, request.RegisterId,
+                OpenPath(organizationId, branchId), $"shift-open:{operationId:D}", cancellationToken);
             try
             {
                 var result = await service.OpenAsync(identity, new(organizationId, branchId, Guid.NewGuid(), operationId, request.RegisterId, request.Currency, request.OpeningBalance), cancellationToken);
@@ -42,17 +32,25 @@ public static class ShiftEndpoints
             var shift = await service.ReadOpenAsync(Identity(context), organizationId, branchId, registerId, cancellationToken);
             return shift is null ? Results.NotFound() : Results.Ok(shift);
         });
-        group.MapPost("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, RecordCashMovementRequest request, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        group.MapPost("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, RecordCashMovementRequest request, HttpContext context,
+            IShiftDeviceRequestAuthorizer proof, IShiftService service, CancellationToken cancellationToken) =>
         {
             if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
-            try { var result = await service.RecordCashMovementAsync(Identity(context), new(organizationId, branchId, shiftId, Guid.NewGuid(), operationId, request.Kind, request.Amount, request.Reason), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/cash-movements/{result.Movement.Id:D}", result.Movement) : Results.Ok(result.Movement); }
+            var identity = Identity(context);
+            await VerifyDeviceProofAsync(context, proof, identity, organizationId, branchId, request.RegisterId,
+                CashMovementPath(organizationId, branchId, shiftId), $"cash-movement:{operationId:D}", cancellationToken);
+            try { var result = await service.RecordCashMovementAsync(identity, new(organizationId, branchId, shiftId, Guid.NewGuid(), operationId, request.RegisterId, request.Kind, request.Amount, request.Reason), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/cash-movements/{result.Movement.Id:D}", result.Movement) : Results.Ok(result.Movement); }
             catch (ArgumentException) { return Invalid(); }
         });
         group.MapGet("/{shiftId:guid}/cash-movements", async (Guid organizationId, Guid branchId, Guid shiftId, HttpContext context, IShiftService service, CancellationToken cancellationToken) => Results.Ok(await service.ListCashMovementsAsync(Identity(context), organizationId, branchId, shiftId, cancellationToken)));
-        group.MapPost("/{shiftId:guid}/close", async (Guid organizationId, Guid branchId, Guid shiftId, CloseShiftRequest request, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
+        group.MapPost("/{shiftId:guid}/close", async (Guid organizationId, Guid branchId, Guid shiftId, CloseShiftRequest request, HttpContext context,
+            IShiftDeviceRequestAuthorizer proof, IShiftService service, CancellationToken cancellationToken) =>
         {
             if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId) || operationId == Guid.Empty) return Invalid();
-            try { var result = await service.CloseAsync(Identity(context), new(organizationId, branchId, shiftId, operationId, request.CountedCash), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}", result.Shift) : Results.Ok(result.Shift); }
+            var identity = Identity(context);
+            await VerifyDeviceProofAsync(context, proof, identity, organizationId, branchId, request.RegisterId,
+                ClosePath(organizationId, branchId, shiftId), $"shift-close:{operationId:D}", cancellationToken);
+            try { var result = await service.CloseAsync(identity, new(organizationId, branchId, shiftId, operationId, request.RegisterId, request.CountedCash), cancellationToken); return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}", result.Shift) : Results.Ok(result.Shift); }
             catch (ArgumentException) { return Invalid(); }
         });
         group.MapGet("/closed", async (Guid organizationId, Guid branchId, HttpContext context, IShiftService service, CancellationToken cancellationToken) =>
@@ -74,6 +72,26 @@ public static class ShiftEndpoints
     }
     private static string OpenPath(Guid organizationId, Guid branchId) =>
         $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/open";
+    private static string CashMovementPath(Guid organizationId, Guid branchId, Guid shiftId) =>
+        $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/cash-movements";
+    private static string ClosePath(Guid organizationId, Guid branchId, Guid shiftId) =>
+        $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/close";
+    private static async Task VerifyDeviceProofAsync(HttpContext context, IShiftDeviceRequestAuthorizer proof,
+        ShiftIdentity identity, Guid organizationId, Guid branchId, Guid registerId, string canonicalPath,
+        string operationIdentity, CancellationToken cancellationToken)
+    {
+        var deviceIdText = Header(context, "X-SalekhPos-Device-Id");
+        if (deviceIdText is null || !Guid.TryParseExact(deviceIdText, "D", out var deviceId) || deviceId == Guid.Empty
+            || !string.Equals(deviceIdText, deviceId.ToString("D"), StringComparison.Ordinal))
+            throw new ShiftRequestAuthenticationException();
+        if (!context.Items.TryGetValue(ShiftRequestBodyDigestMiddleware.DigestItemKey, out var digestValue)
+            || digestValue is not string digest)
+            throw new ShiftRequestAuthenticationException();
+        await proof.VerifyAsync(new(identity, organizationId, branchId, deviceId, registerId, "POST", canonicalPath,
+            operationIdentity, digest, new(Header(context, "X-SalekhPos-Device-Credential"),
+                Header(context, "X-SalekhPos-Device-Timestamp"), Header(context, "X-SalekhPos-Device-Nonce"),
+                Header(context, "X-SalekhPos-Device-Signature"))), cancellationToken);
+    }
     private static ShiftIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The shift request is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_request" });
     private static IResult InvalidQuery() => Results.Problem(statusCode: 400, title: "The shift query is invalid", extensions: new Dictionary<string, object?> { ["code"] = "invalid_shift_query" });

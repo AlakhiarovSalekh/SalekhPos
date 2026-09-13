@@ -131,6 +131,114 @@ public sealed class ShiftDeviceProofTests(AccessFixture fixture) : IClassFixture
     }
 
     [Fact]
+    public async Task CashMovementProofIsDeviceRegisterBodyPathOperationAndNonceBound()
+    {
+        using var owner = Client("owner");
+        var registerA = await CreateRegister(owner, "Cash movement proof A");
+        var registerB = await CreateRegister(owner, "Cash movement proof B");
+        using var deviceA = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerA);
+        using var deviceB = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerA);
+        using var registerBDevice = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerB);
+        var shiftId = await OpenShift(deviceA, owner, registerA);
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/{shiftId:D}/cash-movements";
+
+        using var missingRequest = new HttpRequestMessage(HttpMethod.Post, path)
+        { Content = JsonContent.Create(new { registerId = registerA, kind = "cash_in", amount = 1m, reason = "Missing proof" }) };
+        missingRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var missing = await owner.SendAsync(missingRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, missing.StatusCode);
+
+        using var wrongKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var wrong = await deviceA.RecordCashMovementAsync(fixture, owner, registerA, shiftId, Guid.NewGuid(),
+            "cash_in", 1m, "Wrong signing key", new(SigningKey: wrongKey));
+        Assert.Equal(HttpStatusCode.Unauthorized, wrong.StatusCode);
+        using var crossDevice = await deviceA.RecordCashMovementAsync(fixture, owner, registerA, shiftId,
+            Guid.NewGuid(), "cash_in", 1m, "Cross device", new(HeaderDeviceId: deviceB.DeviceId));
+        Assert.Equal(HttpStatusCode.Unauthorized, crossDevice.StatusCode);
+        using var crossRegisterProof = await registerBDevice.RecordCashMovementAsync(fixture, owner, registerA,
+            shiftId, Guid.NewGuid(), "cash_in", 1m, "Cross register proof");
+        Assert.Equal(HttpStatusCode.Unauthorized, crossRegisterProof.StatusCode);
+        using var crossRegisterTarget = await registerBDevice.RecordCashMovementAsync(fixture, owner, registerB,
+            shiftId, Guid.NewGuid(), "cash_in", 1m, "Cross register target");
+        Assert.Equal(HttpStatusCode.Conflict, crossRegisterTarget.StatusCode);
+
+        var validBody = JsonSerializer.SerializeToUtf8Bytes(
+            new { registerId = registerA, kind = "cash_in", amount = 2m, reason = "Valid signed intent" }, WebJson);
+        var tamperedBody = JsonSerializer.SerializeToUtf8Bytes(
+            new { registerId = registerA, kind = "cash_in", amount = 3m, reason = "Valid signed intent" }, WebJson);
+        using var bodyTamper = await deviceA.RecordCashMovementRawAsync(fixture, owner, shiftId, Guid.NewGuid(),
+            tamperedBody, new(SignedBody: validBody));
+        Assert.Equal(HttpStatusCode.Unauthorized, bodyTamper.StatusCode);
+        using var pathTamper = await deviceA.RecordCashMovementRawAsync(fixture, owner, shiftId, Guid.NewGuid(),
+            validBody, new(SignedPath: path + "/other"));
+        Assert.Equal(HttpStatusCode.Unauthorized, pathTamper.StatusCode);
+        using var operationTamper = await deviceA.RecordCashMovementRawAsync(fixture, owner, shiftId,
+            Guid.NewGuid(), validBody, new(SignedOperationIdentity: $"cash-movement:{Guid.NewGuid():D}"));
+        Assert.Equal(HttpStatusCode.Unauthorized, operationTamper.StatusCode);
+        var registerTamperBody = JsonSerializer.SerializeToUtf8Bytes(
+            new { registerId = registerB, kind = "cash_in", amount = 2m, reason = "Register tamper" }, WebJson);
+        using var registerTamper = await deviceA.RecordCashMovementRawAsync(fixture, owner, shiftId, Guid.NewGuid(),
+            registerTamperBody);
+        Assert.Equal(HttpStatusCode.Unauthorized, registerTamper.StatusCode);
+
+        var operationId = Guid.NewGuid();
+        var proof = new ShiftProofOverrides(Timestamp: DateTimeOffset.UtcNow,
+            Nonce: RandomNumberGenerator.GetBytes(32));
+        using var created = await deviceA.RecordCashMovementAsync(fixture, owner, registerA, shiftId, operationId,
+            "cash_in", 4m, "Accepted movement", proof);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        using var nonceReplay = await deviceA.RecordCashMovementAsync(fixture, owner, registerA, shiftId, operationId,
+            "cash_in", 4m, "Accepted movement", proof);
+        Assert.Equal(HttpStatusCode.Unauthorized, nonceReplay.StatusCode);
+        using var freshReplay = await deviceA.RecordCashMovementAsync(fixture, owner, registerA, shiftId, operationId,
+            "cash_in", 4m, "Accepted movement");
+        Assert.Equal(HttpStatusCode.OK, freshReplay.StatusCode);
+    }
+
+    [Fact]
+    public async Task CloseProofRejectsTamperingUntrustedCredentialsAndUnauthorizedHumans()
+    {
+        using var owner = Client("owner");
+        var registerId = await CreateRegister(owner, "Shift close proof");
+        using var device = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerId);
+        var shiftId = await OpenShift(device, owner, registerId);
+        var validBody = JsonSerializer.SerializeToUtf8Bytes(new { registerId, countedCash = 0m }, WebJson);
+        var tamperedBody = JsonSerializer.SerializeToUtf8Bytes(new { registerId, countedCash = 1m }, WebJson);
+
+        using var bodyTamper = await device.CloseShiftRawAsync(fixture, owner, shiftId, Guid.NewGuid(), tamperedBody,
+            new(SignedBody: validBody));
+        Assert.Equal(HttpStatusCode.Unauthorized, bodyTamper.StatusCode);
+        using var pathTamper = await device.CloseShiftRawAsync(fixture, owner, shiftId, Guid.NewGuid(), validBody,
+            new(SignedPath: $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/shifts/{shiftId:D}"));
+        Assert.Equal(HttpStatusCode.Unauthorized, pathTamper.StatusCode);
+        using var operationTamper = await device.CloseShiftRawAsync(fixture, owner, shiftId, Guid.NewGuid(), validBody,
+            new(SignedOperationIdentity: $"shift-close:{Guid.NewGuid():D}"));
+        Assert.Equal(HttpStatusCode.Unauthorized, operationTamper.StatusCode);
+
+        using var pending = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerId, trust: false);
+        using var pendingResponse = await pending.CloseShiftAsync(fixture, owner, registerId, shiftId, Guid.NewGuid(), 0m);
+        Assert.Equal(HttpStatusCode.Unauthorized, pendingResponse.StatusCode);
+        using var revoked = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, registerId);
+        await revoked.RevokeAsync(fixture, owner);
+        using var revokedResponse = await revoked.CloseShiftAsync(fixture, owner, registerId, shiftId, Guid.NewGuid(), 0m);
+        Assert.Equal(HttpStatusCode.Unauthorized, revokedResponse.StatusCode);
+
+        using var unauthorized = Client("alice");
+        using var denied = await device.CloseShiftAsync(fixture, unauthorized, registerId, shiftId, Guid.NewGuid(), 0m);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+
+        var operationId = Guid.NewGuid();
+        var proof = new ShiftProofOverrides(Timestamp: DateTimeOffset.UtcNow,
+            Nonce: RandomNumberGenerator.GetBytes(32));
+        using var closed = await device.CloseShiftAsync(fixture, owner, registerId, shiftId, operationId, 0m, proof);
+        Assert.Equal(HttpStatusCode.Created, closed.StatusCode);
+        using var nonceReplay = await device.CloseShiftAsync(fixture, owner, registerId, shiftId, operationId, 0m, proof);
+        Assert.Equal(HttpStatusCode.Unauthorized, nonceReplay.StatusCode);
+        using var freshReplay = await device.CloseShiftAsync(fixture, owner, registerId, shiftId, operationId, 0m);
+        Assert.Equal(HttpStatusCode.OK, freshReplay.StatusCode);
+    }
+
+    [Fact]
     public async Task LegacyCredentiallessVerifierBehaviorRemainsOptional()
     {
         using var owner = Client("owner");
@@ -154,6 +262,13 @@ public sealed class ShiftDeviceProofTests(AccessFixture fixture) : IClassFixture
         { Content = JsonContent.Create(new { code = "PROOF-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(), name }) };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+    }
+
+    private async Task<Guid> OpenShift(TrustedDeviceTestClient device, HttpClient client, Guid registerId)
+    {
+        using var response = await device.OpenShiftAsync(fixture, client, registerId, Guid.NewGuid());
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
     }
