@@ -1,11 +1,10 @@
 using System.Globalization;
-using SalekhPos.Desktop.Application.POS;
 using SalekhPos.Desktop.Infrastructure.Authentication;
 
 namespace SalekhPos.Desktop.Infrastructure.Configuration;
 
 public sealed record DesktopRuntimeSettings(Uri ApiBaseAddress, NativeOidcSettings Oidc,
-    PosWorkspaceScope Scope, string DatabasePath)
+    Guid OrganizationId, string DatabasePath)
 {
     public const string ApiBaseAddressVariable = "SALEKHPOS_API_BASE_URL";
     public const string OidcAuthorityVariable = "SALEKHPOS_OIDC_AUTHORITY";
@@ -14,8 +13,6 @@ public sealed record DesktopRuntimeSettings(Uri ApiBaseAddress, NativeOidcSettin
     public const string OidcCallbackPortVariable = "SALEKHPOS_OIDC_CALLBACK_PORT";
     public const string OidcClientSecretVariable = "SALEKHPOS_OIDC_CLIENT_SECRET";
     public const string OrganizationIdVariable = "SALEKHPOS_ORGANIZATION_ID";
-    public const string BranchIdVariable = "SALEKHPOS_BRANCH_ID";
-    public const string DeviceIdVariable = "SALEKHPOS_DEVICE_ID";
     public const string DatabasePathVariable = "SALEKHPOS_SQLITE_PATH";
 
     public static DesktopRuntimeSettings FromEnvironment() => Load(Environment.GetEnvironmentVariable);
@@ -29,8 +26,6 @@ public sealed record DesktopRuntimeSettings(Uri ApiBaseAddress, NativeOidcSettin
         var scopes = Required(read, OidcScopesVariable).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var callbackPort = ParseInt32(Required(read, OidcCallbackPortVariable));
         var organizationId = ParseGuid(Required(read, OrganizationIdVariable));
-        var branchId = ParseGuid(Required(read, BranchIdVariable));
-        var deviceId = ParseGuid(Required(read, DeviceIdVariable));
         var databasePath = Required(read, DatabasePathVariable);
 
         if (!string.IsNullOrWhiteSpace(read(OidcClientSecretVariable))
@@ -39,7 +34,7 @@ public sealed record DesktopRuntimeSettings(Uri ApiBaseAddress, NativeOidcSettin
 
         var settings = new DesktopRuntimeSettings(apiAddress,
             new NativeOidcSettings(authority, clientId, scopes, callbackPort),
-            new PosWorkspaceScope(organizationId, branchId, deviceId), databasePath);
+            organizationId, databasePath);
         settings.Validate();
         return settings with { DatabasePath = Path.GetFullPath(databasePath) };
     }
@@ -50,8 +45,7 @@ public sealed record DesktopRuntimeSettings(Uri ApiBaseAddress, NativeOidcSettin
             || !ApiBaseAddress.IsAbsoluteUri
             || !string.IsNullOrEmpty(ApiBaseAddress.UserInfo) || !string.IsNullOrEmpty(ApiBaseAddress.Query)
             || !string.IsNullOrEmpty(ApiBaseAddress.Fragment) || ApiBaseAddress.AbsolutePath != "/"
-            || ApiBaseAddress.AbsoluteUri.Length > 2048 || Scope.OrganizationId == Guid.Empty
-            || Scope.BranchId == Guid.Empty || Scope.DeviceId == Guid.Empty
+            || ApiBaseAddress.AbsoluteUri.Length > 2048 || OrganizationId == Guid.Empty
             || string.IsNullOrWhiteSpace(DatabasePath) || DatabasePath.Any(char.IsControl)
             || !Path.IsPathFullyQualified(DatabasePath))
             throw Invalid();

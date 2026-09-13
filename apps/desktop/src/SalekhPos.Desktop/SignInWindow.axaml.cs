@@ -5,13 +5,13 @@ namespace SalekhPos.Desktop;
 
 public sealed partial class SignInWindow : Window
 {
-    private readonly Func<CancellationToken, Task<DesktopAuthenticatedRuntime>>? signIn;
-    private readonly Action<DesktopAuthenticatedRuntime>? authenticated;
+    private readonly Func<CancellationToken, Task<IDesktopAuthenticatedFlow>>? signIn;
+    private readonly Action<IDesktopAuthenticatedFlow>? authenticated;
     private readonly CancellationTokenSource cancellation = new();
     private bool busy;
 
-    public SignInWindow(Func<CancellationToken, Task<DesktopAuthenticatedRuntime>> signIn,
-        Action<DesktopAuthenticatedRuntime> authenticated)
+    public SignInWindow(Func<CancellationToken, Task<IDesktopAuthenticatedFlow>> signIn,
+        Action<IDesktopAuthenticatedFlow> authenticated)
     {
         this.signIn = signIn;
         this.authenticated = authenticated;
@@ -36,7 +36,7 @@ public sealed partial class SignInWindow : Window
         SignInButton.IsEnabled = false;
         Progress.IsVisible = true;
         StatusText.Text = "Complete sign-in in your system browser.";
-        DesktopAuthenticatedRuntime? runtime = null;
+        IDesktopAuthenticatedFlow? runtime = null;
         try
         {
             runtime = await signIn(cancellation.Token);

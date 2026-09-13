@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.DeviceSetupWindow"
+        Title="SalekhPos device setup" Width="560" Height="570"
+        MinWidth="500" MinHeight="540" CanResize="False">
+  <Grid Background="#F3F5F7">
+    <Border Width="450" Padding="30" Background="White" CornerRadius="10"
+            HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Set up this terminal" FontSize="26" FontWeight="SemiBold" />
+        <TextBlock Text="Choose an authorized location and register. Device trust is stored securely on this computer."
+                   TextWrapping="Wrap" Foreground="#4B5563" Margin="0,0,0,8" />
+        <TextBlock Text="Branch" FontWeight="SemiBold" />
+        <ComboBox Name="BranchBox" SelectionChanged="BranchSelectionChanged" />
+        <TextBlock Text="Register" FontWeight="SemiBold" />
+        <ComboBox Name="RegisterBox" IsEnabled="False" />
+        <TextBlock Text="Terminal code" FontWeight="SemiBold" />
+        <TextBox Name="CodeBox" Text="POS-TERMINAL" MaxLength="64" />
+        <TextBlock Text="Terminal name" FontWeight="SemiBold" />
+        <TextBox Name="NameBox" Text="POS terminal" MaxLength="160" />
+        <TextBlock Name="StatusText" Text="Select a branch to load its active registers."
+                   TextWrapping="Wrap" MinHeight="38" />
+        <ProgressBar Name="Progress" IsIndeterminate="True" IsVisible="False" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+          <Button Grid.Column="0" Content="Sign out" Click="SignOutClick" />
+          <Button Grid.Column="1" Name="ProvisionButton" Content="Provision securely"
+                  IsEnabled="False" Click="ProvisionClick" />
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

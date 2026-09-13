@@ -8,7 +8,7 @@ namespace SalekhPos.Desktop;
 public sealed partial class App : Avalonia.Application
 {
     private DesktopRuntimeBootstrap? bootstrap;
-    private DesktopAuthenticatedRuntime? authenticatedRuntime;
+    private IDesktopAuthenticatedFlow? authenticatedFlow;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -32,9 +32,38 @@ public sealed partial class App : Avalonia.Application
     }
 
     private void CompleteSignIn(IClassicDesktopStyleApplicationLifetime desktop,
-        DesktopAuthenticatedRuntime runtime)
+        IDesktopAuthenticatedFlow flow)
     {
-        authenticatedRuntime = runtime;
+        authenticatedFlow = flow;
+        if (flow is DesktopDeviceSetupSession setup)
+        {
+            var setupWindow = new DeviceSetupWindow(setup,
+                runtime => CompleteSetup(desktop, setup, runtime), () => SignOut(desktop));
+            var previousSignIn = desktop.MainWindow;
+            desktop.MainWindow = setupWindow;
+            setupWindow.Show();
+            previousSignIn?.Close();
+            return;
+        }
+        var runtime = flow as DesktopAuthenticatedRuntime
+            ?? throw new InvalidOperationException("The authenticated desktop flow is invalid.");
+        var cashier = new MainWindow(runtime.Workspace, () => SignOut(desktop));
+        var previous = desktop.MainWindow;
+        desktop.MainWindow = cashier;
+        cashier.Show();
+        previous?.Close();
+    }
+
+    private void CompleteSetup(IClassicDesktopStyleApplicationLifetime desktop,
+        DesktopDeviceSetupSession setup, DesktopAuthenticatedRuntime runtime)
+    {
+        if (!ReferenceEquals(authenticatedFlow, setup))
+        {
+            runtime.Dispose();
+            return;
+        }
+        setup.Dispose();
+        authenticatedFlow = runtime;
         var cashier = new MainWindow(runtime.Workspace, () => SignOut(desktop));
         var previous = desktop.MainWindow;
         desktop.MainWindow = cashier;
@@ -51,8 +80,8 @@ public sealed partial class App : Avalonia.Application
 
     private void SignOut(IClassicDesktopStyleApplicationLifetime desktop)
     {
-        authenticatedRuntime?.Dispose();
-        authenticatedRuntime = null;
+        authenticatedFlow?.Dispose();
+        authenticatedFlow = null;
         var signIn = CreateSignInWindow(desktop);
         var previous = desktop.MainWindow;
         desktop.MainWindow = signIn;
@@ -62,9 +91,9 @@ public sealed partial class App : Avalonia.Application
 
     private void DisposeRuntime()
     {
-        authenticatedRuntime?.Dispose();
+        authenticatedFlow?.Dispose();
         bootstrap?.Dispose();
-        authenticatedRuntime = null;
+        authenticatedFlow = null;
         bootstrap = null;
     }
 }

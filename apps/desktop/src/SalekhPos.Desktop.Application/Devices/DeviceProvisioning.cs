@@ -49,6 +49,11 @@ public interface IActiveDeviceProvisioningProofMaterialReader
     Task<ActiveDeviceProvisioningProofMaterial> ReadActiveAsync(CancellationToken cancellationToken);
 }
 
+public interface IOptionalActiveDeviceProvisioningProofMaterialReader
+{
+    Task<ActiveDeviceProvisioningProofMaterial?> TryReadActiveAsync(CancellationToken cancellationToken);
+}
+
 public sealed record DeviceRequestProof(string CredentialId, string Timestamp, string Nonce, string Signature);
 
 public interface IDeviceRequestProofSigner
@@ -206,7 +211,7 @@ public sealed class DeviceProvisioner(IDeviceSigningKeyProvider keys, IDevicePro
             $"{deviceId:D}\n{credentialId:D}\n{operationId:D}\n{challenge}\n{fingerprint}");
     }
 
-    private static void ValidateRequest(DeviceProvisioningRequest request)
+    public static void ValidateRequest(DeviceProvisioningRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.OrganizationId == Guid.Empty || request.BranchId == Guid.Empty || request.RegisterId == Guid.Empty

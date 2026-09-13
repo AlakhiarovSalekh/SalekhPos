@@ -4,22 +4,36 @@ using SalekhPos.Desktop.Application.Devices;
 namespace SalekhPos.Desktop.Infrastructure.LocalDatabase;
 
 public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : IDeviceProvisioningStateStore,
-    IActiveDeviceProvisioningProofMaterialReader
+    IActiveDeviceProvisioningProofMaterialReader, IOptionalActiveDeviceProvisioningProofMaterialReader
 {
     private readonly string connectionString = BuildConnection(databasePath);
 
     public async Task<ActiveDeviceProvisioningProofMaterial> ReadActiveAsync(
         CancellationToken cancellationToken)
+        => await TryReadActiveAsync(cancellationToken)
+            ?? throw new InvalidOperationException("The local device is not provisioned.");
+
+    public async Task<ActiveDeviceProvisioningProofMaterial?> TryReadActiveAsync(
+        CancellationToken cancellationToken)
     {
         await using var connection = await Open(cancellationToken);
         await using var transaction = connection.BeginTransaction(deferred: true);
         await Execute(connection, transaction, Schema, cancellationToken);
-        var state = await Read(connection, transaction, cancellationToken)
-            ?? throw new InvalidOperationException("The local device is not provisioned.");
+        var state = await Read(connection, transaction, cancellationToken);
+        if (state is null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return null;
+        }
         var credential = state.Device?.Credential;
-        if (state.Device?.Status != "active" || credential?.Status != "active"
-            || credential.Algorithm != "ecdsa-p256-sha256" || state.PublicKeyFingerprint is null)
-            throw new InvalidOperationException("The local device provisioning state is not active.");
+        if (state.Device?.Status != "active")
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return null;
+        }
+        if (credential?.Status != "active" || credential.Algorithm != "ecdsa-p256-sha256"
+            || state.PublicKeyFingerprint is null)
+            throw new InvalidOperationException("The local device provisioning state is invalid.");
         await transaction.CommitAsync(cancellationToken);
         return new(state.Request.OrganizationId, state.Request.BranchId, state.Device.Id, credential.Id,
             state.KeyReference, state.PublicKeyFingerprint);
@@ -162,14 +176,27 @@ public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : ID
 
     private static void ValidateState(DeviceProvisioningState state)
     {
+        DeviceProvisioner.ValidateRequest(state.Request);
         if (state.Request.OrganizationId == Guid.Empty || state.Request.BranchId == Guid.Empty
             || state.Request.RegisterId == Guid.Empty || state.Request.SyncProtocolVersion != 1
             || state.RegistrationOperationId == Guid.Empty || state.TrustOperationId == Guid.Empty
-            || string.IsNullOrWhiteSpace(state.KeyReference)) throw Invalid();
+            || string.IsNullOrWhiteSpace(state.KeyReference) || state.KeyReference != state.KeyReference.Trim()
+            || state.KeyReference.Any(char.IsControl)) throw Invalid();
         if (state.PublicKeyFingerprint is not null) ValidateFingerprint(state.PublicKeyFingerprint);
         if (state.Device is not null && (state.Device.Id == Guid.Empty || state.Device.Credential is null
             || state.Device.Credential.Id == Guid.Empty || state.Device.Status is not ("pending" or "active")
-            || state.Device.Credential.Status != state.Device.Status)) throw Invalid();
+            || state.Device.Credential.Status != state.Device.Status
+            || state.Device.Credential.Algorithm != "ecdsa-p256-sha256"
+            || state.Device.RegisteredAt == default || state.Device.RegisteredAt.Offset != TimeSpan.Zero
+            || string.IsNullOrWhiteSpace(state.Device.RegisteredBy) || state.Device.RegisteredBy.Length > 512
+            || state.Device.RegisteredBy != state.Device.RegisteredBy.Trim()
+            || state.Device.RegisteredBy.Any(char.IsControl)
+            || state.Device.Credential.ProofExpiresAt == default
+            || state.Device.Credential.ProofExpiresAt.Offset != TimeSpan.Zero)) throw Invalid();
+        if (state.Device?.Credential is not null)
+        {
+            ValidateFingerprint(state.Device.Credential.ProofChallenge);
+        }
     }
 
     private static void ValidateFingerprint(string value)
