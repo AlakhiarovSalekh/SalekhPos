@@ -71,6 +71,12 @@ public interface IDeviceRequestProofSigner
         Guid messageId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken);
     Task<DeviceRequestProof> SignShiftOpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
         Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken);
+    Task<DeviceRequestProof> SignCashMovementAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid shiftId, Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body,
+        CancellationToken cancellationToken);
+    Task<DeviceRequestProof> SignShiftCloseAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid shiftId, Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body,
+        CancellationToken cancellationToken);
 }
 
 public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
@@ -99,6 +105,26 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
         var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/open";
         return await SignAsync(organizationId, branchId, deviceId, $"shift-open:{operationId:D}", canonicalPath,
             expectedPath, body, cancellationToken);
+    }
+
+    public async Task<DeviceRequestProof> SignCashMovementAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid shiftId, Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body,
+        CancellationToken cancellationToken)
+    {
+        ValidateShiftOperation(shiftId, operationId, "Cash-movement");
+        var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/cash-movements";
+        return await SignAsync(organizationId, branchId, deviceId, $"cash-movement:{operationId:D}",
+            canonicalPath, expectedPath, body, cancellationToken);
+    }
+
+    public async Task<DeviceRequestProof> SignShiftCloseAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid shiftId, Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body,
+        CancellationToken cancellationToken)
+    {
+        ValidateShiftOperation(shiftId, operationId, "Shift-close");
+        var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/{shiftId:D}/close";
+        return await SignAsync(organizationId, branchId, deviceId, $"shift-close:{operationId:D}",
+            canonicalPath, expectedPath, body, cancellationToken);
     }
 
     private async Task<DeviceRequestProof> SignAsync(Guid organizationId, Guid branchId, Guid deviceId,
@@ -152,6 +178,12 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
             if (Interlocked.CompareExchange(ref lastTimestampTicks, next, previous) == previous)
                 return new DateTimeOffset(next, TimeSpan.Zero);
         }
+    }
+
+    private static void ValidateShiftOperation(Guid shiftId, Guid operationId, string operationName)
+    {
+        if (shiftId == Guid.Empty || operationId == Guid.Empty)
+            throw new ArgumentException($"{operationName} identities are required.");
     }
 
     private static byte[] DecodeCanonicalBase64(string value, int length)

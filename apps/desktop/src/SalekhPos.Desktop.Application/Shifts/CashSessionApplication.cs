@@ -39,10 +39,11 @@ public interface IRemoteCashManagement
 {
     Task<OpenCashSessionResult> OpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
         OpenCashSessionRequest request, CancellationToken cancellationToken);
-    Task<CashMovementResult> RecordMovementAsync(Guid organizationId, Guid branchId, Guid shiftId,
-        Guid operationId, string kind, decimal amount, string reason, CancellationToken cancellationToken);
-    Task<ClosedCashSessionResult> CloseAsync(Guid organizationId, Guid branchId, Guid shiftId,
-        Guid operationId, decimal countedCash, CancellationToken cancellationToken);
+    Task<CashMovementResult> RecordMovementAsync(Guid organizationId, Guid branchId, Guid deviceId, Guid shiftId,
+        Guid registerId, Guid operationId, string kind, decimal amount, string reason,
+        CancellationToken cancellationToken);
+    Task<ClosedCashSessionResult> CloseAsync(Guid organizationId, Guid branchId, Guid deviceId, Guid shiftId,
+        Guid registerId, Guid operationId, decimal countedCash, CancellationToken cancellationToken);
 }
 
 public sealed class CashSessionCoordinator(IRemoteCashSessionSource remote, ILocalCashSessionStore local)

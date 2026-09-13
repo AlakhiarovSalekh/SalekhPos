@@ -153,8 +153,33 @@ public sealed class PosWorkspaceTests : IDisposable
 
         Assert.Equal(setup.ShiftId, movement.ShiftId); Assert.Equal(5m, movement.Amount);
         Assert.Equal(setup.ShiftId, closed.ShiftId); Assert.False(setup.Workspace.CurrentState.CanSell);
+        var (movementDeviceId, movementRegisterId, _) = Assert.Single(setup.Cash.MovementRequests);
+        Assert.Equal(setup.Scope.DeviceId, movementDeviceId);
+        Assert.Equal(setup.RegisterId, movementRegisterId);
+        var (closeDeviceId, closeRegisterId, _) = Assert.Single(setup.Cash.CloseRequests);
+        Assert.Equal(setup.Scope.DeviceId, closeDeviceId);
+        Assert.Equal(setup.RegisterId, closeRegisterId);
         Assert.Null(await new SqliteCashSessionStore(setup.Path).ReadActiveAsync(setup.Scope.OrganizationId,
             setup.Scope.BranchId, setup.Scope.DeviceId, default));
+    }
+
+    [Fact]
+    public async Task CashWritesFailClosedForMissingOrMismatchedSessionAssignmentEvidence()
+    {
+        var missing = await Setup(hasCashSession: false); await missing.Workspace.OpenOnlineAsync(default);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => missing.Workspace.RecordCashMovementAsync(
+            Guid.NewGuid(), "cash_in", 1m, "Float", default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => missing.Workspace.CloseCashSessionAsync(
+            Guid.NewGuid(), 0m, default));
+        Assert.Empty(missing.Cash.MovementRequests); Assert.Empty(missing.Cash.CloseRequests);
+
+        var mismatched = await Setup(); await mismatched.Workspace.OpenOnlineAsync(default);
+        mismatched.Assignment.RegisterId = Guid.NewGuid();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mismatched.Workspace.RecordCashMovementAsync(
+            Guid.NewGuid(), "cash_out", 1m, "Petty cash", default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mismatched.Workspace.CloseCashSessionAsync(
+            Guid.NewGuid(), 0m, default));
+        Assert.Empty(mismatched.Cash.MovementRequests); Assert.Empty(mismatched.Cash.CloseRequests);
     }
 
     [Fact]
@@ -315,6 +340,8 @@ public sealed class PosWorkspaceTests : IDisposable
         Action<OpenCashSessionResult>? onOpen = null) : IRemoteCashManagement
     {
         public List<OpenCashSessionRequest> OpenRequests { get; } = [];
+        public List<(Guid DeviceId, Guid RegisterId, Guid OperationId)> MovementRequests { get; } = [];
+        public List<(Guid DeviceId, Guid RegisterId, Guid OperationId)> CloseRequests { get; } = [];
         public Task<OpenCashSessionResult> OpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
             OpenCashSessionRequest request, CancellationToken cancellationToken)
         {
@@ -324,26 +351,35 @@ public sealed class PosWorkspaceTests : IDisposable
             onOpen?.Invoke(result);
             return Task.FromResult(result);
         }
-        public Task<CashMovementResult> RecordMovementAsync(Guid organizationId, Guid branchId, Guid shiftId,
-            Guid operationId, string kind, decimal amount, string reason, CancellationToken cancellationToken) =>
-            Task.FromResult(new CashMovementResult(Guid.NewGuid(), shiftId, kind, "GEL", amount, reason,
+        public Task<CashMovementResult> RecordMovementAsync(Guid organizationId, Guid branchId, Guid deviceId,
+            Guid shiftId, Guid requestedRegisterId, Guid operationId, string kind, decimal amount, string reason,
+            CancellationToken cancellationToken)
+        {
+            MovementRequests.Add((deviceId, requestedRegisterId, operationId));
+            return Task.FromResult(new CashMovementResult(Guid.NewGuid(), shiftId, kind, "GEL", amount, reason,
                 DateTimeOffset.UtcNow, "cashier"));
-        public Task<ClosedCashSessionResult> CloseAsync(Guid organizationId, Guid branchId, Guid shiftId,
-            Guid operationId, decimal countedCash, CancellationToken cancellationToken) =>
-            Task.FromResult(new ClosedCashSessionResult(shiftId, branchId, registerId, "GEL", 0m, 0m, 0m,
+        }
+        public Task<ClosedCashSessionResult> CloseAsync(Guid organizationId, Guid branchId, Guid deviceId,
+            Guid shiftId, Guid requestedRegisterId, Guid operationId, decimal countedCash,
+            CancellationToken cancellationToken)
+        {
+            CloseRequests.Add((deviceId, requestedRegisterId, operationId));
+            return Task.FromResult(new ClosedCashSessionResult(shiftId, branchId, registerId, "GEL", 0m, 0m, 0m,
                 5m, 0m, 5m, countedCash, countedCash - 5m, openedAt, DateTimeOffset.UtcNow, "cashier", "cashier"));
+        }
     }
     private sealed class Assignment(PosWorkspaceScope scope, Guid registerId)
         : ITrustedDeviceRegisterAssignmentReader
     {
         public Exception? Failure { get; set; }
+        public Guid RegisterId { get; set; } = registerId;
         public (Guid OrganizationId, Guid BranchId, Guid DeviceId) RequestedScope { get; private set; }
         public Task<TrustedDeviceRegisterAssignment> ReadAsync(Guid organizationId, Guid branchId, Guid deviceId,
             CancellationToken cancellationToken)
         {
             RequestedScope = (organizationId, branchId, deviceId);
             return Failure is null ? Task.FromResult(new TrustedDeviceRegisterAssignment(
-                scope.OrganizationId, scope.BranchId, scope.DeviceId, registerId))
+                scope.OrganizationId, scope.BranchId, scope.DeviceId, RegisterId))
                 : Task.FromException<TrustedDeviceRegisterAssignment>(Failure);
         }
     }

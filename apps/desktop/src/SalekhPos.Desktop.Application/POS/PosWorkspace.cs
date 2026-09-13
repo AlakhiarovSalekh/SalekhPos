@@ -189,11 +189,13 @@ public sealed class PosWorkspace(
         await gate.WaitAsync(cancellationToken);
         try
         {
-            var session = state!.CashSession!;
+            var session = await ReadTrustedCurrentSessionAsync(cancellationToken);
             var result = await cashManagement.RecordMovementAsync(scope.OrganizationId, scope.BranchId,
-                session.ShiftId, operationId, kind, amount, reason, cancellationToken);
-            if (result.Currency != session.Currency)
-                throw new InvalidOperationException("The cash-movement currency does not match the session.");
+                scope.DeviceId, session.ShiftId, session.RegisterId, operationId, kind, amount, reason,
+                cancellationToken);
+            if (result.ShiftId != session.ShiftId || result.Kind != kind || result.Currency != session.Currency
+                || result.Amount != amount || result.Reason != reason)
+                throw new InvalidOperationException("The cash movement does not match the active cash session.");
             state = await Snapshot(session, true, cancellationToken);
             return result;
         }
@@ -209,13 +211,14 @@ public sealed class PosWorkspace(
         await gate.WaitAsync(cancellationToken);
         try
         {
-            var session = state!.CashSession!;
+            var session = await ReadTrustedCurrentSessionAsync(cancellationToken);
             if ((await sales.ReadPendingAsync(scope.DeviceId, 1, cancellationToken)).Count != 0)
                 throw new InvalidOperationException("Pending sales must synchronize before closing the cash session.");
-            var result = await cashManagement.CloseAsync(scope.OrganizationId, scope.BranchId, session.ShiftId,
-                operationId, countedCash, cancellationToken);
-            if (result.RegisterId != session.RegisterId || result.Currency != session.Currency
-                || result.OpenedAt != session.OpenedAt)
+            var result = await cashManagement.CloseAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+                session.ShiftId, session.RegisterId, operationId, countedCash, cancellationToken);
+            if (result.ShiftId != session.ShiftId || result.BranchId != scope.BranchId
+                || result.RegisterId != session.RegisterId || result.Currency != session.Currency
+                || result.CountedCash != countedCash || result.OpenedAt != session.OpenedAt)
                 throw new InvalidOperationException("The closed shift does not match the active cash session.");
             await localCashSessions.ConfirmClosedAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
                 session.ShiftId, cancellationToken);
@@ -238,6 +241,21 @@ public sealed class PosWorkspace(
         EnsureOpened();
         if (!state!.IsOnline || state.CashSession is null)
             throw new InvalidOperationException("An online cash session is required.");
+    }
+    private async Task<LocalCashSession> ReadTrustedCurrentSessionAsync(CancellationToken cancellationToken)
+    {
+        if (state is null || !state.IsOnline || state.CashSession is null)
+            throw new InvalidOperationException("An online cash session is required.");
+        var session = state.CashSession;
+        if (session.OrganizationId != scope.OrganizationId || session.BranchId != scope.BranchId
+            || session.DeviceId != scope.DeviceId || session.RegisterId == Guid.Empty || session.ShiftId == Guid.Empty)
+            throw new InvalidOperationException("The active cash session does not match the workspace.");
+        var assignment = await deviceAssignments.ReadAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+            cancellationToken);
+        if (assignment.OrganizationId != scope.OrganizationId || assignment.BranchId != scope.BranchId
+            || assignment.DeviceId != scope.DeviceId || assignment.RegisterId != session.RegisterId)
+            throw new InvalidOperationException("The trusted device assignment does not match the active cash session.");
+        return session;
     }
     private void ValidateScope() { if (scope.OrganizationId == Guid.Empty || scope.BranchId == Guid.Empty || scope.DeviceId == Guid.Empty) throw new ArgumentException("POS workspace scope is required."); }
 }

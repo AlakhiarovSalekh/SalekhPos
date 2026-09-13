@@ -168,6 +168,57 @@ public sealed class PendingSaleSyncDispatcherTests
     }
 
     [Theory]
+    [InlineData("movement", "none")]
+    [InlineData("movement", "body")]
+    [InlineData("movement", "path")]
+    [InlineData("movement", "operation")]
+    [InlineData("movement", "device")]
+    [InlineData("movement", "credential")]
+    [InlineData("movement", "fingerprint")]
+    [InlineData("close", "none")]
+    [InlineData("close", "body")]
+    [InlineData("close", "path")]
+    [InlineData("close", "operation")]
+    [InlineData("close", "device")]
+    [InlineData("close", "credential")]
+    [InlineData("close", "fingerprint")]
+    public async Task CashWriteProofBindsEveryTrustedRequestField(string requestType, string field)
+    {
+        var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
+        var shift = Guid.NewGuid(); var credential = Guid.NewGuid(); var operation = Guid.NewGuid();
+        using var keys = new TestKeyProvider();
+        var fingerprint = Convert.ToBase64String(SHA256.HashData(keys.PublicKey));
+        var material = new ActiveDeviceProvisioningProofMaterial(organization, branch, device, credential,
+            TestKeyProvider.Reference, fingerprint);
+        var pathSuffix = requestType == "movement" ? "cash-movements" : "close";
+        var operationType = requestType == "movement" ? "cash-movement" : "shift-close";
+        var path = $"/api/v1/organizations/{organization:D}/branches/{branch:D}/shifts/{shift:D}/{pathSuffix}";
+        var body = requestType == "movement"
+            ? Encoding.UTF8.GetBytes("{\"registerId\":\"11111111-1111-4111-8111-111111111111\",\"kind\":\"cash_in\",\"amount\":5,\"reason\":\"Float\"}")
+            : Encoding.UTF8.GetBytes("{\"registerId\":\"11111111-1111-4111-8111-111111111111\",\"countedCash\":5}");
+        var signer = new DeviceRequestProofSigner(keys, new ProofMaterialReader(material),
+            new FixedTimeProvider(new DateTimeOffset(2026, 9, 13, 12, 0, 0, TimeSpan.Zero)));
+        var proof = requestType == "movement"
+            ? await signer.SignCashMovementAsync(organization, branch, device, shift, operation, path, body, default)
+            : await signer.SignShiftCloseAsync(organization, branch, device, shift, operation, path, body, default);
+
+        var verifiedBody = field == "body" ? [.. body, (byte)' '] : body;
+        var verifiedPath = field == "path" ? path + "/changed" : path;
+        var verifiedOperation = field == "operation" ? Guid.NewGuid() : operation;
+        var verifiedDevice = field == "device" ? Guid.NewGuid() : device;
+        var verifiedCredential = field == "credential" ? Guid.NewGuid() : credential;
+        var verifiedFingerprint = field == "fingerprint" ? Convert.ToBase64String(new byte[32]) : fingerprint;
+        var canonical = Encoding.UTF8.GetBytes(string.Join('\n', "salekhpos-device-request-v1", "POST",
+            verifiedPath, organization.ToString("D"), branch.ToString("D"), verifiedDevice.ToString("D"),
+            verifiedCredential.ToString("D"), $"{operationType}:{verifiedOperation:D}",
+            Convert.ToHexString(SHA256.HashData(verifiedBody)), proof.Timestamp, proof.Nonce, verifiedFingerprint));
+        using var verifier = ECDsa.Create(); verifier.ImportSubjectPublicKeyInfo(keys.PublicKey, out _);
+
+        Assert.Equal(field == "none", verifier.VerifyData(canonical, Convert.FromBase64String(proof.Signature),
+            HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+    }
+
+    [Theory]
     [InlineData("none")]
     [InlineData("body")]
     [InlineData("path")]

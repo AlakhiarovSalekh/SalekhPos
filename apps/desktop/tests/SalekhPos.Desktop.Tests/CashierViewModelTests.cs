@@ -43,6 +43,21 @@ public sealed class CashierViewModelTests
     }
 
     [Fact]
+    public async Task UncertainShiftCloseRetryKeepsOperationIdAndRejectsChangedIntent()
+    {
+        var workspace = new Workspace { FailFirstClose = true }; var viewModel = new CashierViewModel(workspace);
+        viewModel.InitializeFromPreparedState();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => viewModel.CloseShiftAsync("15", default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => viewModel.CloseShiftAsync("16", default));
+        await viewModel.CloseShiftAsync("15.0", default);
+
+        Assert.Equal(2, workspace.CloseIntents.Count);
+        Assert.Equal(workspace.CloseIntents[0].OperationId, workspace.CloseIntents[1].OperationId);
+        Assert.All(workspace.CloseIntents, intent => Assert.Equal(15m, intent.CountedCash));
+    }
+
+    [Fact]
     public async Task SuccessfulShiftOpenEnablesSellingFromRefreshedWorkspaceState()
     {
         var workspace = new Workspace(hasSession: false); var viewModel = new CashierViewModel(workspace);
@@ -98,9 +113,11 @@ public sealed class CashierViewModelTests
         private readonly Guid shift = Guid.NewGuid(); private readonly Guid product = Guid.NewGuid();
         public bool FailFirstMovement { get; init; }
         public bool FailFirstOpen { get; init; }
+        public bool FailFirstClose { get; init; }
         public int OpenCalls { get; private set; }
         public List<Guid> MovementOperations { get; } = [];
         public List<(Guid OperationId, string Currency, decimal OpeningBalance)> OpenIntents { get; } = [];
+        public List<(Guid OperationId, decimal CountedCash)> CloseIntents { get; } = [];
         public CashCheckoutRequest? Checkout { get; private set; }
         public PosWorkspaceState CurrentState { get; private set; }
         public Workspace(bool hasSession = true)
@@ -155,7 +172,15 @@ public sealed class CashierViewModelTests
                 DateTimeOffset.UtcNow, "cashier"));
         }
         public Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,
-            CancellationToken cancellationToken) => throw new NotSupportedException();
+            CancellationToken cancellationToken)
+        {
+            CloseIntents.Add((operationId, countedCash));
+            if (FailFirstClose && CloseIntents.Count == 1) throw new HttpRequestException("Uncertain");
+            CurrentState = CurrentState with { CashSession = null };
+            return Task.FromResult(new ClosedCashSessionResult(shift, branch, register, "GEL", 0m, 0m, 0m,
+                0m, 0m, 0m, countedCash, countedCash, DateTimeOffset.UtcNow.AddHours(-1),
+                DateTimeOffset.UtcNow, "cashier", "cashier"));
+        }
         private LocalSellableItem Item() => new(organization, branch, product, Guid.NewGuid(), "SKU-1", "Tea",
             "EA", "10001", 10m, 10m, "GEL", "inclusive", 18m, DateTimeOffset.UtcNow.AddDays(-1), null);
     }
