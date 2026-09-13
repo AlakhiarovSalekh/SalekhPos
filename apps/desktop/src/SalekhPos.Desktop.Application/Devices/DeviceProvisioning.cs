@@ -54,12 +54,23 @@ public interface IOptionalActiveDeviceProvisioningProofMaterialReader
     Task<ActiveDeviceProvisioningProofMaterial?> TryReadActiveAsync(CancellationToken cancellationToken);
 }
 
+public sealed record TrustedDeviceRegisterAssignment(Guid OrganizationId, Guid BranchId, Guid DeviceId,
+    Guid RegisterId);
+
+public interface ITrustedDeviceRegisterAssignmentReader
+{
+    Task<TrustedDeviceRegisterAssignment> ReadAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        CancellationToken cancellationToken);
+}
+
 public sealed record DeviceRequestProof(string CredentialId, string Timestamp, string Nonce, string Signature);
 
 public interface IDeviceRequestProofSigner
 {
     Task<DeviceRequestProof> SignSyncMessageAsync(Guid organizationId, Guid branchId, Guid deviceId,
         Guid messageId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken);
+    Task<DeviceRequestProof> SignShiftOpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken);
 }
 
 public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
@@ -68,6 +79,7 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
 {
     private const string Domain = "salekhpos-device-request-v1";
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
+    private long lastTimestampTicks;
 
     public async Task<DeviceRequestProof> SignSyncMessageAsync(Guid organizationId, Guid branchId, Guid deviceId,
         Guid messageId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
@@ -76,6 +88,25 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
             || messageId == Guid.Empty)
             throw new ArgumentException("Device request proof identities are required.");
         var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/devices/{deviceId:D}/sync/messages";
+        return await SignAsync(organizationId, branchId, deviceId, $"message:{messageId:D}", canonicalPath,
+            expectedPath, body, cancellationToken);
+    }
+
+    public async Task<DeviceRequestProof> SignShiftOpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        Guid operationId, string canonicalPath, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
+    {
+        if (operationId == Guid.Empty) throw new ArgumentException("Shift-open operation identity is required.");
+        var expectedPath = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/shifts/open";
+        return await SignAsync(organizationId, branchId, deviceId, $"shift-open:{operationId:D}", canonicalPath,
+            expectedPath, body, cancellationToken);
+    }
+
+    private async Task<DeviceRequestProof> SignAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        string operationIdentity, string canonicalPath, string expectedPath, ReadOnlyMemory<byte> body,
+        CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || deviceId == Guid.Empty)
+            throw new ArgumentException("Device request proof identities are required.");
         if (!string.Equals(canonicalPath, expectedPath, StringComparison.Ordinal))
             throw new InvalidOperationException("The device request proof path is invalid.");
 
@@ -92,13 +123,13 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
         if (!CryptographicOperations.FixedTimeEquals(persistedFingerprint, actualFingerprint))
             throw new InvalidOperationException("The persisted device key does not match the provisioning state.");
 
-        var timestamp = clock.GetUtcNow().UtcDateTime.ToString(
+        var timestamp = NextTimestamp().UtcDateTime.ToString(
             "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture);
         var nonce = Base64Url(RandomNumberGenerator.GetBytes(32));
         var bodyDigest = Convert.ToHexString(SHA256.HashData(body.Span));
         var canonical = Encoding.UTF8.GetBytes(string.Join('\n', Domain, "POST", canonicalPath,
             organizationId.ToString("D"), branchId.ToString("D"), deviceId.ToString("D"),
-            material.CredentialId.ToString("D"), $"message:{messageId:D}", bodyDigest, timestamp, nonce,
+            material.CredentialId.ToString("D"), operationIdentity, bodyDigest, timestamp, nonce,
             material.PublicKeyFingerprint));
         var signature = key.Sign(canonical);
         if (signature.Length != 64)
@@ -109,6 +140,18 @@ public sealed class DeviceRequestProofSigner(IDeviceSigningKeyProvider keys,
                 DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
             throw new InvalidOperationException("The device key returned an invalid signature.");
         return new(material.CredentialId.ToString("D"), timestamp, nonce, Convert.ToBase64String(signature));
+    }
+
+    private DateTimeOffset NextTimestamp()
+    {
+        var observed = clock.GetUtcNow().UtcTicks;
+        while (true)
+        {
+            var previous = Volatile.Read(ref lastTimestampTicks);
+            var next = Math.Max(observed, checked(previous + 1));
+            if (Interlocked.CompareExchange(ref lastTimestampTicks, next, previous) == previous)
+                return new DateTimeOffset(next, TimeSpan.Zero);
+        }
     }
 
     private static byte[] DecodeCanonicalBase64(string value, int length)

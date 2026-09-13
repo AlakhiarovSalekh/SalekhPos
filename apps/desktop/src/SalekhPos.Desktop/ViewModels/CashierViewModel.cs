@@ -17,6 +17,7 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
     private Guid saleId = Guid.NewGuid();
     private (Guid OperationId, string Kind, decimal Amount, string Reason)? pendingMovement;
     private (Guid OperationId, decimal CountedCash)? pendingClose;
+    private (Guid OperationId, string Currency, decimal OpeningBalance)? pendingOpen;
 
     public ObservableCollection<CartLineViewModel> CartLines { get; } = [];
     public string SessionStatus { get => sessionStatus; private set => Set(ref sessionStatus, value); }
@@ -26,6 +27,8 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
     public string CartStatus => CartLines.Count == 0 ? "Cart is empty" : $"{CartLines.Count} distinct item(s)";
     public bool IsReady => workspace is not null && opened && !busy;
     public bool IsOnlineSession => IsReady && workspace!.CurrentState.IsOnline && workspace.CurrentState.CanSell;
+    public bool CanOpenShift => IsReady && workspace!.CurrentState.IsOnline
+        && workspace.CurrentState.IsCatalogProjectionReady && workspace.CurrentState.CashSession is null;
     public bool CanCompleteSale => IsReady && workspace!.CurrentState.CanSell && CartLines.Count != 0;
     private decimal GrandTotal => CartLines.Sum(x => x.Total);
     private string CurrencySuffix => CartLines.Count == 0 ? "" : " " + CartLines[0].Currency;
@@ -67,6 +70,27 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
         if (workspace is null) return;
         Apply(await workspace.SynchronizeAsync(cancellationToken)); Message = "Synchronization completed.";
     });
+
+    public Task OpenShiftAsync(string currency, string openingBalance, CancellationToken cancellationToken) =>
+        Run(async () =>
+        {
+            if (workspace is null) return;
+            var canonicalCurrency = (currency ?? "").Trim().ToUpperInvariant();
+            if (canonicalCurrency.Length != 3 || canonicalCurrency.Any(c => c is < 'A' or > 'Z'))
+                throw new ArgumentException("Currency must be exactly three ASCII letters.");
+            const NumberStyles DecimalStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+            if (!decimal.TryParse(openingBalance, DecimalStyle, CultureInfo.InvariantCulture, out var value)
+                || value < 0 || decimal.Round(value, 6) != value)
+                throw new ArgumentException("Opening balance must be a non-negative decimal with at most 6 decimal places.");
+            if (pendingOpen is not null && (pendingOpen.Value.Currency != canonicalCurrency
+                || pendingOpen.Value.OpeningBalance != value))
+                throw new InvalidOperationException("Retry the unresolved shift opening with its original values.");
+            pendingOpen ??= (Guid.NewGuid(), canonicalCurrency, value);
+            await workspace.OpenCashSessionAsync(pendingOpen.Value.OperationId, canonicalCurrency, value,
+                cancellationToken);
+            pendingOpen = null;
+            Apply(workspace.CurrentState); Message = "Cash shift opened.";
+        });
 
     public Task RecordMovementAsync(string kind, string amount, string reason, CancellationToken cancellationToken) =>
         Run(async () =>
@@ -123,7 +147,7 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
         ChangedAvailability();
     }
     private void ChangedCart() { Changed(nameof(GrandTotalText)); Changed(nameof(CartStatus)); Changed(nameof(CanCompleteSale)); }
-    private void ChangedAvailability() { Changed(nameof(IsReady)); Changed(nameof(IsOnlineSession)); Changed(nameof(CanCompleteSale)); }
+    private void ChangedAvailability() { Changed(nameof(IsReady)); Changed(nameof(IsOnlineSession)); Changed(nameof(CanOpenShift)); Changed(nameof(CanCompleteSale)); }
     private void Set(ref string field, string value, [CallerMemberName] string? name = null) { if (field == value) return; field = value; Changed(name); }
     private void Changed([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new(name));
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -168,6 +168,79 @@ public sealed class PendingSaleSyncDispatcherTests
     }
 
     [Theory]
+    [InlineData("none")]
+    [InlineData("body")]
+    [InlineData("path")]
+    [InlineData("operation")]
+    [InlineData("device")]
+    [InlineData("credential")]
+    [InlineData("fingerprint")]
+    public async Task ShiftOpenProofBindsEveryTrustedRequestField(string field)
+    {
+        var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
+        var credential = Guid.NewGuid(); var operation = Guid.NewGuid();
+        using var keys = new TestKeyProvider();
+        var fingerprint = Convert.ToBase64String(SHA256.HashData(keys.PublicKey));
+        var material = new ActiveDeviceProvisioningProofMaterial(organization, branch, device, credential,
+            TestKeyProvider.Reference, fingerprint);
+        var path = $"/api/v1/organizations/{organization:D}/branches/{branch:D}/shifts/open";
+        var body = Encoding.UTF8.GetBytes("{\"registerId\":\"11111111-1111-4111-8111-111111111111\",\"currency\":\"GEL\",\"openingBalance\":5}");
+        var proof = await new DeviceRequestProofSigner(keys, new ProofMaterialReader(material),
+            new FixedTimeProvider(new DateTimeOffset(2026, 9, 13, 12, 0, 0, TimeSpan.Zero)))
+            .SignShiftOpenAsync(organization, branch, device, operation, path, body, default);
+
+        var verifiedBody = field == "body" ? [.. body, (byte)' '] : body;
+        var verifiedPath = field == "path" ? path + "/changed" : path;
+        var verifiedOperation = field == "operation" ? Guid.NewGuid() : operation;
+        var verifiedDevice = field == "device" ? Guid.NewGuid() : device;
+        var verifiedCredential = field == "credential" ? Guid.NewGuid() : credential;
+        var verifiedFingerprint = field == "fingerprint" ? Convert.ToBase64String(new byte[32]) : fingerprint;
+        var canonical = Encoding.UTF8.GetBytes(string.Join('\n', "salekhpos-device-request-v1", "POST",
+            verifiedPath, organization.ToString("D"), branch.ToString("D"), verifiedDevice.ToString("D"),
+            verifiedCredential.ToString("D"), $"shift-open:{verifiedOperation:D}",
+            Convert.ToHexString(SHA256.HashData(verifiedBody)), proof.Timestamp, proof.Nonce, verifiedFingerprint));
+        using var verifier = ECDsa.Create(); verifier.ImportSubjectPublicKeyInfo(keys.PublicKey, out _);
+
+        Assert.Equal(field == "none", verifier.VerifyData(canonical, Convert.FromBase64String(proof.Signature),
+            HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+    }
+
+    [Fact]
+    public async Task ShiftOpenSignerRejectsNonCanonicalPathBeforeSigning()
+    {
+        var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
+        using var keys = new TestKeyProvider();
+        var material = new ActiveDeviceProvisioningProofMaterial(organization, branch, device, Guid.NewGuid(),
+            TestKeyProvider.Reference, Convert.ToBase64String(SHA256.HashData(keys.PublicKey)));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new DeviceRequestProofSigner(keys,
+            new ProofMaterialReader(material)).SignShiftOpenAsync(organization, branch, device, Guid.NewGuid(),
+            "/changed", "{}"u8.ToArray(), default));
+    }
+
+    [Fact]
+    public async Task ShiftOpenRetryUsesFreshProofEvenWhenClockDoesNotAdvance()
+    {
+        var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
+        using var keys = new TestKeyProvider();
+        var material = new ActiveDeviceProvisioningProofMaterial(organization, branch, device, Guid.NewGuid(),
+            TestKeyProvider.Reference, Convert.ToBase64String(SHA256.HashData(keys.PublicKey)));
+        var signer = new DeviceRequestProofSigner(keys, new ProofMaterialReader(material),
+            new FixedTimeProvider(new DateTimeOffset(2026, 9, 13, 12, 0, 0, TimeSpan.Zero)));
+        var operation = Guid.NewGuid();
+        var path = $"/api/v1/organizations/{organization:D}/branches/{branch:D}/shifts/open";
+
+        var first = await signer.SignShiftOpenAsync(organization, branch, device, operation, path,
+            "{}"u8.ToArray(), default);
+        var second = await signer.SignShiftOpenAsync(organization, branch, device, operation, path,
+            "{}"u8.ToArray(), default);
+
+        Assert.NotEqual(first.Timestamp, second.Timestamp);
+        Assert.NotEqual(first.Nonce, second.Nonce);
+        Assert.NotEqual(first.Signature, second.Signature);
+    }
+
+    [Theory]
     [InlineData("missing-state")]
     [InlineData("inactive-state")]
     [InlineData("corrupt-state")]

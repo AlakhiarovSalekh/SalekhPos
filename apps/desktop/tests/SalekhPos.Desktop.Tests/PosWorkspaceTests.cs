@@ -1,4 +1,5 @@
 using SalekhPos.Desktop.Application.Offline;
+using SalekhPos.Desktop.Application.Devices;
 using SalekhPos.Desktop.Application.POS;
 using SalekhPos.Desktop.Application.Shifts;
 using SalekhPos.Desktop.Domain.LocalCatalog;
@@ -156,7 +157,73 @@ public sealed class PosWorkspaceTests : IDisposable
             setup.Scope.BranchId, setup.Scope.DeviceId, default));
     }
 
-    private async Task<SetupResult> Setup(bool hasCashSession = true, List<string>? calls = null)
+    [Fact]
+    public async Task ShiftOpenUsesTrustedAssignmentAndPublishesOnlyMatchingAuthoritativeRefresh()
+    {
+        var setup = await Setup(hasCashSession: false); await setup.Workspace.OpenOnlineAsync(default);
+        var operation = Guid.NewGuid();
+
+        var result = await setup.Workspace.OpenCashSessionAsync(operation, "GEL", 7.123456m, default);
+
+        Assert.Equal(setup.RegisterId, result.RegisterId);
+        Assert.Equal((setup.Scope.OrganizationId, setup.Scope.BranchId, setup.Scope.DeviceId),
+            setup.Assignment.RequestedScope);
+        var request = Assert.Single(setup.Cash.OpenRequests);
+        Assert.Equal(operation, request.OperationId); Assert.Equal(setup.RegisterId, request.RegisterId);
+        Assert.True(setup.Workspace.CurrentState.CanSell);
+        Assert.Equal(result.ShiftId, setup.Workspace.CurrentState.CashSession!.ShiftId);
+    }
+
+    [Fact]
+    public async Task ShiftOpenFailsClosedForOfflineExistingSessionOrMissingAssignment()
+    {
+        var offline = await Setup(hasCashSession: false); await offline.Workspace.OpenOnlineAsync(default);
+        await offline.Workspace.OpenOfflineAsync(default);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => offline.Workspace.OpenCashSessionAsync(
+            Guid.NewGuid(), "GEL", 0m, default));
+        Assert.Empty(offline.Cash.OpenRequests);
+
+        var existing = await Setup(); await existing.Workspace.OpenOnlineAsync(default);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => existing.Workspace.OpenCashSessionAsync(
+            Guid.NewGuid(), "GEL", 0m, default));
+        Assert.Empty(existing.Cash.OpenRequests);
+
+        var missing = await Setup(hasCashSession: false); await missing.Workspace.OpenOnlineAsync(default);
+        missing.Assignment.Failure = new InvalidOperationException("missing assignment");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => missing.Workspace.OpenCashSessionAsync(
+            Guid.NewGuid(), "GEL", 0m, default));
+        Assert.Empty(missing.Cash.OpenRequests); Assert.False(missing.Workspace.CurrentState.CanSell);
+    }
+
+    [Fact]
+    public async Task ShiftOpenRequiresPreparedCatalogReadiness()
+    {
+        var setup = await Setup(hasCashSession: false, catalogReady: false);
+        var state = await setup.Workspace.OpenOnlineAsync(default);
+
+        Assert.False(state.IsCatalogProjectionReady);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => setup.Workspace.OpenCashSessionAsync(
+            Guid.NewGuid(), "GEL", 0m, default));
+        Assert.Empty(setup.Cash.OpenRequests);
+    }
+
+    [Fact]
+    public async Task ShiftOpenRefreshMismatchNeverEnablesSelling()
+    {
+        var setup = await Setup(hasCashSession: false, mismatchedOpenRefresh: true);
+        await setup.Workspace.OpenOnlineAsync(default);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => setup.Workspace.OpenCashSessionAsync(
+            Guid.NewGuid(), "GEL", 3m, default));
+
+        Assert.Single(setup.Cash.OpenRequests); Assert.False(setup.Workspace.CurrentState.CanSell);
+        Assert.Null(setup.Workspace.CurrentState.CashSession);
+        Assert.Null(await new SqliteCashSessionStore(setup.Path).ReadActiveAsync(setup.Scope.OrganizationId,
+            setup.Scope.BranchId, setup.Scope.DeviceId, default));
+    }
+
+    private async Task<SetupResult> Setup(bool hasCashSession = true, List<string>? calls = null,
+        bool mismatchedOpenRefresh = false, bool catalogReady = true)
     {
         var organization = Guid.NewGuid(); var branch = Guid.NewGuid(); var device = Guid.NewGuid();
         var register = Guid.NewGuid(); var shift = Guid.NewGuid(); var product = Guid.NewGuid();
@@ -169,26 +236,37 @@ public sealed class PosWorkspaceTests : IDisposable
         var item = new LocalSellableItem(organization, branch, product, Guid.NewGuid(), "SKU-1", "Tea", "EA",
             "10001", 2m, 10m, "GEL", "inclusive", 18m, openedAt, null);
         var remoteCatalog = new CatalogSource(new(organization, branch, DateTimeOffset.UtcNow, [item]), calls);
-        var transport = new Transport(calls); var cash = new CashManagement(register, openedAt);
-        return new(scope, path, product, shift,
-            await Workspace(scope, path, sessions, remoteCatalog, transport, cash), transport);
+        var transport = new Transport(calls); var assignment = new Assignment(scope, register);
+        var cash = new CashManagement(register, openedAt, shift, result => sessions.SetShift(new(result.ShiftId,
+            branch, register, "open", mismatchedOpenRefresh ? "USD" : result.Currency, result.OpeningBalance,
+            result.OpenedAt)));
+        return new(scope, path, product, shift, register,
+            await Workspace(scope, path, sessions, remoteCatalog, transport, cash, register, assignment,
+                catalogReady), transport,
+            cash, assignment);
     }
 
     private static async Task<PosWorkspace> Workspace(PosWorkspaceScope scope, string path,
         IRemoteCashSessionSource sessionSource, IRemoteSellableCatalog remoteCatalog, Transport transport,
-        IRemoteCashManagement? cashManagement = null)
+        IRemoteCashManagement? cashManagement = null, Guid? registerId = null, Assignment? assignment = null,
+        bool catalogReady = true)
     {
-        var sessionStore = new SqliteCashSessionStore(path); var catalog = new SqliteSellableCatalog(path);
+        var sessionStore = new SqliteCashSessionStore(path); var sqliteCatalog = new SqliteSellableCatalog(path);
+        ILocalSellableCatalog catalog = catalogReady ? sqliteCatalog : new NotReadyCatalog(sqliteCatalog);
         var sales = await new SqliteLocalSaleStore(path).OpenAsync();
         return new(scope, new(sessionSource, sessionStore), sessionStore, new(remoteCatalog, catalog), catalog,
             new SqliteProjectedSaleCheckout(path),
             new PendingSaleSyncRunner(new PendingSaleSyncDispatcher(sales, transport), new Delay()), sales,
-            cashManagement ?? new CashManagement(Guid.NewGuid(), DateTimeOffset.UtcNow));
+            cashManagement ?? new CashManagement(Guid.NewGuid(), DateTimeOffset.UtcNow),
+            assignment ?? new Assignment(scope, registerId ?? Guid.NewGuid()));
     }
 
     private sealed class SessionSource(RemoteCashSessionSnapshot snapshot, List<string>? calls = null)
         : IRemoteCashSessionSource
     {
+        private RemoteCashSessionSnapshot snapshot = snapshot;
+        public void SetShift(RemoteOpenShift shift) => snapshot = snapshot with
+        { Shift = shift, CapturedAt = DateTimeOffset.UtcNow };
         public Task<RemoteCashSessionSnapshot> DownloadAsync(Guid organizationId, Guid branchId,
             Guid deviceId, CancellationToken cancellationToken)
         {
@@ -233,8 +311,19 @@ public sealed class PosWorkspaceTests : IDisposable
                 message.PayloadDigest, DateTimeOffset.UtcNow, false));
         }
     }
-    private sealed class CashManagement(Guid registerId, DateTimeOffset openedAt) : IRemoteCashManagement
+    private sealed class CashManagement(Guid registerId, DateTimeOffset openedAt, Guid? openShiftId = null,
+        Action<OpenCashSessionResult>? onOpen = null) : IRemoteCashManagement
     {
+        public List<OpenCashSessionRequest> OpenRequests { get; } = [];
+        public Task<OpenCashSessionResult> OpenAsync(Guid organizationId, Guid branchId, Guid deviceId,
+            OpenCashSessionRequest request, CancellationToken cancellationToken)
+        {
+            OpenRequests.Add(request);
+            var result = new OpenCashSessionResult(openShiftId ?? Guid.NewGuid(), branchId, request.RegisterId,
+                "open", request.Currency, request.OpeningBalance, openedAt, "cashier");
+            onOpen?.Invoke(result);
+            return Task.FromResult(result);
+        }
         public Task<CashMovementResult> RecordMovementAsync(Guid organizationId, Guid branchId, Guid shiftId,
             Guid operationId, string kind, decimal amount, string reason, CancellationToken cancellationToken) =>
             Task.FromResult(new CashMovementResult(Guid.NewGuid(), shiftId, kind, "GEL", amount, reason,
@@ -244,7 +333,34 @@ public sealed class PosWorkspaceTests : IDisposable
             Task.FromResult(new ClosedCashSessionResult(shiftId, branchId, registerId, "GEL", 0m, 0m, 0m,
                 5m, 0m, 5m, countedCash, countedCash - 5m, openedAt, DateTimeOffset.UtcNow, "cashier", "cashier"));
     }
+    private sealed class Assignment(PosWorkspaceScope scope, Guid registerId)
+        : ITrustedDeviceRegisterAssignmentReader
+    {
+        public Exception? Failure { get; set; }
+        public (Guid OrganizationId, Guid BranchId, Guid DeviceId) RequestedScope { get; private set; }
+        public Task<TrustedDeviceRegisterAssignment> ReadAsync(Guid organizationId, Guid branchId, Guid deviceId,
+            CancellationToken cancellationToken)
+        {
+            RequestedScope = (organizationId, branchId, deviceId);
+            return Failure is null ? Task.FromResult(new TrustedDeviceRegisterAssignment(
+                scope.OrganizationId, scope.BranchId, scope.DeviceId, registerId))
+                : Task.FromException<TrustedDeviceRegisterAssignment>(Failure);
+        }
+    }
+    private sealed class NotReadyCatalog(ILocalSellableCatalog inner) : ILocalSellableCatalog
+    {
+        public Task<bool> ApplyAsync(SellableCatalogSnapshot snapshot, CancellationToken cancellationToken) =>
+            inner.ApplyAsync(snapshot, cancellationToken);
+        public Task<bool> IsProjectionReadyAsync(Guid organizationId, Guid branchId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<LocalSellableItem?> FindByProductAsync(Guid organizationId, Guid branchId, Guid productId,
+            DateTimeOffset at, CancellationToken cancellationToken) =>
+            inner.FindByProductAsync(organizationId, branchId, productId, at, cancellationToken);
+        public Task<LocalSellableItem?> FindByBarcodeAsync(Guid organizationId, Guid branchId, string barcode,
+            DateTimeOffset at, CancellationToken cancellationToken) =>
+            inner.FindByBarcodeAsync(organizationId, branchId, barcode, at, cancellationToken);
+    }
     private sealed record SetupResult(PosWorkspaceScope Scope, string Path, Guid ProductId, Guid ShiftId,
-        PosWorkspace Workspace, Transport Transport);
+        Guid RegisterId, PosWorkspace Workspace, Transport Transport, CashManagement Cash, Assignment Assignment);
     public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 }

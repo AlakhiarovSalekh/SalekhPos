@@ -1,4 +1,5 @@
 using SalekhPos.Desktop.Application.Offline;
+using SalekhPos.Desktop.Application.Devices;
 using SalekhPos.Desktop.Application.Shifts;
 using SalekhPos.Desktop.Domain.LocalCatalog;
 using SalekhPos.Desktop.Domain.LocalSales;
@@ -27,6 +28,8 @@ public interface IPosWorkspace
     Task<LocalSellableItem?> FindByBarcodeAsync(string barcode, DateTimeOffset at, CancellationToken cancellationToken);
     Task<LocalSaleWriteResult> CompleteCashSaleAsync(CashCheckoutRequest request, CancellationToken cancellationToken);
     Task<PosWorkspaceState> SynchronizeAsync(CancellationToken cancellationToken);
+    Task<OpenCashSessionResult> OpenCashSessionAsync(Guid operationId, string currency, decimal openingBalance,
+        CancellationToken cancellationToken);
     Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount, string reason,
         CancellationToken cancellationToken);
     Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,
@@ -42,7 +45,8 @@ public sealed class PosWorkspace(
     IProjectedSaleCheckout checkout,
     PendingSaleSyncRunner sync,
     ILocalSaleStore sales,
-    IRemoteCashManagement cashManagement) : IPosWorkspace
+    IRemoteCashManagement cashManagement,
+    ITrustedDeviceRegisterAssignmentReader deviceAssignments) : IPosWorkspace
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private PosWorkspaceState? state;
@@ -127,6 +131,50 @@ public sealed class PosWorkspace(
                 cancellationToken);
             await catalogRefresh.RefreshAsync(scope.OrganizationId, scope.BranchId, cancellationToken);
             return state = await Snapshot(session, true, cancellationToken);
+        }
+        finally { gate.Release(); }
+    }
+
+    public async Task<OpenCashSessionResult> OpenCashSessionAsync(Guid operationId, string currency,
+        decimal openingBalance, CancellationToken cancellationToken)
+    {
+        if (operationId == Guid.Empty || currency is null || currency.Length != 3
+            || currency.Any(c => c is < 'A' or > 'Z') || openingBalance < 0
+            || decimal.Round(openingBalance, 6) != openingBalance)
+            throw new ArgumentException("Shift-opening request is invalid.");
+        EnsureOpened();
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!state!.IsOnline) throw new InvalidOperationException("A cash session can only be opened online.");
+            if (!state.IsCatalogProjectionReady)
+                throw new InvalidOperationException("The verified catalog must be ready before opening a cash session.");
+            if (state.CashSession is not null)
+                throw new InvalidOperationException("A cash session is already open.");
+            var assignment = await deviceAssignments.ReadAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+                cancellationToken);
+            if (assignment.OrganizationId != scope.OrganizationId || assignment.BranchId != scope.BranchId
+                || assignment.DeviceId != scope.DeviceId || assignment.RegisterId == Guid.Empty)
+                throw new InvalidOperationException("The trusted device assignment does not match the workspace.");
+            var result = await cashManagement.OpenAsync(scope.OrganizationId, scope.BranchId, scope.DeviceId,
+                new(assignment.RegisterId, currency, openingBalance, operationId), cancellationToken);
+            if (result.ShiftId == Guid.Empty || result.BranchId != scope.BranchId
+                || result.RegisterId != assignment.RegisterId || result.Status != "open"
+                || result.Currency != currency || result.OpeningBalance != openingBalance
+                || result.OpenedAt == default || result.OpenedAt.Offset != TimeSpan.Zero
+                || string.IsNullOrWhiteSpace(result.OpenedBy) || result.OpenedBy != result.OpenedBy.Trim()
+                || result.OpenedBy.Length > 512 || result.OpenedBy.Any(char.IsControl))
+                throw new InvalidOperationException("The opened shift does not match the requested cash session.");
+            var refreshed = await cashSessions.RefreshOpenedAsync(scope.OrganizationId, scope.BranchId,
+                scope.DeviceId, result, cancellationToken);
+            if (refreshed is null || refreshed.OrganizationId != scope.OrganizationId
+                || refreshed.BranchId != scope.BranchId || refreshed.DeviceId != scope.DeviceId
+                || refreshed.RegisterId != assignment.RegisterId || refreshed.RegisterId != result.RegisterId
+                || refreshed.ShiftId != result.ShiftId || refreshed.Currency != result.Currency
+                || refreshed.OpeningBalance != result.OpeningBalance || refreshed.OpenedAt != result.OpenedAt)
+                throw new InvalidOperationException("The authoritative cash session does not match the opened shift.");
+            state = await Snapshot(refreshed, true, cancellationToken);
+            return result;
         }
         finally { gate.Release(); }
     }

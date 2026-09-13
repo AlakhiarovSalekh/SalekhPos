@@ -157,6 +157,8 @@ public sealed class PosReadinessSessionTests
             CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<PosWorkspaceState> SynchronizeAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+        public Task<OpenCashSessionResult> OpenCashSessionAsync(Guid operationId, string currency,
+            decimal openingBalance, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount,
             string reason, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,

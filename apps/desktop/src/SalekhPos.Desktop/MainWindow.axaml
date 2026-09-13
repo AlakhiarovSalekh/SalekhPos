@@ -47,6 +47,13 @@
           <TextBox Name="CashReceivedBox" PlaceholderText="Cash received" />
           <Button Content="Complete sale" Click="CompleteSaleClick" IsEnabled="{Binding CanCompleteSale}" />
           <Separator Margin="0,8" />
+          <TextBlock Text="Open shift" FontSize="18" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <TextBox Name="OpenCurrencyBox" Text="GEL" PlaceholderText="Currency" />
+            <TextBox Grid.Column="1" Name="OpeningBalanceBox" Text="0" PlaceholderText="Opening balance" />
+          </Grid>
+          <Button Content="Open shift" Click="OpenShiftClick" IsEnabled="{Binding CanOpenShift}" />
+          <Separator Margin="0,8" />
           <TextBlock Text="Cash management" FontSize="18" FontWeight="SemiBold" />
           <ComboBox Name="MovementKindBox" SelectedIndex="0">
             <ComboBoxItem Content="cash_in" />

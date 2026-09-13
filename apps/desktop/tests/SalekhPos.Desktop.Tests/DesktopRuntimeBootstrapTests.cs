@@ -432,6 +432,8 @@ public sealed class DesktopRuntimeBootstrapTests
             CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<PosWorkspaceState> SynchronizeAsync(CancellationToken cancellationToken) =>
             Task.FromResult(CurrentState);
+        public Task<OpenCashSessionResult> OpenCashSessionAsync(Guid operationId, string currency,
+            decimal openingBalance, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount,
             string reason, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<ClosedCashSessionResult> CloseCashSessionAsync(Guid operationId, decimal countedCash,

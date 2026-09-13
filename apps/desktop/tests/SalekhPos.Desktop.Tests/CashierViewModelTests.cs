@@ -42,21 +42,73 @@ public sealed class CashierViewModelTests
         Assert.Equal(workspace.MovementOperations[0], workspace.MovementOperations[1]);
     }
 
-    private sealed class Workspace : IPosWorkspace
+    [Fact]
+    public async Task SuccessfulShiftOpenEnablesSellingFromRefreshedWorkspaceState()
+    {
+        var workspace = new Workspace(hasSession: false); var viewModel = new CashierViewModel(workspace);
+        viewModel.InitializeFromPreparedState();
+
+        Assert.True(viewModel.CanOpenShift); Assert.False(viewModel.IsOnlineSession);
+        await viewModel.OpenShiftAsync(" gel ", "10.123456", default);
+
+        Assert.True(viewModel.IsOnlineSession); Assert.False(viewModel.CanOpenShift);
+        Assert.Equal("GEL", workspace.OpenIntents.Single().Currency);
+        Assert.Equal("Cash shift opened.", viewModel.Message);
+    }
+
+    [Fact]
+    public async Task UncertainShiftOpenPreservesOperationAndRejectsChangedRetryIntent()
+    {
+        var workspace = new Workspace(hasSession: false) { FailFirstOpen = true };
+        var viewModel = new CashierViewModel(workspace); viewModel.InitializeFromPreparedState();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => viewModel.OpenShiftAsync("GEL", "5", default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => viewModel.OpenShiftAsync("USD", "6", default));
+        await viewModel.OpenShiftAsync("gel", "5.0", default);
+
+        Assert.Equal(2, workspace.OpenIntents.Count);
+        Assert.Equal(workspace.OpenIntents[0].OperationId, workspace.OpenIntents[1].OperationId);
+        Assert.All(workspace.OpenIntents, intent =>
+        {
+            Assert.Equal("GEL", intent.Currency); Assert.Equal(5m, intent.OpeningBalance);
+        });
+    }
+
+    [Theory]
+    [InlineData("", "0")]
+    [InlineData("GE1", "0")]
+    [InlineData("GEL", "-1")]
+    [InlineData("GEL", "1.1234567")]
+    [InlineData("GEL", "1,2")]
+    public async Task InvalidShiftOpenInputSendsNothing(string currency, string balance)
+    {
+        var workspace = new Workspace(hasSession: false); var viewModel = new CashierViewModel(workspace);
+        viewModel.InitializeFromPreparedState();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => viewModel.OpenShiftAsync(currency, balance, default));
+
+        Assert.Empty(workspace.OpenIntents); Assert.NotEmpty(viewModel.Message);
+    }
+
+    private sealed class Workspace
+        : IPosWorkspace
     {
         private readonly Guid organization = Guid.NewGuid(); private readonly Guid branch = Guid.NewGuid();
         private readonly Guid device = Guid.NewGuid(); private readonly Guid register = Guid.NewGuid();
         private readonly Guid shift = Guid.NewGuid(); private readonly Guid product = Guid.NewGuid();
         public bool FailFirstMovement { get; init; }
+        public bool FailFirstOpen { get; init; }
         public int OpenCalls { get; private set; }
         public List<Guid> MovementOperations { get; } = [];
+        public List<(Guid OperationId, string Currency, decimal OpeningBalance)> OpenIntents { get; } = [];
         public CashCheckoutRequest? Checkout { get; private set; }
         public PosWorkspaceState CurrentState { get; private set; }
-        public Workspace()
+        public Workspace(bool hasSession = true)
         {
             var scope = new PosWorkspaceScope(organization, branch, device);
-            CurrentState = new(scope, new LocalCashSession(organization, branch, device, register, shift, "GEL",
-                0m, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow), true, 0, false, true,
+            var session = hasSession ? new LocalCashSession(organization, branch, device, register, shift, "GEL",
+                0m, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow) : null;
+            CurrentState = new(scope, session, true, 0, false, true,
                 DateTimeOffset.UtcNow);
         }
         public Task<PosWorkspaceState> OpenOnlineAsync(CancellationToken cancellationToken)
@@ -80,6 +132,20 @@ public sealed class CashierViewModelTests
             CurrentState = CurrentState with { PendingSales = 1 }; return Task.FromResult(new LocalSaleWriteResult(sale, message, true));
         }
         public Task<PosWorkspaceState> SynchronizeAsync(CancellationToken cancellationToken) => Task.FromResult(CurrentState);
+        public Task<OpenCashSessionResult> OpenCashSessionAsync(Guid operationId, string currency,
+            decimal openingBalance, CancellationToken cancellationToken)
+        {
+            OpenIntents.Add((operationId, currency, openingBalance));
+            if (FailFirstOpen && OpenIntents.Count == 1) throw new HttpRequestException("Uncertain");
+            var openedAt = DateTimeOffset.UtcNow;
+            CurrentState = CurrentState with
+            {
+                CashSession = new LocalCashSession(organization, branch, device, register, shift, currency,
+                    openingBalance, openedAt, openedAt)
+            };
+            return Task.FromResult(new OpenCashSessionResult(shift, branch, register, "open", currency,
+                openingBalance, openedAt, "cashier"));
+        }
         public Task<CashMovementResult> RecordCashMovementAsync(Guid operationId, string kind, decimal amount,
             string reason, CancellationToken cancellationToken)
         {

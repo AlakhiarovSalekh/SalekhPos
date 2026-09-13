@@ -126,6 +126,8 @@ public sealed class DeviceProvisioningTests
         try
         {
             await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadActiveAsync(default));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadAsync(request.OrganizationId,
+                request.BranchId, Guid.NewGuid(), default));
             var state = await store.GetOrCreateAsync(request, Guid.NewGuid(), Guid.NewGuid(),
                 "cng-user:" + Guid.NewGuid().ToString("N"), default);
             state = await store.BindPublicKeyAsync(state, fingerprint, default);
@@ -149,11 +151,26 @@ public sealed class DeviceProvisioningTests
             Assert.Equal(active.Id, material.DeviceId);
             Assert.Equal(credentialId, material.CredentialId);
             Assert.Equal(fingerprint, material.PublicKeyFingerprint);
+            var assignment = await store.ReadAsync(request.OrganizationId, request.BranchId, active.Id, default);
+            Assert.Equal(request.RegisterId, assignment.RegisterId);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadAsync(request.OrganizationId,
+                Guid.NewGuid(), active.Id, default));
             await using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
             {
                 await connection.OpenAsync();
                 await using var command = connection.CreateCommand();
-                command.CommandText = "UPDATE device_provisioning_state SET public_key_fingerprint='corrupt'";
+                command.CommandText = "UPDATE device_provisioning_state SET register_id='corrupt'";
+                await command.ExecuteNonQueryAsync();
+            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadAsync(request.OrganizationId,
+                request.BranchId, active.Id, default));
+            await using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "UPDATE device_provisioning_state SET register_id=$1," +
+                    "public_key_fingerprint='corrupt'";
+                command.Parameters.AddWithValue("$1", request.RegisterId.ToString("D"));
                 await command.ExecuteNonQueryAsync();
             }
             await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadActiveAsync(default));

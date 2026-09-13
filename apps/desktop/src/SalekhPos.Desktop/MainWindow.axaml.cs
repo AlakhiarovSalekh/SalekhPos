@@ -28,6 +28,8 @@ public sealed partial class MainWindow : Window
     private async Task Scan() { var value = BarcodeBox.Text ?? ""; await Execute(() => viewModel.ScanAsync(value, default)); BarcodeBox.Clear(); BarcodeBox.Focus(); }
     private async void CompleteSaleClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await Execute(() => viewModel.CompleteAsync(CashReceivedBox.Text ?? "", default));
     private async void SynchronizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await Execute(() => viewModel.SynchronizeAsync(default));
+    private async void OpenShiftClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await Execute(() => viewModel.OpenShiftAsync(OpenCurrencyBox.Text ?? "", OpeningBalanceBox.Text ?? "", default));
     private async void RecordMovementClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var kind = (MovementKindBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";

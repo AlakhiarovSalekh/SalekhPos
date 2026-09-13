@@ -28,7 +28,7 @@ public static class DesktopPosComposition
             new SqliteProjectedSaleCheckout(databasePath),
             new PendingSaleSyncRunner(new PendingSaleSyncDispatcher(saleStore,
                 new HttpRemoteSyncTransport(authenticatedClient, proofSigner)), new SystemSyncRetryDelay()),
-            saleStore, new HttpRemoteCashManagement(authenticatedClient));
+            saleStore, new HttpRemoteCashManagement(authenticatedClient, proofSigner), proofMaterial);
     }
 
     private sealed class SystemSyncRetryDelay : ISyncRetryDelay

@@ -4,7 +4,8 @@ using SalekhPos.Desktop.Application.Devices;
 namespace SalekhPos.Desktop.Infrastructure.LocalDatabase;
 
 public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : IDeviceProvisioningStateStore,
-    IActiveDeviceProvisioningProofMaterialReader, IOptionalActiveDeviceProvisioningProofMaterialReader
+    IActiveDeviceProvisioningProofMaterialReader, IOptionalActiveDeviceProvisioningProofMaterialReader,
+    ITrustedDeviceRegisterAssignmentReader
 {
     private readonly string connectionString = BuildConnection(databasePath);
 
@@ -37,6 +38,24 @@ public sealed class SqliteDeviceProvisioningStateStore(string databasePath) : ID
         await transaction.CommitAsync(cancellationToken);
         return new(state.Request.OrganizationId, state.Request.BranchId, state.Device.Id, credential.Id,
             state.KeyReference, state.PublicKeyFingerprint);
+    }
+
+    public async Task<TrustedDeviceRegisterAssignment> ReadAsync(Guid organizationId, Guid branchId, Guid deviceId,
+        CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || deviceId == Guid.Empty)
+            throw new ArgumentException("Trusted device assignment scope is required.");
+        await using var connection = await Open(cancellationToken);
+        await using var transaction = connection.BeginTransaction(deferred: true);
+        await Execute(connection, transaction, Schema, cancellationToken);
+        var state = await Read(connection, transaction, cancellationToken)
+            ?? throw new InvalidOperationException("The trusted device assignment is missing.");
+        if (state.Device?.Status != "active" || state.Device.Id != deviceId
+            || state.Request.OrganizationId != organizationId || state.Request.BranchId != branchId
+            || state.Request.RegisterId == Guid.Empty)
+            throw new InvalidOperationException("The trusted device assignment does not match the requested scope.");
+        await transaction.CommitAsync(cancellationToken);
+        return new(organizationId, branchId, deviceId, state.Request.RegisterId);
     }
 
     public async Task<DeviceProvisioningState> GetOrCreateAsync(DeviceProvisioningRequest request,
