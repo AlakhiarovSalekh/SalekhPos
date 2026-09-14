@@ -5,7 +5,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@salekhpos/packages-api-client": ["../../packages/api-client/src/index.ts"]
     }
   },
   "include": [

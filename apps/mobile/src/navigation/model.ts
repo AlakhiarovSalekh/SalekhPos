@@ -1,10 +1,10 @@
 import type { SessionAuthorization } from "@/security/session";
 
-export type MobileRoute = "/dashboard" | "/scanner";
+export type MobileRoute = "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner";
 
 export type NavigationItem = Readonly<{
   id: string;
-  labelKey: "navigation.dashboard" | "navigation.scanner";
+  labelKey: "navigation.dashboard" | "navigation.organizations" | "navigation.stores" | "navigation.products" | "navigation.inventory" | "navigation.scanner";
   route: MobileRoute;
   requiredPermissions?: readonly string[];
   allowedRoles?: readonly string[];
@@ -17,9 +17,34 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
     route: "/dashboard" as const,
   }),
   Object.freeze({
+    id: "organizations",
+    labelKey: "navigation.organizations" as const,
+    route: "/organizations" as const,
+    requiredPermissions: ["branches.view"],
+  }),
+  Object.freeze({
+    id: "stores",
+    labelKey: "navigation.stores" as const,
+    route: "/stores" as const,
+    requiredPermissions: ["branches.view"],
+  }),
+  Object.freeze({
+    id: "products",
+    labelKey: "navigation.products" as const,
+    route: "/products" as const,
+    requiredPermissions: ["products.view"],
+  }),
+  Object.freeze({
+    id: "inventory",
+    labelKey: "navigation.inventory" as const,
+    route: "/inventory" as const,
+    requiredPermissions: ["inventory.view"],
+  }),
+  Object.freeze({
     id: "scanner",
     labelKey: "navigation.scanner" as const,
     route: "/scanner" as const,
+    requiredPermissions: ["products.view"],
   }),
 ]);
 

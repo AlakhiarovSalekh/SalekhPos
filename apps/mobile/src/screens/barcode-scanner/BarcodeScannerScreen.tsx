@@ -13,8 +13,12 @@ export function BarcodeScannerScreen() {
   const [scannedValue, setScannedValue] = useState<string | null>(null);
 
   const handleBarcodeScanned = useCallback((result: BarcodeScanningResult) => {
-    setScannedValue(result.data);
-  }, []);
+    const value = result.data.trim();
+    setScannedValue(value);
+    if (/^\d{4,64}$/u.test(value)) {
+      router.replace({ pathname: "/products", params: { barcode: value } });
+    }
+  }, [router]);
 
   const permissionMessage =
     permission?.granted === false
@@ -59,6 +63,7 @@ export function BarcodeScannerScreen() {
       {scannedValue === null ? null : (
         <View style={styles.result} accessible accessibilityLiveRegion="polite">
           <Text style={textStyles.body}>{t("scanner.scanned", { value: scannedValue })}</Text>
+          {!/^\d{4,64}$/u.test(scannedValue) ? <Text style={styles.errorText}>{t("scanner.invalidBarcode")}</Text> : null}
           <AppButton onPress={() => setScannedValue(null)}>{t("scanner.scanAgain")}</AppButton>
         </View>
       )}

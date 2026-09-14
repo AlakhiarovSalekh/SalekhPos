@@ -16,9 +16,11 @@
     "node": ">=24"
   },
   "dependencies": {
+    "@salekhpos/packages-api-client": "workspace:*",
     "expo": "57.0.22",
     "expo-camera": "57.0.5",
     "expo-constants": "57.0.18",
+    "expo-crypto": "~57.0.3",
     "expo-linking": "57.0.10",
     "expo-localization": "57.0.2",
     "expo-router": "57.0.21",

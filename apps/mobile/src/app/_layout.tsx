@@ -6,6 +6,7 @@ import { useEffect, useMemo } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { ApiProvider } from "@/api/ApiContext";
 import { ErrorSurface, LoadingSurface } from "@/components/primitives";
 import { parseRuntimeConfig, type RuntimeConfig } from "@/config/runtimeConfig";
 import { LocalizationProvider, useLocalization } from "@/localization/LocalizationProvider";
@@ -65,16 +66,18 @@ function RootNavigator() {
 }
 
 function AuthenticatedStack({ runtimeConfig: _runtimeConfig }: Readonly<{ runtimeConfig: RuntimeConfig }>) {
-  const { status } = useSession();
+  const { status, session } = useSession();
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Protected guard={status === "signedOut"}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
-      <Stack.Protected guard={status === "authenticated"}>
-        <Stack.Screen name="(app)" />
-      </Stack.Protected>
-    </Stack>
+    <ApiProvider baseUrl={_runtimeConfig.apiBaseUrl} accessToken={session?.accessToken ?? null}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Protected guard={status === "signedOut"}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+        <Stack.Protected guard={status === "authenticated"}>
+          <Stack.Screen name="(app)" />
+        </Stack.Protected>
+      </Stack>
+    </ApiProvider>
   );
 }
