@@ -4,6 +4,7 @@ Set-StrictMode -Version Latest
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $taskPnpm = Join-Path $taskRoot 'scripts/pnpm.ps1'
 $taskPreviousCi = $env:CI
+$taskMobileExport = Join-Path ([IO.Path]::GetTempPath()) ('salekhpos-mobile-export-ci-' + [guid]::NewGuid().ToString('N'))
 $env:CI = 'true'
 
 function Invoke-Pnpm([string[]] $Arguments) {
@@ -18,9 +19,13 @@ try {
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'test')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'exec', 'expo', 'install', '--check')
+    Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'exec', 'expo', 'export', '--platform', 'android', '--output-dir', $taskMobileExport)
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'lint')
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'build')
-    Write-Output 'PASS: Node workspace install, shared API client, mobile and web gates completed.'
+    Write-Output 'PASS: Node workspace install, shared API client, mobile bundle and web gates completed.'
 }
-finally { $env:CI = $taskPreviousCi }
+finally {
+    if (Test-Path -LiteralPath $taskMobileExport) { Remove-Item -LiteralPath $taskMobileExport -Recurse -Force }
+    $env:CI = $taskPreviousCi
+}

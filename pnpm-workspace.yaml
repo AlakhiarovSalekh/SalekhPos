@@ -1,5 +1,13 @@
 packages:
   - apps/*
   - packages/*
+# Exact transitive security pins; check-node.ps1 also performs a real Expo Android bundle export.
+overrides:
+  image-size: 2.0.3
+  uuid: 11.1.1
+  decode-uri-component: 0.5.0
 allowBuilds:
   unrs-resolver: true
+# image-size 2.0.3 is the upstream security patch released on 2026-09-14.
+minimumReleaseAgeExclude:
+  - image-size@2.0.3
