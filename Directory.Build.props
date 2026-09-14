@@ -8,6 +8,7 @@
     <Deterministic>true</Deterministic>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <UseArtifactsOutput>true</UseArtifactsOutput>
-    <ArtifactsPath Condition="'$(ArtifactsPath)' == ''">$([System.IO.Path]::GetTempPath())salekhpos-artifacts</ArtifactsPath>
+    <SalekhPosCheckoutName>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('$(MSBuildThisFileDirectory)'))))</SalekhPosCheckoutName>
+    <ArtifactsPath Condition="'$(ArtifactsPath)' == ''">$([System.IO.Path]::GetTempPath())salekhpos-artifacts/$(SalekhPosCheckoutName)</ArtifactsPath>
   </PropertyGroup>
 </Project>

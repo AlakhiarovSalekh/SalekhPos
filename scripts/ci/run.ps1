@@ -22,6 +22,7 @@ try {
     & (Join-Path $PSScriptRoot 'check-structure.ps1') -RequireTracked
     & (Join-Path $PSScriptRoot 'check-architecture.ps1')
     & (Join-Path $PSScriptRoot 'check-secrets.ps1') -ReportDirectory $ReportDirectory
+    & (Join-Path $PSScriptRoot 'check-node.ps1')
     Invoke-DotnetCheck @('restore', $taskSolution, '--locked-mode', '-p:NuGetAudit=true', '-p:NuGetAuditMode=all', '-p:NuGetAuditLevel=low')
     Invoke-DotnetCheck @('build', $taskSolution, '--configuration', 'Release', '--no-restore', '-warnaserror')
     Invoke-DotnetCheck @('format', $taskSolution, '--verify-no-changes', '--no-restore', '--severity', 'info')
@@ -33,6 +34,6 @@ try {
         & (Join-Path $taskRoot 'scripts/test-postgres.ps1') -RunDotnetTests
         if ($LASTEXITCODE -ne 0) { throw 'Native PostgreSQL/integration checks failed.' }
     }
-    Write-Output 'PASS: complete local CI gate finished (architecture, secrets, restore, build, format, dependencies, PostgreSQL and .NET tests).'
+    Write-Output 'PASS: complete local CI gate finished (architecture, secrets, Node apps, restore, build, format, dependencies, PostgreSQL and .NET tests).'
 }
 finally { $env:ContinuousIntegrationBuild = $taskPreviousCi }
