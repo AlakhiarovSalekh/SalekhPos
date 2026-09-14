@@ -1,2 +1,7 @@
-// Reserved location required by the final repository structure.
-// No implementation is claimed. See docs/development/progress.md.
+using SalekhPos.Worker.DependencyInjection;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddWorkerRuntime(builder.Configuration);
+
+await builder.Build().RunAsync().ConfigureAwait(false);
