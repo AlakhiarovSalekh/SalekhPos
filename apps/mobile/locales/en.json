@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "SalekhPos",
+  "NSCameraUsageDescription": "Allow SalekhPos to use the camera when you choose to scan a barcode.",
+  "NSFaceIDUsageDescription": "Allow SalekhPos to use Face ID to protect your signed-in session."
+}

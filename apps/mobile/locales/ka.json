@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "SalekhPos",
+  "NSCameraUsageDescription": "მიეცით SalekhPos-ს კამერის გამოყენების უფლება, როდესაც შტრიხკოდის სკანირებას აირჩევთ.",
+  "NSFaceIDUsageDescription": "მიეცით SalekhPos-ს Face ID-ის გამოყენების უფლება თქვენი სესიის დასაცავად."
+}

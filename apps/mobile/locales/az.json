@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "SalekhPos",
+  "NSCameraUsageDescription": "Barkod skan etməyi seçdiyiniz zaman SalekhPos tətbiqinə kameradan istifadə icazəsi verin.",
+  "NSFaceIDUsageDescription": "Daxil olduğunuz sessiyanı qorumaq üçün SalekhPos tətbiqinə Face ID istifadəsi icazəsi verin."
+}
