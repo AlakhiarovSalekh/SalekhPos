@@ -166,7 +166,7 @@ public static class WebAuthentication
         }).AllowAnonymous().RequireRateLimiting("business");
     }
 
-    private static async Task<bool> ValidateMutation(HttpContext context, IAntiforgery antiforgery, WebAuthenticationSettings settings)
+    internal static async Task<bool> ValidateMutation(HttpContext context, IAntiforgery antiforgery, WebAuthenticationSettings settings)
     {
         if (!string.Equals(context.Request.Headers.Origin, settings.PublicOrigin, StringComparison.Ordinal)) { return false; }
         try { await antiforgery.ValidateRequestAsync(context); return true; }

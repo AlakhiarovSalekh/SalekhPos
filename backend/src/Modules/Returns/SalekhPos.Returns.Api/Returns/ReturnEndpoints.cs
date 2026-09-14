@@ -24,6 +24,19 @@ public static class ReturnEndpoints
                 catch (ArgumentException) { return InvalidQuery(); }
             }).RequireAuthorization().RequireRateLimiting("business");
 
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/sales/{saleId:guid}/returns",
+            async (Guid organizationId, Guid branchId, Guid saleId, HttpContext context, IReturnReader reader,
+                CancellationToken cancellationToken) =>
+            {
+                if (!TryListQuery(context, out var pageSize, out var after)) return InvalidQuery();
+                try
+                {
+                    return Results.Ok(await reader.ListForSaleAsync(Identity(context), organizationId, branchId,
+                        saleId, pageSize, after, cancellationToken));
+                }
+                catch (ArgumentException) { return InvalidQuery(); }
+            }).RequireAuthorization().RequireRateLimiting("business");
+
         app.MapGet("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/returns/{returnId:guid}",
             async (Guid organizationId, Guid branchId, Guid returnId, HttpContext context, IReturnReader reader,
                 CancellationToken cancellationToken) =>

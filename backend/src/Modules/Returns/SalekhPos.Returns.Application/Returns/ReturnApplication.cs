@@ -17,6 +17,8 @@ public interface IReturnReader
         Guid returnId, CancellationToken cancellationToken);
     Task<ReturnPage> ListAsync(ReturnIdentity identity, Guid organizationId, Guid branchId, int pageSize,
         Guid? after, CancellationToken cancellationToken);
+    Task<ReturnPage> ListForSaleAsync(ReturnIdentity identity, Guid organizationId, Guid branchId, Guid saleId,
+        int pageSize, Guid? after, CancellationToken cancellationToken);
 }
 public sealed class ReturnDeniedException : Exception;
 public sealed class ReturnConflictException : Exception;

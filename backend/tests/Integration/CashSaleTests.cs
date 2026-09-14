@@ -311,6 +311,11 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var detailBody = JsonDocument.Parse(await detail.Content.ReadAsStringAsync());
         Assert.Equal(saleId, detailBody.RootElement.GetProperty("saleId").GetGuid());
         Assert.Single(detailBody.RootElement.GetProperty("lines").EnumerateArray());
+        using var bySale = await owner.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId:D}/void");
+        Assert.Equal(HttpStatusCode.OK, bySale.StatusCode);
+        using var bySaleBody = JsonDocument.Parse(await bySale.Content.ReadAsStringAsync());
+        Assert.Equal(voidId, bySaleBody.RootElement.GetProperty("id").GetGuid());
         using var voidRefund = await owner.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids/{voidId:D}/refund");
         Assert.Equal(HttpStatusCode.OK, voidRefund.StatusCode);
@@ -374,6 +379,9 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var denied = await deniedClient.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/voids");
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        using var deniedBySale = await deniedClient.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId:D}/void");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedBySale.StatusCode);
     }
 
     [Fact]
@@ -470,6 +478,13 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var readBody = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
         Assert.Equal(2m, Assert.Single(readBody.RootElement.GetProperty("lines").EnumerateArray())
             .GetProperty("quantity").GetDecimal());
+        using var saleReturns = await client.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId:D}/returns?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, saleReturns.StatusCode);
+        using var saleReturnsBody = JsonDocument.Parse(await saleReturns.Content.ReadAsStringAsync());
+        Assert.Single(saleReturnsBody.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal(saleId, saleReturnsBody.RootElement.GetProperty("items")[0].GetProperty("saleId").GetGuid());
+        Assert.NotEqual(JsonValueKind.Null, saleReturnsBody.RootElement.GetProperty("nextCursor").ValueKind);
         using var invalidList = await client.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns?pageSize=101");
         Assert.Equal(HttpStatusCode.BadRequest, invalidList.StatusCode);
@@ -491,6 +506,9 @@ public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessF
         using var deniedList = await deniedClient.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/returns");
         Assert.Equal(HttpStatusCode.Forbidden, deniedList.StatusCode);
+        using var deniedSaleReturns = await deniedClient.GetAsync(
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/{saleId:D}/returns");
+        Assert.Equal(HttpStatusCode.Forbidden, deniedSaleReturns.StatusCode);
     }
 
     private async Task<Guid> PrepareProduct(decimal amount, decimal stock)

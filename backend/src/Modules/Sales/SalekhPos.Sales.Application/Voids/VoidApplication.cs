@@ -16,6 +16,8 @@ public interface ISaleVoidReader
         int pageSize, Guid? after, CancellationToken cancellationToken);
     Task<VoidedSaleResponse?> ReadAsync(string issuer, string subject, Guid organizationId, Guid branchId,
         Guid voidId, CancellationToken cancellationToken);
+    Task<VoidedSaleResponse?> ReadForSaleAsync(string issuer, string subject, Guid organizationId, Guid branchId,
+        Guid saleId, CancellationToken cancellationToken);
 }
 public sealed class SaleVoidDeniedException : Exception;
 public sealed class SaleVoidConflictException : Exception;

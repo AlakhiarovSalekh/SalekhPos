@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./inventory.css";
+import "./manager.css";
 
 export const metadata: Metadata = { title: "SalekhPos — Retail workspace", description: "Your SalekhPos retail workspace." };
 

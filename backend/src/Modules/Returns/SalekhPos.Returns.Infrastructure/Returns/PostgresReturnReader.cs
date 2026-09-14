@@ -9,6 +9,17 @@ public sealed class PostgresReturnReader(NpgsqlDataSource? source) : IReturnRead
 {
     public async Task<ReturnPage> ListAsync(ReturnIdentity identity, Guid organizationId, Guid branchId,
         int pageSize, Guid? after, CancellationToken cancellationToken)
+        => await ListCoreAsync(identity, organizationId, branchId, null, pageSize, after, cancellationToken);
+
+    public async Task<ReturnPage> ListForSaleAsync(ReturnIdentity identity, Guid organizationId, Guid branchId,
+        Guid saleId, int pageSize, Guid? after, CancellationToken cancellationToken)
+    {
+        if (saleId == Guid.Empty) throw new ArgumentException("Return query is invalid.");
+        return await ListCoreAsync(identity, organizationId, branchId, saleId, pageSize, after, cancellationToken);
+    }
+
+    private async Task<ReturnPage> ListCoreAsync(ReturnIdentity identity, Guid organizationId, Guid branchId,
+        Guid? saleId, int pageSize, Guid? after, CancellationToken cancellationToken)
     {
         Validate(organizationId, branchId, after, pageSize);
         var dataSource = source ?? throw new ReturnsUnavailableException();
@@ -16,10 +27,11 @@ public sealed class PostgresReturnReader(NpgsqlDataSource? source) : IReturnRead
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         await Context(connection, transaction, organizationId, identity, cancellationToken);
         await Demand(connection, transaction, organizationId, branchId, identity, cancellationToken);
-        await using var query = new NpgsqlCommand("SELECT return_id,sale_id,branch_id,currency,amount,reason,completed_at FROM returns.completed_returns WHERE organization_id=$1 AND branch_id=$2 AND ($3::uuid IS NULL OR return_id>$3) ORDER BY return_id LIMIT $4", connection, transaction);
+        await using var query = new NpgsqlCommand("SELECT return_id,sale_id,branch_id,currency,amount,reason,completed_at FROM returns.completed_returns WHERE organization_id=$1 AND branch_id=$2 AND ($3::uuid IS NULL OR return_id>$3) AND ($5::uuid IS NULL OR sale_id=$5) ORDER BY return_id LIMIT $4", connection, transaction);
         query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
         query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid, Value = (object?)after ?? DBNull.Value });
         query.Parameters.AddWithValue(pageSize + 1);
+        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid, Value = (object?)saleId ?? DBNull.Value });
         var items = new List<ReturnSummaryResponse>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
             while (await reader.ReadAsync(cancellationToken)) items.Add(new(reader.GetGuid(0), reader.GetGuid(1),

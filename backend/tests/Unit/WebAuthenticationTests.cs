@@ -43,6 +43,25 @@ public sealed class WebAuthenticationTests
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync("/auth/login", null)).StatusCode);
     }
 
+    [Fact]
+    public async Task BusinessBffFailsClosedWithoutAWebSession()
+    {
+        await using var unavailable = new WebApplicationFactory<Program>();
+        using var unavailableClient = unavailable.CreateClient();
+        using var unavailableResponse = await unavailableClient.GetAsync(
+            "/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, unavailableResponse.StatusCode);
+
+        await using var configured = Configured("https://identity.example", "https://web.example");
+        using var configuredClient = configured.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://web.example")
+        });
+        using var unauthorizedResponse = await configuredClient.GetAsync(
+            "/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches");
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthorizedResponse.StatusCode);
+    }
+
     private static WebApplicationFactory<Program> Configured(string authority, string origin) => new WebApplicationFactory<Program>()
         .WithWebHostBuilder(builder => builder.UseEnvironment("Testing")
             .UseSetting("WebAuthentication:Authority", authority)

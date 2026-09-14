@@ -39,6 +39,20 @@ public static class SaleVoidEndpoints
                 catch (ArgumentException) { return InvalidQuery(); }
             }).RequireAuthorization().RequireRateLimiting("business");
 
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/sales/{saleId:guid}/void",
+            async (Guid organizationId, Guid branchId, Guid saleId, HttpContext context,
+                ISaleVoidReader reader, CancellationToken cancellationToken) =>
+            {
+                try
+                {
+                    var result = await reader.ReadForSaleAsync(context.User.FindFirst("iss")!.Value,
+                        context.User.FindFirst("sub")!.Value, organizationId, branchId, saleId,
+                        cancellationToken);
+                    return result is null ? Results.NotFound() : Results.Ok(result);
+                }
+                catch (ArgumentException) { return InvalidQuery(); }
+            }).RequireAuthorization().RequireRateLimiting("business");
+
         app.MapPost("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/sales/voids",
             async (Guid organizationId, Guid branchId, VoidSaleRequest request, HttpContext context,
                 ISaleVoidService service, CancellationToken cancellationToken) =>
