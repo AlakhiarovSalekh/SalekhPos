@@ -18,6 +18,7 @@ public sealed class WebAuthenticationTests
         Assert.Contains("\"configured\":false", await session.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.PostAsync("/auth/login", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/v1/platform/authority")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/bff/v1/organizations/11111111-1111-4111-8111-111111111111/inventory/access")).StatusCode);
     }
 
     [Theory]

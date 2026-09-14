@@ -5,7 +5,10 @@ const url = new URL(backend);
 if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) throw new Error("Invalid backend origin");
 const config: NextConfig = {
   poweredByHeader: false,
-  async rewrites() { return [{ source: "/auth/:path*", destination: `${url.origin}/auth/:path*` }]; },
+  async rewrites() { return [
+    { source: "/auth/:path*", destination: `${url.origin}/auth/:path*` },
+    { source: "/bff/:path*", destination: `${url.origin}/bff/:path*` }
+  ]; },
   async headers() { return [{ source: "/:path*", headers: [
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "X-Frame-Options", value: "DENY" },

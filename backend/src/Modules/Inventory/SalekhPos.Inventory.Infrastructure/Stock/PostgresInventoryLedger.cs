@@ -84,6 +84,46 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
         return new(items.AsReadOnly(), next);
     }
 
+    public async Task<InventoryAccessResponse> ReadAccessAsync(InventoryIdentity identity, Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        if (organizationId == Guid.Empty) throw new ArgumentException("Organization ID is invalid.");
+        var dataSource = source ?? throw new InventoryUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await Safe(connection, transaction, cancellationToken);
+        await Context(connection, transaction, organizationId, identity, cancellationToken);
+        await using var command = new NpgsqlCommand("""
+            SELECT b.branch_id,b.code,b.name,b.time_zone_id,
+              bool_or(g.permission='inventory.view'),bool_or(g.permission='inventory.adjust')
+            FROM organization.branches b
+            JOIN organization.organizations o ON o.organization_id=b.organization_id
+            JOIN organization.businesses business ON business.organization_id=b.organization_id AND business.business_id=b.business_id
+            LEFT JOIN organization.regions region ON region.organization_id=b.organization_id AND region.business_id=b.business_id AND region.region_id=b.region_id
+            JOIN access.memberships m ON m.organization_id=b.organization_id
+            JOIN access.permission_grants g ON g.organization_id=m.organization_id AND g.membership_id=m.membership_id
+            WHERE b.organization_id=$1 AND o.is_active AND business.is_active AND b.is_active AND b.is_configured
+              AND (b.region_id IS NULL OR region.is_active)
+              AND m.issuer=$2 AND m.subject=$3 AND m.is_active
+              AND m.valid_from<=statement_timestamp() AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp())
+              AND g.permission IN ('inventory.view','inventory.adjust')
+              AND (g.scope_kind='organization' OR (g.scope_kind='business' AND g.business_id=b.business_id)
+                OR (g.scope_kind='region' AND g.business_id=b.business_id AND g.region_id=b.region_id)
+                OR (g.scope_kind='branch' AND g.business_id=b.business_id AND g.branch_id=b.branch_id))
+            GROUP BY b.branch_id,b.code,b.name,b.time_zone_id ORDER BY b.name,b.branch_id
+            """, connection, transaction);
+        command.Parameters.AddWithValue(organizationId);
+        command.Parameters.AddWithValue(identity.Issuer);
+        command.Parameters.AddWithValue(identity.Subject);
+        var branches = new List<InventoryBranchAccess>();
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken))
+                branches.Add(new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                    reader.GetBoolean(4), reader.GetBoolean(5)));
+        await transaction.CommitAsync(cancellationToken);
+        return new(organizationId, branches.AsReadOnly());
+    }
+
     private static async Task Context(NpgsqlConnection c, NpgsqlTransaction t, Guid org, InventoryIdentity id, CancellationToken ct)
     {
         await using var q = new NpgsqlCommand("SELECT set_config('app.organization_id',$1,true),set_config('app.issuer',$2,true),set_config('app.subject',$3,true)", c, t);

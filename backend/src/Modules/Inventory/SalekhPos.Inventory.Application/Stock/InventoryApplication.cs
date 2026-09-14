@@ -29,6 +29,8 @@ public interface IInventoryLedger
         CancellationToken cancellationToken);
     Task<StockPage> ReadStockAsync(InventoryIdentity identity, Guid organizationId, Guid branchId,
         int pageSize, Guid? after, CancellationToken cancellationToken);
+    Task<InventoryAccessResponse> ReadAccessAsync(InventoryIdentity identity, Guid organizationId,
+        CancellationToken cancellationToken);
 }
 public sealed class InventoryDeniedException : Exception;
 public sealed class InventoryConflictException : Exception;

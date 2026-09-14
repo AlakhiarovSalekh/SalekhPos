@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Npgsql;
+using SalekhPos.Inventory.Infrastructure.Stock;
 using Xunit;
 
 namespace SalekhPos.IntegrationTests;
@@ -38,6 +40,17 @@ public sealed class InventoryLedgerTests(AccessFixture fixture) : IClassFixture<
         Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
         using var denied = Client("alice");
         Assert.Equal(HttpStatusCode.Forbidden, (await denied.GetAsync(Path + "/stock")).StatusCode);
+    }
+    [Fact]
+    public async Task InventoryAccessUsesPersistedMembershipScopeAndDoesNotLeakOtherTenants()
+    {
+        await using var source = NpgsqlDataSource.Create(fixture.RuntimeConnection);
+        var ledger = new PostgresInventoryLedger(source);
+        var owner = await ledger.ReadAccessAsync(new(AccessFixture.Issuer, "owner"), fixture.OrganizationA, default);
+        Assert.Contains(owner.Branches, branch => branch.BranchId == fixture.BranchA && branch.CanView && branch.CanAdjust);
+        Assert.DoesNotContain(owner.Branches, branch => branch.BranchId == fixture.BranchB);
+        var unassigned = await ledger.ReadAccessAsync(new(AccessFixture.Issuer, "alice"), fixture.OrganizationA, default);
+        Assert.Empty(unassigned.Branches);
     }
     private HttpClient Client(string subject) { var client = fixture.Factory.CreateClient(); client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token(subject)); return client; }
     private async Task<Guid> CreateProduct()
