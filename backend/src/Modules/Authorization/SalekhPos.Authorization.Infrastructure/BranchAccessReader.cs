@@ -9,18 +9,6 @@ public sealed class BranchAccessReader(AccessDatabase database)
 {
     // The same check protects readiness AND each business read. A accidentally
     // elevated connection must never bypass RLS just because readiness was ignored.
-    private const string RuntimeSafetySql = """
-        SELECT current_user = 'salekhpos_runtime'
-            AND NOT EXISTS (SELECT FROM pg_roles WHERE rolname = current_user
-                AND (rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication))
-            AND NOT EXISTS (SELECT FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname = current_user))
-            AND (SELECT count(*) = 6 AND bool_and(c.relrowsecurity AND c.relforcerowsecurity
-                    AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname = current_user))
-                 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-                 WHERE (n.nspname = 'organization' AND c.relname IN ('organizations','businesses','regions','branches'))
-                    OR (n.nspname = 'access' AND c.relname IN ('memberships','permission_grants')))
-        """;
-
     public async Task<bool> IsReadyAsync(CancellationToken cancellationToken)
     {
         if (database.DataSource is null)
@@ -28,7 +16,7 @@ public sealed class BranchAccessReader(AccessDatabase database)
             return false;
         }
         await using var connection = await database.DataSource.OpenConnectionAsync(cancellationToken);
-        return await HasSafeRuntimeAsync(connection, null, cancellationToken);
+        return await AccessRuntimeSafety.IsSafeAsync(connection, null, cancellationToken);
     }
 
     public async Task<BranchPage> ReadAsync(AccessIdentity identity, Guid organizationId,
@@ -43,7 +31,7 @@ public sealed class BranchAccessReader(AccessDatabase database)
         var source = database.DataSource ?? throw new AccessUnavailableException();
         await using var connection = await source.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        if (!await HasSafeRuntimeAsync(connection, transaction, cancellationToken))
+        if (!await AccessRuntimeSafety.IsSafeAsync(connection, transaction, cancellationToken))
         {
             throw new AccessUnavailableException();
         }
@@ -132,9 +120,4 @@ public sealed class BranchAccessReader(AccessDatabase database)
         command.Parameters.AddWithValue(identity.Subject);
     }
 
-    private static async Task<bool> HasSafeRuntimeAsync(NpgsqlConnection connection, NpgsqlTransaction? transaction, CancellationToken cancellationToken)
-    {
-        await using var command = new NpgsqlCommand(RuntimeSafetySql, connection, transaction);
-        return await command.ExecuteScalarAsync(cancellationToken) is true;
-    }
 }

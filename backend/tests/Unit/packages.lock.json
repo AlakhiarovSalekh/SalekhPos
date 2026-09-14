@@ -427,6 +427,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.11, )",
+          "SalekhPos.Authorization.Api": "[1.0.0, )",
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Catalog.Api": "[1.0.0, )",
           "SalekhPos.Catalog.Infrastructure": "[1.0.0, )",
@@ -455,14 +456,28 @@
           "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )"
         }
       },
+      "salekhpos.authorization.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Authorization.Application": "[1.0.0, )",
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
       "salekhpos.authorization.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.authorization.contracts": {
         "type": "Project"
       },
       "salekhpos.authorization.infrastructure": {
         "type": "Project",
         "dependencies": {
           "Npgsql": "[10.0.3, )",
-          "SalekhPos.Authorization.Application": "[1.0.0, )"
+          "SalekhPos.Authorization.Application": "[1.0.0, )",
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
         }
       },
       "salekhpos.catalog.api": {

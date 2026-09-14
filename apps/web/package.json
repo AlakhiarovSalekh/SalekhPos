@@ -8,10 +8,11 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run src && tsc -p tsconfig.test.json && node --test .test-dist/tests/unit/*.test.js",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@salekhpos/packages-api-client": "workspace:*",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"

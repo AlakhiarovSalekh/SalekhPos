@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using SalekhPos.Authorization.Infrastructure;
+using SalekhPos.Authorization.Application;
 using SalekhPos.Identity.Infrastructure.Tokens;
 
 namespace SalekhPos.Api.Authentication;
@@ -42,11 +45,30 @@ public static class WebAuthentication
 {
     public const string CookieScheme = "WebSession";
     public const string OidcScheme = "WebOidc";
+    private const string BusinessApiScheme = "BusinessApiAuthentication";
 
     public static void AddWebAuthentication(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var settings = WebAuthenticationSettings.Read(configuration, environment);
         services.AddSingleton(new WebAuthenticationState(settings));
+        services.AddAuthentication().AddPolicyScheme(BusinessApiScheme, null, options =>
+        {
+            options.ForwardDefaultSelector = context =>
+            {
+                if (context.Request.Headers.ContainsKey("Authorization"))
+                {
+                    return JwtBearerDefaults.AuthenticationScheme;
+                }
+                return settings is not null
+                    && context.Request.Cookies.ContainsKey(settings.AllowLoopbackHttp
+                        ? "SalekhPos-Dev-Session"
+                        : "__Host-SalekhPos-Session")
+                        ? CookieScheme
+                        : JwtBearerDefaults.AuthenticationScheme;
+            };
+        });
+        services.AddAuthorizationBuilder().AddPolicy(AuthorizationPolicies.BusinessApi, policy =>
+            policy.AddAuthenticationSchemes(BusinessApiScheme).RequireAuthenticatedUser());
         services.AddAntiforgery(options =>
         {
             options.Cookie.Name = settings?.AllowLoopbackHttp == true ? "SalekhPos-Dev-Csrf" : "__Host-SalekhPos-Csrf";
@@ -115,6 +137,25 @@ public static class WebAuthentication
             options.TokenValidationParameters.NameClaimType = "name";
             options.TokenValidationParameters.ValidateIssuer = true;
             options.TokenValidationParameters.ValidIssuer = settings.Authority;
+            options.Events.OnTokenValidated = context =>
+            {
+                var issuers = context.Principal!.FindAll("iss").ToArray();
+                var subjects = context.Principal.FindAll("sub").ToArray();
+                if (issuers.Length != 1 || subjects.Length != 1)
+                {
+                    context.Fail("A unique subject and issuer are required.");
+                    return Task.CompletedTask;
+                }
+                try
+                {
+                    _ = new AccessIdentity(issuers[0].Value, subjects[0].Value);
+                }
+                catch (ArgumentException)
+                {
+                    context.Fail("The identity is invalid.");
+                }
+                return Task.CompletedTask;
+            };
             options.Events.OnRedirectToIdentityProvider = context =>
             {
                 context.ProtocolMessage.RedirectUri = settings.PublicOrigin + "/auth/callback";

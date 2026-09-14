@@ -25,6 +25,12 @@
         }
       },
       "salekhpos.authorization.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.authorization.contracts": {
         "type": "Project"
       }
     }

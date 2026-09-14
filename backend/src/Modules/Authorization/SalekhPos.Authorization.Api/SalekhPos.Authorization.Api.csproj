@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../SalekhPos.Authorization.Application/SalekhPos.Authorization.Application.csproj" />
     <ProjectReference Include="../SalekhPos.Authorization.Contracts/SalekhPos.Authorization.Contracts.csproj" />
   </ItemGroup>
 </Project>

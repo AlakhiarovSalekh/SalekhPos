@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SalekhPos.Catalog.Application.Products;
@@ -12,7 +13,7 @@ public static class ProductEndpoints
     public static void MapProductEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/organizations/{organizationId:guid}/products")
-            .RequireAuthorization().RequireRateLimiting("business");
+            .RequireAuthorization("business-api").RequireRateLimiting("business");
         group.MapGet("", async (Guid organizationId, HttpContext context, IProductCatalog catalog, CancellationToken cancellationToken) =>
         {
             if (!TryQuery(context, out var pageSize, out var after)) return InvalidQuery();
@@ -35,8 +36,9 @@ public static class ProductEndpoints
             catch (ArgumentException) { return InvalidQuery(); }
         });
         group.MapPost("", async (Guid organizationId, CreateProductRequest request, HttpContext context,
-            IProductCatalog catalog, CancellationToken cancellationToken) =>
+            IProductCatalog catalog, IAntiforgery antiforgery, CancellationToken cancellationToken) =>
         {
+            if (!await ValidateBrowserMutationAsync(context, antiforgery)) return InvalidBrowserMutation();
             if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId)
                 || operationId == Guid.Empty || organizationId == Guid.Empty) return InvalidQuery();
             ProductWriteResult result;
@@ -51,8 +53,9 @@ public static class ProductEndpoints
                 : Results.Ok(result.Product);
         });
         group.MapPut("/{productId:guid}", async (Guid organizationId, Guid productId, UpdateProductRequest request,
-            HttpContext context, IProductCatalog catalog, CancellationToken cancellationToken) =>
+            HttpContext context, IProductCatalog catalog, IAntiforgery antiforgery, CancellationToken cancellationToken) =>
         {
+            if (!await ValidateBrowserMutationAsync(context, antiforgery)) return InvalidBrowserMutation();
             try
             {
                 return Results.Ok(await catalog.UpdateAsync(Identity(context), new(organizationId, productId,
@@ -67,6 +70,25 @@ public static class ProductEndpoints
 
     private static IResult InvalidQuery() => Results.Problem(statusCode: 400, title: "The product request is invalid",
         extensions: new Dictionary<string, object?> { ["code"] = "invalid_product_request" });
+
+    private static IResult InvalidBrowserMutation() => Results.Problem(statusCode: 400,
+        title: "The browser request could not be verified",
+        extensions: new Dictionary<string, object?> { ["code"] = "invalid_browser_request" });
+
+    private static async Task<bool> ValidateBrowserMutationAsync(HttpContext context, IAntiforgery antiforgery)
+    {
+        if (context.Request.Headers.ContainsKey("Authorization")) return true;
+
+        try
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            return true;
+        }
+        catch (AntiforgeryValidationException)
+        {
+            return false;
+        }
+    }
 
     private static bool TryQuery(HttpContext context, out int pageSize, out Guid? after)
     {

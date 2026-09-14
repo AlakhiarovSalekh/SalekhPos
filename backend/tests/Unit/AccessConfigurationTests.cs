@@ -32,6 +32,8 @@ public sealed class AccessConfigurationTests
     [InlineData("issuer", "")]
     [InlineData("issuer\n", "subject")]
     [InlineData("issuer", "subject\n")]
+    [InlineData(" issuer", "subject")]
+    [InlineData("issuer", "subject ")]
     public void InvalidIdentityCannotEnterDataBoundary(string issuer, string subject)
     {
         Assert.Throws<ArgumentException>(() => new AccessIdentity(issuer, subject));

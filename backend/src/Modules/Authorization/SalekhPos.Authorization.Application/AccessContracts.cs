@@ -1,5 +1,7 @@
 namespace SalekhPos.Authorization.Application;
 
+using SalekhPos.Authorization.Contracts.Organizations;
+
 // Only the authentication boundary constructs this identity from a validated token.
 // Tenant, role and permission claims supplied by clients are never used here.
 public sealed record AccessIdentity
@@ -9,11 +11,13 @@ public sealed record AccessIdentity
 
     public AccessIdentity(string issuer, string subject)
     {
-        if (string.IsNullOrWhiteSpace(issuer) || issuer.Length > 2048 || issuer.Any(char.IsControl))
+        if (string.IsNullOrWhiteSpace(issuer) || issuer.Length > 2048 || issuer != issuer.Trim()
+            || issuer.Any(char.IsControl) || issuer.Any(char.IsSurrogate))
         {
             throw new ArgumentException("Invalid identity issuer.", nameof(issuer));
         }
-        if (string.IsNullOrWhiteSpace(subject) || subject.Length > 256 || subject.Any(char.IsControl))
+        if (string.IsNullOrWhiteSpace(subject) || subject.Length > 256 || subject != subject.Trim()
+            || subject.Any(char.IsControl) || subject.Any(char.IsSurrogate))
         {
             throw new ArgumentException("Invalid identity subject.", nameof(subject));
         }
@@ -26,6 +30,17 @@ public sealed record BranchSummary(Guid Id, Guid BusinessId, Guid? RegionId, str
     string Name, string TimeZoneId);
 
 public sealed record BranchPage(IReadOnlyList<BranchSummary> Items, Guid? NextCursor);
+
+public static class AuthorizationPolicies
+{
+    public const string BusinessApi = "business-api";
+}
+
+public interface IAccessibleOrganizationReader
+{
+    Task<AccessibleOrganizationPage> ReadAsync(AccessIdentity identity, int pageSize,
+        Guid? after, CancellationToken cancellationToken);
+}
 
 public sealed class AccessDeniedException : Exception;
 public sealed class AccessUnavailableException : Exception;
