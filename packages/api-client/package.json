@@ -1,6 +1,30 @@
 {
   "name": "@salekhpos/packages-api-client",
   "private": true,
-  "version": "0.0.0",
-  "description": "Reserved workspace; application implementation pending"
+  "version": "0.1.0",
+  "description": "Strict, dependency-free SalekhPos JSON API client for web and mobile",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true }); require('node:fs').rmSync('.test-dist', { recursive: true, force: true })\"",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "build": "tsc",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }
