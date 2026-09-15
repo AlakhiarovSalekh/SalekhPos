@@ -7,6 +7,8 @@ import {
   ApiResponseTooLargeError,
 } from "@salekhpos/packages-api-client";
 import { ContractParseError } from "@/api/contracts";
+import { OperationsContractError } from "@/api/operationsContracts";
+import { ManagementContractError } from "@/api/managementContracts";
 
 export type SafeErrorCode = "cancelled" | "offline" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "invalid" | "unsafe_response" | "unavailable";
 export type SafeAppError = Readonly<{ code: SafeErrorCode; retryable: boolean }>;
@@ -14,7 +16,7 @@ export type SafeAppError = Readonly<{ code: SafeErrorCode; retryable: boolean }>
 export function mapSafeError(error: unknown): SafeAppError {
   if (error instanceof ApiRequestAbortedError) return { code: "cancelled", retryable: false };
   if (error instanceof ApiNetworkError) return { code: "offline", retryable: true };
-  if (error instanceof ContractParseError || error instanceof ApiResponseParseError || error instanceof ApiResponseTooLargeError) return { code: "unsafe_response", retryable: true };
+  if (error instanceof ContractParseError || error instanceof OperationsContractError || error instanceof ManagementContractError || error instanceof ApiResponseParseError || error instanceof ApiResponseTooLargeError) return { code: "unsafe_response", retryable: true };
   if (error instanceof ApiProblemError || error instanceof ApiHttpError) {
     if (error.status === 401) return { code: "unauthenticated", retryable: false };
     if (error.status === 403) return { code: "forbidden", retryable: false };

@@ -1056,3 +1056,15 @@ product correctness guarantee or production-readiness claim.
 The historical next flow was organization/access → catalog → shifts → atomic cash
 sale/inventory → idempotency → receipt, followed by native/offline/hardware proofs.
 The master roadmap expands this flow while retaining the same integrity priorities.
+
+## September 15, 2026 — management and purchasing expansion
+
+- Added real Customers, Suppliers, Purchasing, Employees and Reporting modules across Domain, Contracts, Application, Infrastructure and API layers.
+- Added PostgreSQL migrations 032-035 with forced tenant RLS, scoped grants, optimistic versions and idempotent write boundaries.
+- Purchasing now supports draft creation plus submit, approve and cancel transitions; receiving is intentionally not claimed until inventory mutation can be atomic.
+- Added operational reporting over sales, returns, purchasing and open shifts with explicit mixed-currency fail-closed behavior.
+- Added session-protected web BFF endpoints plus management pages for customers, suppliers, employees, purchasing and reports.
+- Added iOS/Android management contracts, services, permission-gated navigation and native management screens.
+- Added desktop manager-business contracts and authenticated HTTP client integration alongside existing trusted-terminal operations.
+- Verification completed before checkpoint: full backend solution Release build passed with zero warnings/errors; desktop Release build passed with zero warnings/errors; desktop tests 156/156 passed; mobile typecheck and 81/81 tests passed; web typecheck, ESLint and Next production build passed.
+- Remaining product work is concentrated in broader business modules, deeper offline/sync, production observability/HA, release operations, integrations and additional end-to-end database validation.

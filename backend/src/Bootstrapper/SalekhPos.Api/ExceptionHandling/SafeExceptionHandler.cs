@@ -15,6 +15,11 @@ using SalekhPos.Stores.Application.Registers;
 using SalekhPos.ShiftManagement.Application.Shifts;
 using SalekhPos.Devices.Application.Devices;
 using SalekhPos.Sync.Application.SyncMessages;
+using SalekhPos.Customers.Application.Customers;
+using SalekhPos.Suppliers.Application.Suppliers;
+using SalekhPos.Purchasing.Application.PurchaseOrders;
+using SalekhPos.Employees.Application.Employees;
+using SalekhPos.Reporting.Application.Reports;
 
 namespace SalekhPos.Api.ExceptionHandling;
 
@@ -51,13 +56,26 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             SyncDeniedException => (403, "sync_access_denied", "Synchronization access is not permitted"),
             SyncConflictException => (409, "sync_operation_conflict", "The synchronization message conflicts with current state"),
             ShiftConflictException => (409, "shift_operation_conflict", "The shift operation conflicts with current state"),
+            CustomerDeniedException => (403, "customer_access_denied", "Customer access is not permitted"),
+            CustomerConflictException => (409, "customer_operation_conflict", "The customer operation conflicts with current state"),
+            CustomerNotFoundException => (404, "customer_not_found", "The customer is unavailable"),
+            SupplierDeniedException => (403, "supplier_access_denied", "Supplier access is not permitted"),
+            SupplierConflictException => (409, "supplier_operation_conflict", "The supplier operation conflicts with current state"),
+            SupplierNotFoundException => (404, "supplier_not_found", "The supplier is unavailable"),
+            PurchasingDeniedException => (403, "purchasing_access_denied", "Purchasing access is not permitted"),
+            PurchaseOrderConflictException => (409, "purchase_order_conflict", "The purchase order conflicts with current state"),
+            PurchaseOrderNotFoundException => (404, "purchase_order_not_found", "The purchase order is unavailable"),
+            EmployeeDeniedException => (403, "employee_access_denied", "Employee access is not permitted"),
+            EmployeeConflictException => (409, "employee_operation_conflict", "The employee operation conflicts with current state"),
+            EmployeeNotFoundException => (404, "employee_not_found", "The employee is unavailable"),
+            ReportingDeniedException => (403, "reporting_access_denied", "Reporting access is not permitted"),
             SalesConflictException => (409, "sale_operation_conflict", "The sale operation conflicts with current state"),
             SalePriceUnavailableException => (409, "sale_price_unavailable", "A current product price is unavailable"),
             InsufficientStockException => (409, "insufficient_stock", "Available stock is insufficient"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),
-            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

@@ -2,12 +2,12 @@ import type { SessionAuthorization } from "@/security/session";
 
 export type MobileRoute =
   | "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner"
-  | "/pricing" | "/registers" | "/reconciliation";
+  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports";
 
 export type NavigationLabelKey =
   | "navigation.dashboard" | "navigation.organizations" | "navigation.stores"
   | "navigation.products" | "navigation.inventory" | "navigation.scanner"
-  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation";
+  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports";
 
 export type NavigationItem = Readonly<{
   id: string;
@@ -36,6 +36,11 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
     requiredAnyPermissions: ["stores.view", "stores.manage"] }),
   Object.freeze({ id: "reconciliation", labelKey: "navigation.reconciliation" as const, route: "/reconciliation" as const,
     requiredPermissions: ["shifts.view", "payments.view"] }),
+  Object.freeze({ id: "customers", labelKey: "navigation.customers" as const, route: "/customers" as const, requiredPermissions: ["customers.view"] }),
+  Object.freeze({ id: "suppliers", labelKey: "navigation.suppliers" as const, route: "/suppliers" as const, requiredPermissions: ["suppliers.view"] }),
+  Object.freeze({ id: "employees", labelKey: "navigation.employees" as const, route: "/employees" as const, requiredPermissions: ["employees.view"] }),
+  Object.freeze({ id: "purchasing", labelKey: "navigation.purchasing" as const, route: "/purchasing" as const, requiredPermissions: ["purchase_orders.view"] }),
+  Object.freeze({ id: "reports", labelKey: "navigation.reports" as const, route: "/reports" as const, requiredPermissions: ["reports.view"] }),
 ]);
 
 export function canAccessNavigationItem(

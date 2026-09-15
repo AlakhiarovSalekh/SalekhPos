@@ -431,8 +431,12 @@
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Catalog.Api": "[1.0.0, )",
           "SalekhPos.Catalog.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Customers.Api": "[1.0.0, )",
+          "SalekhPos.Customers.Infrastructure": "[1.0.0, )",
           "SalekhPos.Devices.Api": "[1.0.0, )",
           "SalekhPos.Devices.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Employees.Api": "[1.0.0, )",
+          "SalekhPos.Employees.Infrastructure": "[1.0.0, )",
           "SalekhPos.Identity.Api": "[1.0.0, )",
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
@@ -441,6 +445,10 @@
           "SalekhPos.Payments.Infrastructure": "[1.0.0, )",
           "SalekhPos.Pricing.Api": "[1.0.0, )",
           "SalekhPos.Pricing.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Purchasing.Api": "[1.0.0, )",
+          "SalekhPos.Purchasing.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Reporting.Api": "[1.0.0, )",
+          "SalekhPos.Reporting.Infrastructure": "[1.0.0, )",
           "SalekhPos.Returns.Api": "[1.0.0, )",
           "SalekhPos.Returns.Infrastructure": "[1.0.0, )",
           "SalekhPos.Sales.Api": "[1.0.0, )",
@@ -450,6 +458,8 @@
           "SalekhPos.ShiftManagement.Infrastructure": "[1.0.0, )",
           "SalekhPos.Stores.Api": "[1.0.0, )",
           "SalekhPos.Stores.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Suppliers.Api": "[1.0.0, )",
+          "SalekhPos.Suppliers.Infrastructure": "[1.0.0, )",
           "SalekhPos.Sync.Api": "[1.0.0, )",
           "SalekhPos.Sync.Infrastructure": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
@@ -509,6 +519,35 @@
           "SalekhPos.Catalog.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.customers.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Customers.Application": "[1.0.0, )",
+          "SalekhPos.Customers.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.customers.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Customers.Contracts": "[1.0.0, )",
+          "SalekhPos.Customers.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.customers.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.customers.domain": {
+        "type": "Project"
+      },
+      "salekhpos.customers.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Customers.Application": "[1.0.0, )",
+          "SalekhPos.Customers.Contracts": "[1.0.0, )",
+          "SalekhPos.Customers.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.devices.api": {
         "type": "Project",
         "dependencies": {
@@ -536,6 +575,35 @@
           "SalekhPos.Devices.Application": "[1.0.0, )",
           "SalekhPos.Devices.Contracts": "[1.0.0, )",
           "SalekhPos.Devices.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.employees.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Employees.Application": "[1.0.0, )",
+          "SalekhPos.Employees.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.employees.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Employees.Contracts": "[1.0.0, )",
+          "SalekhPos.Employees.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.employees.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.employees.domain": {
+        "type": "Project"
+      },
+      "salekhpos.employees.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Employees.Application": "[1.0.0, )",
+          "SalekhPos.Employees.Contracts": "[1.0.0, )",
+          "SalekhPos.Employees.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.identity.api": {
@@ -641,6 +709,65 @@
           "SalekhPos.Pricing.Application": "[1.0.0, )",
           "SalekhPos.Pricing.Contracts": "[1.0.0, )",
           "SalekhPos.Pricing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.purchasing.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Purchasing.Application": "[1.0.0, )",
+          "SalekhPos.Purchasing.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.purchasing.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Purchasing.Contracts": "[1.0.0, )",
+          "SalekhPos.Purchasing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.purchasing.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.purchasing.domain": {
+        "type": "Project"
+      },
+      "salekhpos.purchasing.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Purchasing.Application": "[1.0.0, )",
+          "SalekhPos.Purchasing.Contracts": "[1.0.0, )",
+          "SalekhPos.Purchasing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.reporting.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Reporting.Application": "[1.0.0, )",
+          "SalekhPos.Reporting.Contracts": "[1.0.0, )",
+          "SalekhPos.Reporting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.reporting.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Reporting.Contracts": "[1.0.0, )",
+          "SalekhPos.Reporting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.reporting.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.reporting.domain": {
+        "type": "Project"
+      },
+      "salekhpos.reporting.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Reporting.Application": "[1.0.0, )",
+          "SalekhPos.Reporting.Contracts": "[1.0.0, )",
+          "SalekhPos.Reporting.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.returns.api": {
@@ -760,6 +887,35 @@
           "SalekhPos.Stores.Application": "[1.0.0, )",
           "SalekhPos.Stores.Contracts": "[1.0.0, )",
           "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.suppliers.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Suppliers.Application": "[1.0.0, )",
+          "SalekhPos.Suppliers.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.suppliers.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Suppliers.Contracts": "[1.0.0, )",
+          "SalekhPos.Suppliers.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.suppliers.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.suppliers.domain": {
+        "type": "Project"
+      },
+      "salekhpos.suppliers.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Suppliers.Application": "[1.0.0, )",
+          "SalekhPos.Suppliers.Contracts": "[1.0.0, )",
+          "SalekhPos.Suppliers.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.sync.api": {

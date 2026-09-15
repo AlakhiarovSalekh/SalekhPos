@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "salekhpos.suppliers.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Suppliers.Contracts": "[1.0.0, )",
+          "SalekhPos.Suppliers.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.suppliers.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.suppliers.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}

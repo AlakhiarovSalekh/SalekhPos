@@ -32,4 +32,16 @@
     <ProjectReference Include="..\..\Modules\Returns\SalekhPos.Returns.Api\SalekhPos.Returns.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Returns\SalekhPos.Returns.Infrastructure\SalekhPos.Returns.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/Customers/SalekhPos.Customers.Api/SalekhPos.Customers.Api.csproj" />
+    <ProjectReference Include="../../Modules/Customers/SalekhPos.Customers.Infrastructure/SalekhPos.Customers.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Suppliers/SalekhPos.Suppliers.Api/SalekhPos.Suppliers.Api.csproj" />
+    <ProjectReference Include="../../Modules/Suppliers/SalekhPos.Suppliers.Infrastructure/SalekhPos.Suppliers.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Purchasing/SalekhPos.Purchasing.Api/SalekhPos.Purchasing.Api.csproj" />
+    <ProjectReference Include="../../Modules/Purchasing/SalekhPos.Purchasing.Infrastructure/SalekhPos.Purchasing.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Employees/SalekhPos.Employees.Api/SalekhPos.Employees.Api.csproj" />
+    <ProjectReference Include="../../Modules/Employees/SalekhPos.Employees.Infrastructure/SalekhPos.Employees.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Reporting/SalekhPos.Reporting.Api/SalekhPos.Reporting.Api.csproj" />
+    <ProjectReference Include="../../Modules/Reporting/SalekhPos.Reporting.Infrastructure/SalekhPos.Reporting.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

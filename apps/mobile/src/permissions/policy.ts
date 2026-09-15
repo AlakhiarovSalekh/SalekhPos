@@ -11,6 +11,18 @@ export const permissions = Object.freeze({
   storesManage: "stores.manage",
   shiftsView: "shifts.view",
   paymentsView: "payments.view",
+  customersView: "customers.view",
+  customersCreate: "customers.create",
+  suppliersView: "suppliers.view",
+  suppliersCreate: "suppliers.create",
+  employeesView: "employees.view",
+  employeesCreate: "employees.create",
+  purchaseOrdersView: "purchase_orders.view",
+  purchaseOrdersCreate: "purchase_orders.create",
+  purchaseOrdersSubmit: "purchase_orders.submit",
+  purchaseOrdersApprove: "purchase_orders.approve",
+  purchaseOrdersCancel: "purchase_orders.cancel",
+  reportsView: "reports.view",
 } as const);
 
 export function hasPermission(authorization: SessionAuthorization, permission: string): boolean {
