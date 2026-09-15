@@ -17,6 +17,10 @@ export function ManagerShell({ organizationId, branchId, branchName, children }:
         <Link href="/suppliers">Suppliers</Link>
         <Link href="/employees">Employees</Link>
         <Link href="/purchasing">Purchasing</Link>
+        <Link href="/stock-transfers">Transfers</Link>
+        <Link href="/promotions">Promotions</Link>
+        <Link href="/loyalty">Loyalty</Link>
+        <Link href="/audit-log">Audit</Link>
         <Link href="/reporting">Reports</Link>
         <Link href="/dashboard">Account</Link>
       </nav>

@@ -1,0 +1,81 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.ManagerCommerceWindow"
+        Title="SalekhPos Management" Width="1050" Height="760" MinWidth="850" MinHeight="620">
+  <Grid RowDefinitions="Auto,*" Background="#F3F5F7">
+    <Border Background="#17202A" Padding="20,14">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel><TextBlock Text="Management extensions" FontSize="24" FontWeight="SemiBold" Foreground="White"/>
+          <TextBlock Name="ScopeText" Foreground="#C9D4DE"/></StackPanel>
+        <Button Grid.Column="1" Content="Refresh all" Click="RefreshAllClick"/>
+      </Grid>
+    </Border>
+    <TabControl Grid.Row="1" Margin="18">
+      <TabItem Header="Stock transfers">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="8">
+          <StackPanel Spacing="10"><TextBlock Text="Create transfer" FontSize="20" FontWeight="SemiBold"/>
+            <TextBox Name="DestinationBranchBox" PlaceholderText="Destination branch UUID"/>
+            <TextBox Name="TransferProductBox" PlaceholderText="Product UUID"/>
+            <TextBox Name="TransferQuantityBox" Text="1" PlaceholderText="Quantity"/>
+            <TextBox Name="TransferReferenceBox" PlaceholderText="Reference"/>
+            <Button Content="Create draft" Click="CreateTransferClick"/>
+            <TextBlock Name="TransferMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="10"><TextBlock Text="Transfer lifecycle" FontSize="20" FontWeight="SemiBold"/>
+            <ListBox Name="TransferList" Height="420"/>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+              <Button Content="Dispatch" Click="DispatchTransferClick"/>
+              <Button Grid.Column="1" Content="Receive" Click="ReceiveTransferClick"/>
+              <Button Grid.Column="2" Content="Cancel" Click="CancelTransferClick"/>
+            </Grid>
+            <Button Content="Refresh transfers" Click="RefreshTransfersClick"/>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Promotions">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="8">
+          <StackPanel Spacing="10"><TextBlock Text="Create campaign" FontSize="20" FontWeight="SemiBold"/>
+            <TextBox Name="PromotionCodeBox" PlaceholderText="Code"/>
+            <TextBox Name="PromotionNameBox" PlaceholderText="Name"/>
+            <ComboBox Name="PromotionKindBox" SelectedIndex="0"><ComboBoxItem Content="percentage"/><ComboBoxItem Content="fixed"/></ComboBox>
+            <TextBox Name="PromotionValueBox" Text="10" PlaceholderText="Discount value"/>
+            <TextBox Name="PromotionMinimumBox" Text="0" PlaceholderText="Minimum subtotal"/>
+            <TextBox Name="PromotionCurrencyBox" Text="GEL" PlaceholderText="Currency"/>
+            <Button Content="Create campaign" Click="CreatePromotionClick"/>
+            <TextBlock Name="PromotionMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="10"><TextBlock Text="Campaigns" FontSize="20" FontWeight="SemiBold"/>
+            <ListBox Name="PromotionList" Height="330"/>
+            <Button Content="Deactivate selected" Click="DeactivatePromotionClick"/>
+            <Separator/>
+            <TextBlock Text="Evaluate cart" FontWeight="SemiBold"/>
+            <TextBox Name="PromotionSubtotalBox" Text="100" PlaceholderText="Subtotal"/>
+            <Button Content="Evaluate promotions" Click="EvaluatePromotionClick"/>
+            <TextBlock Name="PromotionEvaluationText" TextWrapping="Wrap"/>
+            <Button Content="Refresh promotions" Click="RefreshPromotionsClick"/>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Loyalty">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" Margin="8">
+          <StackPanel Spacing="10"><TextBlock Text="Customer loyalty" FontSize="20" FontWeight="SemiBold"/>
+            <TextBox Name="LoyaltyCustomerBox" PlaceholderText="Customer UUID"/>
+            <Button Content="Open loyalty account" Click="OpenLoyaltyClick"/>
+            <ListBox Name="LoyaltyList" Height="330"/>
+            <Button Content="Refresh accounts" Click="RefreshLoyaltyClick"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="10"><TextBlock Text="Points" FontSize="20" FontWeight="SemiBold"/>
+            <TextBox Name="LoyaltyPointsBox" Text="100" PlaceholderText="Points"/>
+            <TextBox Name="LoyaltyReasonBox" Text="Manual loyalty adjustment" PlaceholderText="Reason"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Content="Earn" Click="EarnPointsClick"/>
+              <Button Grid.Column="1" Content="Redeem" Click="RedeemPointsClick"/>
+            </Grid>
+            <TextBlock Name="LoyaltyMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</Window>
+

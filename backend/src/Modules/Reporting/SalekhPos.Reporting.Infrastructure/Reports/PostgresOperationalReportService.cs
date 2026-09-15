@@ -33,7 +33,7 @@ public sealed class PostgresOperationalReportService(NpgsqlDataSource? source) :
                 WHERE organization_id=$1 AND branch_id=$2 AND completed_at >= $3 AND completed_at < $4),0),
               (SELECT count(*)::int FROM purchasing.purchase_orders
                 WHERE organization_id=$1 AND branch_id=$2 AND created_at >= $3 AND created_at < $4),
-              COALESCE((SELECT sum(total_amount) FROM purchasing.purchase_orders
+              COALESCE((SELECT sum(total) FROM purchasing.purchase_orders
                 WHERE organization_id=$1 AND branch_id=$2 AND created_at >= $3 AND created_at < $4),0),
               (SELECT count(*)::int FROM shifts.shifts
                 WHERE organization_id=$1 AND branch_id=$2 AND status='open')

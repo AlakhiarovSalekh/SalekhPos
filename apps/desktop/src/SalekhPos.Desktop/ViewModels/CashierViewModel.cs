@@ -30,6 +30,8 @@ public sealed class CashierViewModel(IPosWorkspace? workspace) : INotifyProperty
     public bool CanOpenShift => IsReady && workspace!.CurrentState.IsOnline
         && workspace.CurrentState.IsCatalogProjectionReady && workspace.CurrentState.CashSession is null;
     public bool CanCompleteSale => IsReady && workspace!.CurrentState.CanSell && CartLines.Count != 0;
+    public PosWorkspaceScope CurrentScope => workspace?.CurrentState.Scope
+        ?? throw new InvalidOperationException("The POS workspace is not ready.");
     private decimal GrandTotal => CartLines.Sum(x => x.Total);
     private string CurrencySuffix => CartLines.Count == 0 ? "" : " " + CartLines[0].Currency;
 

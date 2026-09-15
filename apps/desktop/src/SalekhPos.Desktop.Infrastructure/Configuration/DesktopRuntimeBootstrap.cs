@@ -39,6 +39,8 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         Workspace = workspace;
         ManagerOperations = new HttpManagerOperations(authenticatedClient);
         ManagerBusiness = new HttpManagerBusiness(authenticatedClient);
+        CommerceExtensions = new HttpCommerceExtensions(authenticatedClient);
+        AuditViewer = new HttpAuditViewer(authenticatedClient);
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
@@ -48,6 +50,8 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     public IPosWorkspace Workspace { get; }
     public IManagerOperations ManagerOperations { get; }
     public IManagerBusiness ManagerBusiness { get; }
+    public ICommerceExtensions CommerceExtensions { get; }
+    public IAuditViewer AuditViewer { get; }
     public string Subject { get; }
 
     public void Dispose()

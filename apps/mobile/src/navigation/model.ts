@@ -2,12 +2,12 @@ import type { SessionAuthorization } from "@/security/session";
 
 export type MobileRoute =
   | "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner"
-  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports";
+  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/audit";
 
 export type NavigationLabelKey =
   | "navigation.dashboard" | "navigation.organizations" | "navigation.stores"
   | "navigation.products" | "navigation.inventory" | "navigation.scanner"
-  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports";
+  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.audit";
 
 export type NavigationItem = Readonly<{
   id: string;
@@ -41,6 +41,10 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
   Object.freeze({ id: "employees", labelKey: "navigation.employees" as const, route: "/employees" as const, requiredPermissions: ["employees.view"] }),
   Object.freeze({ id: "purchasing", labelKey: "navigation.purchasing" as const, route: "/purchasing" as const, requiredPermissions: ["purchase_orders.view"] }),
   Object.freeze({ id: "reports", labelKey: "navigation.reports" as const, route: "/reports" as const, requiredPermissions: ["reports.view"] }),
+  Object.freeze({ id: "stock-transfers", labelKey: "navigation.stockTransfers" as const, route: "/stock-transfers" as const, requiredPermissions: ["inventory.view"] }),
+  Object.freeze({ id: "promotions", labelKey: "navigation.promotions" as const, route: "/promotions" as const, requiredAnyPermissions: ["pricing.view", "pricing.manage"] }),
+  Object.freeze({ id: "loyalty", labelKey: "navigation.loyalty" as const, route: "/loyalty" as const, requiredAnyPermissions: ["loyalty.view", "loyalty.manage"] }),
+  Object.freeze({ id: "audit", labelKey: "navigation.audit" as const, route: "/audit" as const, requiredPermissions: ["audit.view"] }),
 ]);
 
 export function canAccessNavigationItem(

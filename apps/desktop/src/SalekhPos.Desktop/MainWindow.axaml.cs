@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using SalekhPos.Desktop.Application.POS;
+using SalekhPos.Desktop.Application.Management;
 using SalekhPos.Desktop.Infrastructure.Authentication;
 using SalekhPos.Desktop.ViewModels;
 
@@ -10,16 +11,20 @@ public sealed partial class MainWindow : Window
 {
     private readonly CashierViewModel viewModel;
     private readonly Action signOut;
+    private readonly ICommerceExtensions? commerce;
+    private readonly IAuditViewer? audit;
     private int signOutStarted;
     public MainWindow() => throw new InvalidOperationException("An authenticated workspace is required.");
     public MainWindow(IPosWorkspace workspace) : this(workspace, () => { })
     {
     }
-    public MainWindow(IPosWorkspace workspace, Action signOut)
+    public MainWindow(IPosWorkspace workspace, Action signOut) : this(workspace, null, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, Action signOut) : this(workspace, commerce, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit, Action signOut)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(signOut);
-        this.signOut = signOut;
+        this.signOut = signOut; this.commerce = commerce; this.audit = audit;
         InitializeComponent(); DataContext = viewModel = new(workspace);
         Opened += (_, _) => viewModel.InitializeFromPreparedState();
     }
@@ -36,6 +41,16 @@ public sealed partial class MainWindow : Window
         await Execute(() => viewModel.RecordMovementAsync(kind, MovementAmountBox.Text ?? "", MovementReasonBox.Text ?? "", default));
     }
     private async void CloseShiftClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await Execute(() => viewModel.CloseShiftAsync(CountedCashBox.Text ?? "", default));
+    private void ManagementClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (commerce is null) return;
+        var scope = viewModel.CurrentScope;
+        new ManagerCommerceWindow(commerce, scope.OrganizationId, scope.BranchId).Show(this);
+    }
+    private void AuditClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (audit is null) return; var scope=viewModel.CurrentScope; new ManagerAuditWindow(audit,scope.OrganizationId,scope.BranchId).Show(this);
+    }
     private void SignOutClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => RequestSignOut();
     private async Task Execute(Func<Task> action)
     {

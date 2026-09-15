@@ -66,6 +66,18 @@ using SalekhPos.Employees.Infrastructure.Employees;
 using SalekhPos.Reporting.Api.Reports;
 using SalekhPos.Reporting.Application.Reports;
 using SalekhPos.Reporting.Infrastructure.Reports;
+using SalekhPos.Warehousing.Api.Transfers;
+using SalekhPos.Warehousing.Application.Transfers;
+using SalekhPos.Warehousing.Infrastructure.Transfers;
+using SalekhPos.Promotions.Api.Campaigns;
+using SalekhPos.Promotions.Application.Campaigns;
+using SalekhPos.Promotions.Infrastructure.Campaigns;
+using SalekhPos.Loyalty.Api.Accounts;
+using SalekhPos.Loyalty.Application.Accounts;
+using SalekhPos.Loyalty.Infrastructure.Accounts;
+using SalekhPos.Audit.Api.AuditTrail;
+using SalekhPos.Audit.Application.AuditTrail;
+using SalekhPos.Audit.Infrastructure.AuditTrail;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -127,6 +139,10 @@ builder.Services.AddSingleton<ISupplierDirectory>(provider => new PostgresSuppli
 builder.Services.AddSingleton<IPurchaseOrderService>(provider => new PostgresPurchaseOrderService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IEmployeeDirectory>(provider => new PostgresEmployeeDirectory(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IOperationalReportService>(provider => new PostgresOperationalReportService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IStockTransferService>(provider => new PostgresStockTransferService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IPromotionService>(provider => new PostgresPromotionService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ILoyaltyAccountService>(provider => new PostgresLoyaltyAccountService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IAuditTrail>(provider => new PostgresAuditTrail(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -178,6 +194,7 @@ app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAuditCapture();
 app.UseSyncRequestBodyDigest();
 app.UseShiftRequestBodyDigest();
 
@@ -208,11 +225,17 @@ app.MapSupplierEndpoints();
 app.MapPurchaseOrderEndpoints();
 app.MapEmployeeEndpoints();
 app.MapOperationalReportEndpoints();
+app.MapStockTransferEndpoints();
+app.MapPromotionEndpoints();
+app.MapLoyaltyEndpoints();
+app.MapAuditEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapWebBusinessEndpoints();
 app.MapWebOperationsEndpoints();
 app.MapWebManagementEndpoints();
+app.MapWebCommerceExtensionsEndpoints();
+app.MapWebAuditEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();

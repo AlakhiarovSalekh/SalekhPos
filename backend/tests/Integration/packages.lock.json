@@ -427,6 +427,8 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.11, )",
+          "SalekhPos.Audit.Api": "[1.0.0, )",
+          "SalekhPos.Audit.Infrastructure": "[1.0.0, )",
           "SalekhPos.Authorization.Api": "[1.0.0, )",
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Catalog.Api": "[1.0.0, )",
@@ -441,10 +443,14 @@
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
           "SalekhPos.Inventory.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Loyalty.Api": "[1.0.0, )",
+          "SalekhPos.Loyalty.Infrastructure": "[1.0.0, )",
           "SalekhPos.Payments.Api": "[1.0.0, )",
           "SalekhPos.Payments.Infrastructure": "[1.0.0, )",
           "SalekhPos.Pricing.Api": "[1.0.0, )",
           "SalekhPos.Pricing.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Promotions.Api": "[1.0.0, )",
+          "SalekhPos.Promotions.Infrastructure": "[1.0.0, )",
           "SalekhPos.Purchasing.Api": "[1.0.0, )",
           "SalekhPos.Purchasing.Infrastructure": "[1.0.0, )",
           "SalekhPos.Reporting.Api": "[1.0.0, )",
@@ -463,7 +469,38 @@
           "SalekhPos.Sync.Api": "[1.0.0, )",
           "SalekhPos.Sync.Infrastructure": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
-          "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )"
+          "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Warehousing.Api": "[1.0.0, )",
+          "SalekhPos.Warehousing.Infrastructure": "[1.0.0, )"
+        }
+      },
+      "salekhpos.audit.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Audit.Application": "[1.0.0, )",
+          "SalekhPos.Audit.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.audit.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Audit.Contracts": "[1.0.0, )",
+          "SalekhPos.Audit.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.audit.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.audit.domain": {
+        "type": "Project"
+      },
+      "salekhpos.audit.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Audit.Application": "[1.0.0, )",
+          "SalekhPos.Audit.Contracts": "[1.0.0, )",
+          "SalekhPos.Audit.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.authorization.api": {
@@ -651,6 +688,35 @@
           "SalekhPos.Inventory.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.loyalty.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Loyalty.Application": "[1.0.0, )",
+          "SalekhPos.Loyalty.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.loyalty.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Loyalty.Contracts": "[1.0.0, )",
+          "SalekhPos.Loyalty.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.loyalty.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.loyalty.domain": {
+        "type": "Project"
+      },
+      "salekhpos.loyalty.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Loyalty.Application": "[1.0.0, )",
+          "SalekhPos.Loyalty.Contracts": "[1.0.0, )",
+          "SalekhPos.Loyalty.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.payments.api": {
         "type": "Project",
         "dependencies": {
@@ -706,6 +772,35 @@
           "SalekhPos.Pricing.Application": "[1.0.0, )",
           "SalekhPos.Pricing.Contracts": "[1.0.0, )",
           "SalekhPos.Pricing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.promotions.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Promotions.Application": "[1.0.0, )",
+          "SalekhPos.Promotions.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.promotions.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Promotions.Contracts": "[1.0.0, )",
+          "SalekhPos.Promotions.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.promotions.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.promotions.domain": {
+        "type": "Project"
+      },
+      "salekhpos.promotions.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Promotions.Application": "[1.0.0, )",
+          "SalekhPos.Promotions.Contracts": "[1.0.0, )",
+          "SalekhPos.Promotions.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.purchasing.api": {
@@ -968,6 +1063,35 @@
         "dependencies": {
           "Npgsql": "[10.0.3, )",
           "SalekhPos.SystemAdministration.Application": "[1.0.0, )"
+        }
+      },
+      "salekhpos.warehousing.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Warehousing.Application": "[1.0.0, )",
+          "SalekhPos.Warehousing.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.warehousing.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Warehousing.Contracts": "[1.0.0, )",
+          "SalekhPos.Warehousing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.warehousing.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.warehousing.domain": {
+        "type": "Project"
+      },
+      "salekhpos.warehousing.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Warehousing.Application": "[1.0.0, )",
+          "SalekhPos.Warehousing.Contracts": "[1.0.0, )",
+          "SalekhPos.Warehousing.Domain": "[1.0.0, )"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {

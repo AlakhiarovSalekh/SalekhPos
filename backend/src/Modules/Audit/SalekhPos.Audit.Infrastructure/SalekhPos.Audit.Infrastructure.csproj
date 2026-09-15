@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SalekhPos.Audit.Application/SalekhPos.Audit.Application.csproj" />
+    <ProjectReference Include="../SalekhPos.Audit.Domain/SalekhPos.Audit.Domain.csproj" />
+    <ProjectReference Include="../SalekhPos.Audit.Contracts/SalekhPos.Audit.Contracts.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

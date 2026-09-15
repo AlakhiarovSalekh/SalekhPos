@@ -1,0 +1,20 @@
+export type AuditEvent = {
+  id: string;
+  sequence: number;
+  actorSubject: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  branchId: string | null;
+  deviceId: string | null;
+  sourceIp: string | null;
+  outcome: string;
+  reason: string | null;
+  correlationId: string;
+  requestId: string;
+  occurredAt: string;
+  previousHash: string;
+  eventHash: string;
+};
+export type AuditEventPage = { items: AuditEvent[]; nextSequence: number | null };
+export type AuditIntegrity = { isValid: boolean; verifiedEvents: number; firstSequence: number | null; lastSequence: number | null; lastHash: string | null };

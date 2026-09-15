@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SalekhPos.Warehousing.Application/SalekhPos.Warehousing.Application.csproj" />
+    <ProjectReference Include="../SalekhPos.Warehousing.Contracts/SalekhPos.Warehousing.Contracts.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

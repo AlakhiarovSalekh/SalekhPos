@@ -1,3 +1,17 @@
+## September 16, 2026 - warehousing, promotions, loyalty and immutable audit
+
+- Added production vertical slices for stock transfers, promotions and loyalty across backend domain/application/contracts/infrastructure/API, PostgreSQL/RLS, web manager surfaces, mobile manager screens/services and desktop authenticated management UI.
+- Stock transfers now model draft -> in_transit -> received with draft cancellation, source/destination validation, inventory advisory locking, stock availability checks and idempotent transfer_out/transfer_in ledger movements.
+- Promotions now support scoped percentage/fixed campaigns, activation windows, minimum subtotal/currency rules, deactivation and deterministic best-applicable-discount evaluation without implicit stacking.
+- Loyalty now provides customer accounts, tier progression, immutable earn/redeem point events, exact idempotent replay snapshots and negative-balance protection.
+- Added a first-class append-only Audit module with tenant sequence heads, SHA-256 previous-hash/event-hash chaining, forced RLS, least-privilege grants, integrity verification API, browser BFF, web/mobile/desktop viewers and fail-closed mutation-attempt capture for bearer and web-session identities.
+- Fixed operational reporting to aggregate the real purchasing `total` column. Renumbered business migrations after the existing 032 authorization migration to a unique 033-040 sequence and added database contract tests for every new migration.
+- Verified locally: full .NET Release solution build 0 warnings/0 errors; backend unit 182/182; desktop 156/156; mobile 81/81 plus typecheck; web typecheck, ESLint and production build; structure 1543/1543; requirement integrity 464 ranges; architecture 119 projects; Gitleaks working tree/history clean; migration sequence validator passes through 040.
+- PostgreSQL migration/isolation execution was not completed on this workstation because the native test runner's PostgreSQL 18 `initdb.exe` bundle is not installed and no system PostgreSQL installation is present. The new 033-040 SQL contract tests are committed for CI/native execution.
+
+### Continue here
+
+Run the disposable PostgreSQL 18 migration/isolation suite when the native bundle is available, then continue with Accounting/Taxation/Localization and remaining platform modules while extending audit coverage from HTTP mutation evidence into domain-specific before/after evidence where required.
 ## September 15, 2026 — manager operations across web, mobile and desktop
 
 - Added cookie-authenticated web BFF operations for pricing, register provisioning, read-only shift/cash reconciliation and payment-event reads while preserving trusted-device proof requirements for shift/cash mutations.
