@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -60,6 +60,26 @@ public sealed class WebAuthenticationTests
         using var unauthorizedResponse = await configuredClient.GetAsync(
             "/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches");
         Assert.Equal(HttpStatusCode.Unauthorized, unauthorizedResponse.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/registers?pageSize=25")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/pricing/resolve?branchId=20000000-0000-0000-0000-000000000002&productId=30000000-0000-0000-0000-000000000003&at=2026-09-15T08%3A00%3A00.0000000%2B00%3A00")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/shifts/open?registerId=40000000-0000-0000-0000-000000000004")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/shifts/closed?pageSize=25")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/payment-events?pageSize=25")]
+    public async Task OperationsBffFailsClosedWithoutAWebSession(string route)
+    {
+        await using var unavailable = new WebApplicationFactory<Program>();
+        using var unavailableClient = unavailable.CreateClient();
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await unavailableClient.GetAsync(route)).StatusCode);
+
+        await using var configured = Configured("https://identity.example", "https://web.example");
+        using var configuredClient = configured.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://web.example")
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, (await configuredClient.GetAsync(route)).StatusCode);
     }
 
     private static WebApplicationFactory<Program> Configured(string authority, string origin) => new WebApplicationFactory<Program>()

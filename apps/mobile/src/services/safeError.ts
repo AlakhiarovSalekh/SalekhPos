@@ -25,3 +25,9 @@ export function mapSafeError(error: unknown): SafeAppError {
   }
   return { code: "unavailable", retryable: false };
 }
+
+export function safeErrorTranslationKey(error: SafeAppError):
+  | "apiError.cancelled" | "apiError.offline" | "apiError.unauthenticated" | "apiError.forbidden"
+  | "apiError.not_found" | "apiError.conflict" | "apiError.invalid" | "apiError.unsafe_response" | "apiError.unavailable" {
+  return `apiError.${error.code}` as const;
+}

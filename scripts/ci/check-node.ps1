@@ -16,6 +16,7 @@ try {
     Invoke-Pnpm @('install', '--frozen-lockfile')
     Invoke-Pnpm @('--filter', '@salekhpos/packages-api-client', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/packages-api-client', 'test')
+    Invoke-Pnpm @('--filter', '@salekhpos/packages-api-client', 'build')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'test')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'exec', 'expo', 'install', '--check')
@@ -23,7 +24,7 @@ try {
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'lint')
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'build')
-    Write-Output 'PASS: Node workspace install, shared API client, mobile bundle and web gates completed.'
+    Write-Output 'PASS: Node workspace install, shared API client build, mobile bundle and web gates completed.'
 }
 finally {
     if (Test-Path -LiteralPath $taskMobileExport) { Remove-Item -LiteralPath $taskMobileExport -Recurse -Force }

@@ -1,3 +1,15 @@
+## September 15, 2026 — manager operations across web, mobile and desktop
+
+- Added cookie-authenticated web BFF operations for pricing, register provisioning, read-only shift/cash reconciliation and payment-event reads while preserving trusted-device proof requirements for shift/cash mutations.
+- Added production web manager workspaces and routes for Pricing, Registers and Operations/Reconciliation with bounded parsers, CSRF, idempotency, safe errors and strict scope selection.
+- Added mobile manager operations contracts/services, permission-gated Pricing, Registers and Reconciliation screens, safe localized errors and cross-scope response validation.
+- Added desktop authenticated manager operations HTTP client for registers, effective pricing, shift/cash evidence and payment events, with strict response validation and runtime integration.
+- Fixed clean-runner web CI by explicitly building the shared API client before web typecheck/build. Fixed closed-shift contract validation bugs found independently in web and mobile.
+- Verified locally: backend unit 182/182, desktop 156/156, mobile 81/81, web 21/21 Vitest plus 4/4 browser/API tests, shared API client 25/25; web production build, full .NET Release solution build, structure 1543/1543, requirement integrity 464 ranges, architecture 74 projects, and Gitleaks all passed. PostgreSQL integration was not rerun for this milestone before publication.
+
+### Continue here
+
+Continue with Customers/CRM, Suppliers/Purchasing, Employees and Reporting as real module vertical slices; then extend web/mobile/desktop manager surfaces and run database integration before the next release milestone.
 ## September 13, 2026 - trusted-terminal shift opening
 - Bound shift opening to active cryptographic device credentials and the server-side device-to-register assignment while preserving independent human authorization and audit attribution.
 - Added desktop open-shift UX with exact-body device proof signing, stable idempotency intent, durable trusted register assignment, and authoritative post-open refresh before sales are enabled.

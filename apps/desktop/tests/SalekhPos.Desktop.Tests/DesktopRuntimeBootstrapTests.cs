@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using SalekhPos.Desktop.Application.Devices;
 using SalekhPos.Desktop.Application.Offline;
 using SalekhPos.Desktop.Application.POS;
@@ -88,6 +88,7 @@ public sealed class DesktopRuntimeBootstrapTests
         Assert.True(oidc.Completed);
         Assert.True(factory.CreatedAfterSignIn);
         Assert.Same(workspace, runtime.Workspace);
+        Assert.NotNull(runtime.ManagerOperations);
         Assert.Equal("cashier-1", runtime.Subject);
         Assert.Equal(scope, factory.Scope);
         Assert.Equal(settings.DatabasePath, factory.DatabasePath);

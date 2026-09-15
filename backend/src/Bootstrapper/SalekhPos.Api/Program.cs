@@ -186,6 +186,7 @@ app.MapReturnEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapWebBusinessEndpoints();
+app.MapWebOperationsEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();

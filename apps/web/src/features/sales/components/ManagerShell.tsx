@@ -10,6 +10,9 @@ export function ManagerShell({ organizationId, branchId, branchName, children }:
       <nav aria-label="Management">
         <Link href={`/sales${query}`}>Sales</Link>
         <Link href={`/returns${query}`}>Returns</Link>
+        <Link href="/pricing">Pricing</Link>
+        <Link href="/registers">Registers</Link>
+        <Link href="/operations">Operations</Link>
         <Link href="/dashboard">Account</Link>
       </nav>
       <div className="scope-chip" title={branchId}>{branchName ?? (branchId ? `Branch ${branchId.slice(0, 8)}` : "Choose a branch")}</div>

@@ -20,6 +20,8 @@ jobs:
           node-version-file: .nvmrc
       - run: npm install --global pnpm@11.19.0 --ignore-scripts
       - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter @salekhpos/packages-api-client build
+      - run: pnpm --filter @salekhpos/web typecheck
       - run: pnpm --filter @salekhpos/web lint
       - run: pnpm --filter @salekhpos/web build
       - run: pnpm audit --prod

@@ -1,7 +1,9 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using SalekhPos.Desktop.Application.Devices;
+using SalekhPos.Desktop.Application.Operations;
 using SalekhPos.Desktop.Application.POS;
 using SalekhPos.Desktop.Infrastructure.Authentication;
+using SalekhPos.Desktop.Infrastructure.Operations;
 
 namespace SalekhPos.Desktop.Infrastructure.Configuration;
 
@@ -33,6 +35,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         InMemoryAccessTokenProvider tokens, HttpClient authenticatedClient, Action released)
     {
         Workspace = workspace;
+        ManagerOperations = new HttpManagerOperations(authenticatedClient);
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
@@ -40,6 +43,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     }
 
     public IPosWorkspace Workspace { get; }
+    public IManagerOperations ManagerOperations { get; }
     public string Subject { get; }
 
     public void Dispose()

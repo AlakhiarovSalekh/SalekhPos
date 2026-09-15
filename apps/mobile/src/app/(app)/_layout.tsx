@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-import { permissions, hasPermission } from "@/permissions/policy";
+import { permissions, hasAnyPermission, hasPermission } from "@/permissions/policy";
 import { useSession } from "@/state/SessionContext";
 import { WorkspaceProvider } from "@/state/workspace";
 
@@ -26,6 +26,16 @@ export default function AppLayout() {
         <Stack.Protected guard={hasPermission(authorization, permissions.inventoryAdjust)}>
           <Stack.Screen name="inventory-receipt" />
           <Stack.Screen name="inventory-adjustment" />
+        </Stack.Protected>
+        <Stack.Protected guard={hasAnyPermission(authorization, [permissions.pricingView, permissions.pricingManage])}>
+          <Stack.Screen name="pricing" />
+        </Stack.Protected>
+        <Stack.Protected guard={hasAnyPermission(authorization, [permissions.storesView, permissions.storesManage])}>
+          <Stack.Screen name="registers" />
+        </Stack.Protected>
+        <Stack.Protected guard={hasPermission(authorization, permissions.shiftsView)
+          && hasPermission(authorization, permissions.paymentsView)}>
+          <Stack.Screen name="reconciliation" />
         </Stack.Protected>
       </Stack>
     </WorkspaceProvider>
