@@ -11,3 +11,7 @@ allowBuilds:
 # image-size 2.0.3 is the upstream security patch released on 2026-09-14.
 minimumReleaseAgeExclude:
   - image-size@2.0.3
+  - '@expo/cli@57.0.25'
+  - '@expo/router-server@57.0.10'
+  - babel-preset-expo@57.0.12
+  - expo@57.0.23

@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@salekhpos/packages-api-client": "workspace:*",
-    "expo": "57.0.22",
+    "expo": "57.0.23",
     "expo-camera": "57.0.5",
     "expo-constants": "57.0.18",
     "expo-crypto": "~57.0.3",
