@@ -1,4 +1,4 @@
-﻿using SalekhPos.Promotions.Contracts.Campaigns;
+using SalekhPos.Promotions.Contracts.Campaigns;
 using SalekhPos.Promotions.Domain.Promotions;
 
 namespace SalekhPos.Promotions.Application.Campaigns;

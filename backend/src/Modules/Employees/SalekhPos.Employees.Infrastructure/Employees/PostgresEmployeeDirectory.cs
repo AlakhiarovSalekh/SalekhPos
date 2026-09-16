@@ -81,7 +81,7 @@ public sealed class PostgresEmployeeDirectory(NpgsqlDataSource? source) : IEmplo
               AND ($3::uuid IS NULL OR e.employee_id>$3) ORDER BY e.employee_id LIMIT $4
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Uuid, Value=(object?)after ?? DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid, Value = (object?)after ?? DBNull.Value });
         query.Parameters.AddWithValue(pageSize + 1);
         var items = new List<EmployeeResponse>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
@@ -137,8 +137,8 @@ public sealed class PostgresEmployeeDirectory(NpgsqlDataSource? source) : IEmplo
             """, connection, transaction);
         update.Parameters.AddWithValue(command.OrganizationId); update.Parameters.AddWithValue(command.EmployeeId);
         update.Parameters.AddWithValue(validated.DisplayName);
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Text, Value=(object?)validated.Email ?? DBNull.Value });
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Text, Value=(object?)validated.Phone ?? DBNull.Value });
+        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)validated.Email ?? DBNull.Value });
+        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)validated.Phone ?? DBNull.Value });
         update.Parameters.AddWithValue(validated.JobTitle); update.Parameters.AddWithValue(validated.IsActive);
         update.Parameters.AddWithValue(now); update.Parameters.AddWithValue(command.ExpectedVersion);
         EmployeeRow? row;

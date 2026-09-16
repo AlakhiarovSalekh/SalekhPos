@@ -33,10 +33,16 @@ public sealed class PostgresCustomerDirectory(NpgsqlDataSource? source) : ICusto
         insert.Parameters.AddWithValue(command.OperationId);
         insert.Parameters.AddWithValue(customer.Code);
         insert.Parameters.AddWithValue(customer.DisplayName);
-        insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)customer.Email ?? DBNull.Value });
-        insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)customer.Phone ?? DBNull.Value });
+        insert.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)customer.Email ?? DBNull.Value
+        });
+        insert.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)customer.Phone ?? DBNull.Value
+        });
         insert.Parameters.AddWithValue(identity.Issuer);
         insert.Parameters.AddWithValue(identity.Subject);
         CustomerResponse? response;
@@ -89,8 +95,11 @@ public sealed class PostgresCustomerDirectory(NpgsqlDataSource? source) : ICusto
             ORDER BY customer_id LIMIT $3
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid,
-            Value = (object?)after ?? DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = (object?)after ?? DBNull.Value
+        });
         query.Parameters.AddWithValue(pageSize + 1);
         var items = new List<CustomerResponse>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
@@ -149,10 +158,16 @@ public sealed class PostgresCustomerDirectory(NpgsqlDataSource? source) : ICusto
         update.Parameters.AddWithValue(command.OrganizationId);
         update.Parameters.AddWithValue(command.CustomerId);
         update.Parameters.AddWithValue(validated.DisplayName);
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)validated.Email ?? DBNull.Value });
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)validated.Phone ?? DBNull.Value });
+        update.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)validated.Email ?? DBNull.Value
+        });
+        update.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)validated.Phone ?? DBNull.Value
+        });
         update.Parameters.AddWithValue(validated.IsActive);
         update.Parameters.AddWithValue(command.ExpectedVersion);
         CustomerResponse? result;

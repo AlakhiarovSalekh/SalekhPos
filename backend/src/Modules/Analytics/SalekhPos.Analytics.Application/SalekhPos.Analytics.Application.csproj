@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../SalekhPos.Analytics.Domain/SalekhPos.Analytics.Domain.csproj" /><ProjectReference Include="../SalekhPos.Analytics.Contracts/SalekhPos.Analytics.Contracts.csproj" /></ItemGroup></Project>

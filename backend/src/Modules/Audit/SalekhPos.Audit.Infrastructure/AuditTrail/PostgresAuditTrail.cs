@@ -67,9 +67,9 @@ public sealed class PostgresAuditTrail(NpgsqlDataSource? source) : IAuditTrail
             ORDER BY sequence LIMIT $5
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Bigint, Value=afterSequence.HasValue?afterSequence.Value:DBNull.Value });
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Text, Value=(object?)action??DBNull.Value });
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Uuid, Value=branchId.HasValue?branchId.Value:DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Bigint, Value = afterSequence.HasValue ? afterSequence.Value : DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)action ?? DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid, Value = branchId.HasValue ? branchId.Value : DBNull.Value });
         query.Parameters.AddWithValue(pageSize + 1);
         var rows = new List<Row>();
         await using (var reader = await query.ExecuteReaderAsync(ct))
@@ -77,7 +77,7 @@ public sealed class PostgresAuditTrail(NpgsqlDataSource? source) : IAuditTrail
         long? next = null;
         if (rows.Count > pageSize) { rows.RemoveAt(pageSize); next = rows[^1].Sequence; }
         await transaction.CommitAsync(ct);
-        return new(rows.Select(ToResponse).ToArray(), next);
+        return new([.. rows.Select(ToResponse)], next);
     }
 
     public async Task<AuditEventResponse?> ReadAsync(AuditIdentity identity, Guid organizationId,
@@ -283,8 +283,10 @@ public sealed class PostgresAuditTrail(NpgsqlDataSource? source) : IAuditTrail
     private static string Hex(byte[] value) => Convert.ToHexString(value).ToLowerInvariant();
     private static AuditOutcome ParseOutcome(string value) => value switch
     {
-        "attempted" => AuditOutcome.Attempted, "succeeded" => AuditOutcome.Succeeded,
-        "failed" => AuditOutcome.Failed, _ => throw new AuditUnavailableException()
+        "attempted" => AuditOutcome.Attempted,
+        "succeeded" => AuditOutcome.Succeeded,
+        "failed" => AuditOutcome.Failed,
+        _ => throw new AuditUnavailableException()
     };
 
     private static void ValidateQuery(AuditIdentity identity, Guid organizationId, int pageSize,

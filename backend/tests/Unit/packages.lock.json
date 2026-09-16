@@ -422,11 +422,42 @@
           "xunit.extensibility.core": "[2.9.2]"
         }
       },
+      "salekhpos.analytics.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Analytics.Application": "[1.0.0, )",
+          "SalekhPos.Analytics.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.analytics.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Analytics.Contracts": "[1.0.0, )",
+          "SalekhPos.Analytics.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.analytics.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.analytics.domain": {
+        "type": "Project"
+      },
+      "salekhpos.analytics.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Analytics.Application": "[1.0.0, )",
+          "SalekhPos.Analytics.Contracts": "[1.0.0, )",
+          "SalekhPos.Analytics.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.api": {
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.11, )",
+          "SalekhPos.Analytics.Api": "[1.0.0, )",
+          "SalekhPos.Analytics.Infrastructure": "[1.0.0, )",
           "SalekhPos.Audit.Api": "[1.0.0, )",
           "SalekhPos.Audit.Infrastructure": "[1.0.0, )",
           "SalekhPos.Authorization.Api": "[1.0.0, )",
@@ -443,8 +474,12 @@
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
           "SalekhPos.Inventory.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Localization.Api": "[1.0.0, )",
+          "SalekhPos.Localization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Loyalty.Api": "[1.0.0, )",
           "SalekhPos.Loyalty.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Notifications.Api": "[1.0.0, )",
+          "SalekhPos.Notifications.Infrastructure": "[1.0.0, )",
           "SalekhPos.Payments.Api": "[1.0.0, )",
           "SalekhPos.Payments.Infrastructure": "[1.0.0, )",
           "SalekhPos.Pricing.Api": "[1.0.0, )",
@@ -470,6 +505,8 @@
           "SalekhPos.Sync.Infrastructure": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Api": "[1.0.0, )",
           "SalekhPos.SystemAdministration.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Taxation.Api": "[1.0.0, )",
+          "SalekhPos.Taxation.Infrastructure": "[1.0.0, )",
           "SalekhPos.Warehousing.Api": "[1.0.0, )",
           "SalekhPos.Warehousing.Infrastructure": "[1.0.0, )"
         }
@@ -688,6 +725,35 @@
           "SalekhPos.Inventory.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.localization.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Localization.Application": "[1.0.0, )",
+          "SalekhPos.Localization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.localization.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Localization.Contracts": "[1.0.0, )",
+          "SalekhPos.Localization.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.localization.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.localization.domain": {
+        "type": "Project"
+      },
+      "salekhpos.localization.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Localization.Application": "[1.0.0, )",
+          "SalekhPos.Localization.Contracts": "[1.0.0, )",
+          "SalekhPos.Localization.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.loyalty.api": {
         "type": "Project",
         "dependencies": {
@@ -715,6 +781,35 @@
           "SalekhPos.Loyalty.Application": "[1.0.0, )",
           "SalekhPos.Loyalty.Contracts": "[1.0.0, )",
           "SalekhPos.Loyalty.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.notifications.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Notifications.Application": "[1.0.0, )",
+          "SalekhPos.Notifications.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.notifications.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Notifications.Contracts": "[1.0.0, )",
+          "SalekhPos.Notifications.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.notifications.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.notifications.domain": {
+        "type": "Project"
+      },
+      "salekhpos.notifications.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Notifications.Application": "[1.0.0, )",
+          "SalekhPos.Notifications.Contracts": "[1.0.0, )",
+          "SalekhPos.Notifications.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.organizations.domain": {
@@ -1066,6 +1161,35 @@
         "dependencies": {
           "Npgsql": "[10.0.3, )",
           "SalekhPos.SystemAdministration.Application": "[1.0.0, )"
+        }
+      },
+      "salekhpos.taxation.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Taxation.Application": "[1.0.0, )",
+          "SalekhPos.Taxation.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.taxation.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Taxation.Contracts": "[1.0.0, )",
+          "SalekhPos.Taxation.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.taxation.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.taxation.domain": {
+        "type": "Project"
+      },
+      "salekhpos.taxation.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Taxation.Application": "[1.0.0, )",
+          "SalekhPos.Taxation.Contracts": "[1.0.0, )",
+          "SalekhPos.Taxation.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.warehousing.api": {

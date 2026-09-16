@@ -5,7 +5,7 @@ using SalekhPos.Audit.Domain.AuditEvents;
 
 namespace SalekhPos.Api.Authentication;
 
-public sealed class AuditCaptureMiddleware(RequestDelegate next, ILogger<AuditCaptureMiddleware> logger)
+public sealed partial class AuditCaptureMiddleware(RequestDelegate next, ILogger<AuditCaptureMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context, IAuditTrail audit)
     {
@@ -29,7 +29,14 @@ public sealed class AuditCaptureMiddleware(RequestDelegate next, ILogger<AuditCa
         }
         catch (Exception exception) when (exception is AuditUnavailableException or AuditConflictException)
         {
-            AuditCompletionFailed(logger, context.TraceIdentifier, exception.GetType().Name);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                var failureClass = exception is AuditUnavailableException
+                    ? nameof(AuditUnavailableException)
+                    : nameof(AuditConflictException);
+                var traceIdentifier = context.TraceIdentifier;
+                AuditCompletionFailed(logger, traceIdentifier, failureClass);
+            }
         }
     }
 
@@ -106,9 +113,9 @@ public sealed class AuditCaptureMiddleware(RequestDelegate next, ILogger<AuditCa
         return "http_mutation";
     }
 
-    private static void AuditCompletionFailed(ILogger logger, string traceId, string failureClass) =>
-        logger.LogCritical("Audit completion persistence failed for trace {TraceId}; class {FailureClass}",
-            traceId, failureClass);
+    [LoggerMessage(EventId = 1, Level = LogLevel.Critical,
+        Message = "Audit completion persistence failed for trace {TraceId}; class {FailureClass}")]
+    private static partial void AuditCompletionFailed(ILogger logger, string traceId, string failureClass);
 }
 
 public static class AuditCaptureMiddlewareExtensions

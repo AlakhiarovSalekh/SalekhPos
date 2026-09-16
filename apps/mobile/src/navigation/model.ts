@@ -2,12 +2,12 @@ import type { SessionAuthorization } from "@/security/session";
 
 export type MobileRoute =
   | "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner"
-  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/audit";
+  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/notifications" | "/taxation" | "/localization" | "/analytics" | "/audit";
 
 export type NavigationLabelKey =
   | "navigation.dashboard" | "navigation.organizations" | "navigation.stores"
   | "navigation.products" | "navigation.inventory" | "navigation.scanner"
-  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.audit";
+  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.notifications" | "navigation.taxation" | "navigation.localization" | "navigation.analytics" | "navigation.audit";
 
 export type NavigationItem = Readonly<{
   id: string;
@@ -44,6 +44,10 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
   Object.freeze({ id: "stock-transfers", labelKey: "navigation.stockTransfers" as const, route: "/stock-transfers" as const, requiredPermissions: ["inventory.view"] }),
   Object.freeze({ id: "promotions", labelKey: "navigation.promotions" as const, route: "/promotions" as const, requiredAnyPermissions: ["pricing.view", "pricing.manage"] }),
   Object.freeze({ id: "loyalty", labelKey: "navigation.loyalty" as const, route: "/loyalty" as const, requiredAnyPermissions: ["loyalty.view", "loyalty.manage"] }),
+  Object.freeze({ id: "notifications", labelKey: "navigation.notifications" as const, route: "/notifications" as const, requiredPermissions: ["notifications.view"] }),
+  Object.freeze({ id: "taxation", labelKey: "navigation.taxation" as const, route: "/taxation" as const, requiredAnyPermissions: ["taxation.view", "taxation.manage"] }),
+  Object.freeze({ id: "localization", labelKey: "navigation.localization" as const, route: "/localization" as const, requiredAnyPermissions: ["localization.view", "localization.manage"] }),
+  Object.freeze({ id: "analytics", labelKey: "navigation.analytics" as const, route: "/analytics" as const, requiredPermissions: ["reports.view"] }),
   Object.freeze({ id: "audit", labelKey: "navigation.audit" as const, route: "/audit" as const, requiredPermissions: ["audit.view"] }),
 ]);
 

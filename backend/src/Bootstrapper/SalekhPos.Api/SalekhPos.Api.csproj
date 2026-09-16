@@ -51,5 +51,13 @@
     <ProjectReference Include="../../Modules/Loyalty/SalekhPos.Loyalty.Infrastructure/SalekhPos.Loyalty.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Audit\SalekhPos.Audit.Api\SalekhPos.Audit.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Audit\SalekhPos.Audit.Infrastructure\SalekhPos.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/SalekhPos.Notifications.Api/SalekhPos.Notifications.Api.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/SalekhPos.Notifications.Infrastructure/SalekhPos.Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Taxation/SalekhPos.Taxation.Api/SalekhPos.Taxation.Api.csproj" />
+    <ProjectReference Include="../../Modules/Taxation/SalekhPos.Taxation.Infrastructure/SalekhPos.Taxation.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Localization/SalekhPos.Localization.Api/SalekhPos.Localization.Api.csproj" />
+    <ProjectReference Include="../../Modules/Localization/SalekhPos.Localization.Infrastructure/SalekhPos.Localization.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Analytics/SalekhPos.Analytics.Api/SalekhPos.Analytics.Api.csproj" />
+    <ProjectReference Include="../../Modules/Analytics/SalekhPos.Analytics.Infrastructure/SalekhPos.Analytics.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

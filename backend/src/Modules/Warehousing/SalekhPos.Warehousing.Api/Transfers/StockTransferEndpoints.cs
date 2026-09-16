@@ -51,7 +51,8 @@ public static class StockTransferEndpoints
         group.MapPost($"/{{transferId:guid}}/{action}", async (Guid organizationId, Guid branchId, Guid transferId,
             ChangeStockTransferStatusRequest request, HttpContext context, IStockTransferService transfers,
             IAntiforgery antiforgery, CancellationToken ct) =>
-        {            if (!await ValidateMutation(context, antiforgery) || request.ExpectedVersion < 1)
+        {
+            if (!await ValidateMutation(context, antiforgery) || request.ExpectedVersion < 1)
                 return Invalid();
             try
             {

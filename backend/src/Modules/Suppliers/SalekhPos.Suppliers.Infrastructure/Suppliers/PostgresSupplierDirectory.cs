@@ -34,10 +34,16 @@ public sealed class PostgresSupplierDirectory(NpgsqlDataSource? source) : ISuppl
         insert.Parameters.AddWithValue(supplier.Code);
         insert.Parameters.AddWithValue(supplier.Name);
         insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)supplier.TaxId ?? DBNull.Value });
-        insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)supplier.Email ?? DBNull.Value });
-        insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)supplier.Phone ?? DBNull.Value });
+        insert.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)supplier.Email ?? DBNull.Value
+        });
+        insert.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)supplier.Phone ?? DBNull.Value
+        });
         insert.Parameters.AddWithValue(identity.Issuer);
         insert.Parameters.AddWithValue(identity.Subject);
         SupplierResponse? response;
@@ -90,8 +96,11 @@ public sealed class PostgresSupplierDirectory(NpgsqlDataSource? source) : ISuppl
             ORDER BY supplier_id LIMIT $3
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid,
-            Value = (object?)after ?? DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = (object?)after ?? DBNull.Value
+        });
         query.Parameters.AddWithValue(pageSize + 1);
         var items = new List<SupplierResponse>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
@@ -151,10 +160,16 @@ public sealed class PostgresSupplierDirectory(NpgsqlDataSource? source) : ISuppl
         update.Parameters.AddWithValue(command.SupplierId);
         update.Parameters.AddWithValue(validated.Name);
         update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = (object?)validated.TaxId ?? DBNull.Value });
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)validated.Email ?? DBNull.Value });
-        update.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)validated.Phone ?? DBNull.Value });
+        update.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)validated.Email ?? DBNull.Value
+        });
+        update.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)validated.Phone ?? DBNull.Value
+        });
         update.Parameters.AddWithValue(validated.IsActive);
         update.Parameters.AddWithValue(command.ExpectedVersion);
         SupplierResponse? result;

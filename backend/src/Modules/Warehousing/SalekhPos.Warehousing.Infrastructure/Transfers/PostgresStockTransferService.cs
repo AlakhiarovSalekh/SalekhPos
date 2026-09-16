@@ -65,8 +65,11 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
             ORDER BY transfer_id LIMIT $4
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid,
-            Value = after.HasValue ? after.Value : DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = after.HasValue ? after.Value : DBNull.Value
+        });
         query.Parameters.AddWithValue(pageSize + 1);
         var headers = new List<Header>();
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
@@ -224,10 +227,16 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
             """, connection, transaction);
         command.Parameters.AddWithValue(header.OrganizationId); command.Parameters.AddWithValue(status);
         command.Parameters.AddWithValue(updatedAt);
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.TimestampTz,
-            Value = dispatchedAt.HasValue ? dispatchedAt.Value : DBNull.Value });
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.TimestampTz,
-            Value = receivedAt.HasValue ? receivedAt.Value : DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.TimestampTz,
+            Value = dispatchedAt.HasValue ? dispatchedAt.Value : DBNull.Value
+        });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.TimestampTz,
+            Value = receivedAt.HasValue ? receivedAt.Value : DBNull.Value
+        });
         command.Parameters.AddWithValue(header.Id);
         if (await command.ExecuteNonQueryAsync(cancellationToken) != 1) throw new WarehousingUnavailableException();
     }
@@ -255,8 +264,11 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
         command.Parameters.AddWithValue(transfer.OrganizationId); command.Parameters.AddWithValue(transfer.Id);
         command.Parameters.AddWithValue(operationId); command.Parameters.AddWithValue(transfer.SourceBranchId);
         command.Parameters.AddWithValue(transfer.DestinationBranchId);
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)transfer.Reference ?? DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)transfer.Reference ?? DBNull.Value
+        });
         command.Parameters.AddWithValue(now); command.Parameters.AddWithValue(identity.Issuer);
         command.Parameters.AddWithValue(identity.Subject);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -265,7 +277,8 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
 
     private static async Task<IReadOnlyList<Line>> InsertLines(NpgsqlConnection connection,
         NpgsqlTransaction transaction, StockTransfer transfer, CancellationToken cancellationToken)
-    {        var rows = new List<Line>(transfer.Lines.Count);
+    {
+        var rows = new List<Line>(transfer.Lines.Count);
         for (var index = 0; index < transfer.Lines.Count; index++)
         {
             var line = transfer.Lines[index];
@@ -293,7 +306,7 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
             WHERE organization_id=$1 AND transfer_id=$2 ORDER BY line_no
             """, connection, transaction);
         command.Parameters.AddWithValue(organizationId); command.Parameters.AddWithValue(transferId);
-        var rows = new List<Line>();        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var rows = new List<Line>(); await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
             rows.Add(new(reader.GetGuid(0), reader.GetDecimal(1), reader.GetGuid(2), reader.GetGuid(3)));
         return rows.AsReadOnly();
@@ -345,7 +358,8 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
 
     private static async Task Prepare(NpgsqlConnection connection, NpgsqlTransaction transaction,
         Guid organizationId, WarehousingIdentity identity, CancellationToken cancellationToken)
-    {        await using var safety = new NpgsqlCommand("""
+    {
+        await using var safety = new NpgsqlCommand("""
             SELECT current_user='salekhpos_runtime'
               AND EXISTS(SELECT FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
                 WHERE n.nspname='warehousing' AND c.relname='stock_transfers' AND c.relrowsecurity
@@ -411,7 +425,7 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
     private static StockTransferResponse ToResponse(Header header, IReadOnlyList<Line> lines) => new(
         header.Id, header.SourceBranchId, header.DestinationBranchId, header.Status, header.Reference,
         header.Version, header.CreatedAt, header.UpdatedAt, header.DispatchedAt, header.ReceivedAt,
-        lines.Select(line => new StockTransferLineResponse(line.ProductId, line.Quantity)).ToArray());
+        [.. lines.Select(line => new StockTransferLineResponse(line.ProductId, line.Quantity))]);
 
     private static Header ReadHeader(NpgsqlDataReader reader) => new(
         reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetGuid(3), reader.GetString(4),

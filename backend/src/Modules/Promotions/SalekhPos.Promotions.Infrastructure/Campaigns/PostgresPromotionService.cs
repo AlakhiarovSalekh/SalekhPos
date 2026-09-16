@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Npgsql;
 using NpgsqlTypes;
 using SalekhPos.Promotions.Application.Campaigns;
@@ -70,7 +70,7 @@ public sealed class PostgresPromotionService(NpgsqlDataSource? source) : IPromot
             next = rows[^1].Id;
         }
         await transaction.CommitAsync(ct);
-        return new(rows.Select(ToResponse).ToArray(), next);
+        return new([.. rows.Select(ToResponse)], next);
     }
     public async Task<PromotionResponse?> ReadAsync(PromotionIdentity identity, Guid organizationId,
         Guid branchId, Guid promotionId, CancellationToken ct)
@@ -152,7 +152,7 @@ public sealed class PostgresPromotionService(NpgsqlDataSource? source) : IPromot
         await transaction.CommitAsync(ct);
         var total = chosen?.Discount ?? 0m;
         var applied = chosen is null
-            ? Array.Empty<AppliedPromotionResponse>()
+            ? []
             : new[] { chosen };
         return new(subtotal, total, subtotal - total, normalizedCurrency, applied);
     }
@@ -179,15 +179,24 @@ public sealed class PostgresPromotionService(NpgsqlDataSource? source) : IPromot
         command.Parameters.AddWithValue(promotion.OrganizationId); command.Parameters.AddWithValue(promotion.Id);
         command.Parameters.AddWithValue(operationId); command.Parameters.AddWithValue(promotion.Code);
         command.Parameters.AddWithValue(promotion.Name);
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Uuid,
-            Value=promotion.BranchId.HasValue ? promotion.BranchId.Value : DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = promotion.BranchId.HasValue ? promotion.BranchId.Value : DBNull.Value
+        });
         command.Parameters.AddWithValue(promotion.Kind == PromotionDiscountKind.Percentage ? "percentage" : "fixed");
         command.Parameters.AddWithValue(promotion.Value);
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Char,
-            Value=(object?)promotion.Currency ?? DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Char,
+            Value = (object?)promotion.Currency ?? DBNull.Value
+        });
         command.Parameters.AddWithValue(promotion.MinimumSubtotal); command.Parameters.AddWithValue(promotion.StartsAt);
-        command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.TimestampTz,
-            Value=promotion.EndsAt.HasValue ? promotion.EndsAt.Value : DBNull.Value });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.TimestampTz,
+            Value = promotion.EndsAt.HasValue ? promotion.EndsAt.Value : DBNull.Value
+        });
         command.Parameters.AddWithValue(identity.Issuer); command.Parameters.AddWithValue(identity.Subject);
         await using var reader = await command.ExecuteReaderAsync(ct);
         return await reader.ReadAsync(ct) ? Read(reader) : null;
@@ -257,8 +266,11 @@ public sealed class PostgresPromotionService(NpgsqlDataSource? source) : IPromot
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(identity.Issuer);
         query.Parameters.AddWithValue(identity.Subject); query.Parameters.AddWithValue(permission);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType=NpgsqlDbType.Uuid,
-            Value=branchId.HasValue ? branchId.Value : DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = branchId.HasValue ? branchId.Value : DBNull.Value
+        });
         if (await query.ExecuteScalarAsync(ct) is not true) throw new PromotionsDeniedException();
     }
 

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using SalekhPos.Audit.Application.AuditTrail;

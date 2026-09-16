@@ -41,6 +41,8 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         ManagerBusiness = new HttpManagerBusiness(authenticatedClient);
         CommerceExtensions = new HttpCommerceExtensions(authenticatedClient);
         AuditViewer = new HttpAuditViewer(authenticatedClient);
+        GlobalConfiguration = new HttpGlobalConfiguration(authenticatedClient);
+        AnalyticsViewer = new HttpAnalyticsViewer(authenticatedClient);
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
@@ -52,6 +54,8 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     public IManagerBusiness ManagerBusiness { get; }
     public ICommerceExtensions CommerceExtensions { get; }
     public IAuditViewer AuditViewer { get; }
+    public IGlobalConfiguration GlobalConfiguration { get; }
+    public IAnalyticsViewer AnalyticsViewer { get; }
     public string Subject { get; }
 
     public void Dispose()

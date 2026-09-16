@@ -23,7 +23,7 @@ public sealed record Employee
 
     private static string NormalizeCode(string value)
     {
-        if (value is null) throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
         var normalized = value.Trim().ToUpperInvariant();
         if (normalized.Length is < 1 or > 32 || !normalized.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
             throw new ArgumentException("Employee code is invalid.");

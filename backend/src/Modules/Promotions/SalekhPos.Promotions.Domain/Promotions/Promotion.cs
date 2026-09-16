@@ -49,7 +49,7 @@ public sealed record Promotion
 
     private static string NormalizeCode(string value)
     {
-        if (value is null) throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
         var normalized = value.Trim().ToUpperInvariant();
         if (normalized.Length is < 1 or > 40
             || !normalized.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
@@ -86,7 +86,7 @@ public sealed record Promotion
     private static decimal ValidateMoney(decimal value, string field)
     {
         if (value < 0 || decimal.Round(value, 6) != value)
-            throw new ArgumentException("Promotion money value is invalid.");
+            throw new ArgumentException($"Promotion {field} is invalid.");
         return value;
     }
 }

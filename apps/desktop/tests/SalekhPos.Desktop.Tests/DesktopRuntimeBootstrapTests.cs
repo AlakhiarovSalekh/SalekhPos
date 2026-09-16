@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using SalekhPos.Desktop.Application.Devices;
 using SalekhPos.Desktop.Application.Offline;
 using SalekhPos.Desktop.Application.POS;

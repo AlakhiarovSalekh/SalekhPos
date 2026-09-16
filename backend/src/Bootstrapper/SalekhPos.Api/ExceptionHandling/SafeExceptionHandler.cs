@@ -24,6 +24,10 @@ using SalekhPos.Audit.Application.AuditTrail;
 using SalekhPos.Warehousing.Application.Transfers;
 using SalekhPos.Promotions.Application.Campaigns;
 using SalekhPos.Loyalty.Application.Accounts;
+using SalekhPos.Notifications.Application.Notifications;
+using SalekhPos.Taxation.Application.TaxConfiguration;
+using SalekhPos.Localization.Application.Settings;
+using SalekhPos.Analytics.Application.Analytics;
 
 namespace SalekhPos.Api.ExceptionHandling;
 
@@ -86,13 +90,23 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             LoyaltyConflictException => (409, "loyalty_conflict", "The loyalty operation conflicts with current state"),
             LoyaltyNotFoundException => (404, "loyalty_account_not_found", "The loyalty account is unavailable"),
             InsufficientLoyaltyPointsException => (409, "insufficient_loyalty_points", "The loyalty account has insufficient points"),
+            NotificationDeniedException => (403, "notification_access_denied", "Notification access is not permitted"),
+            NotificationConflictException => (409, "notification_conflict", "The notification conflicts with current state"),
+            NotificationNotFoundException => (404, "notification_not_found", "The notification is unavailable"),
+            TaxDeniedException => (403, "taxation_access_denied", "Tax configuration access is not permitted"),
+            TaxConflictException => (409, "taxation_conflict", "The tax configuration conflicts with current state"),
+            TaxNotFoundException => (404, "taxation_not_found", "The tax configuration is unavailable"),
+            LocalizationDeniedException => (403, "localization_access_denied", "Localization access is not permitted"),
+            LocalizationConflictException => (409, "localization_conflict", "Localization settings conflict with current state"),
+            LocalizationNotFoundException => (404, "localization_not_found", "Localization settings are unavailable"),
+            AnalyticsDeniedException => (403, "analytics_access_denied", "Analytics access is not permitted"),
             SalesConflictException => (409, "sale_operation_conflict", "The sale operation conflicts with current state"),
             SalePriceUnavailableException => (409, "sale_price_unavailable", "A current product price is unavailable"),
             InsufficientStockException => (409, "insufficient_stock", "Available stock is insufficient"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),
-            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NotificationUnavailableException or TaxUnavailableException or LocalizationUnavailableException or AnalyticsUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

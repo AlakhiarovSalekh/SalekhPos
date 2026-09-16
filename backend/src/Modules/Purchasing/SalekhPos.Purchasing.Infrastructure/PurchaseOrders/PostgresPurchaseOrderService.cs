@@ -37,8 +37,11 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         insert.Parameters.AddWithValue(order.BranchId);
         insert.Parameters.AddWithValue(order.SupplierId);
         insert.Parameters.AddWithValue(order.Currency);
-        insert.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text,
-            Value = (object?)order.Reference ?? DBNull.Value });
+        insert.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = (object?)order.Reference ?? DBNull.Value
+        });
         insert.Parameters.AddWithValue(order.Total);
         insert.Parameters.AddWithValue(createdAt);
         insert.Parameters.AddWithValue(identity.Issuer);
@@ -57,7 +60,7 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         {
             await InsertLines(connection, transaction, order, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return new(ToResponse(header, order.Lines.Select(line => new PurchaseOrderLineResponse(line.ProductId, line.Quantity, line.UnitCost, line.LineTotal)).ToArray()), true);
+            return new(ToResponse(header, [.. order.Lines.Select(line => new PurchaseOrderLineResponse(line.ProductId, line.Quantity, line.UnitCost, line.LineTotal))]), true);
         }
 
         var replay = await ReadByOperation(connection, transaction, order.OrganizationId,
@@ -87,8 +90,11 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
         query.Parameters.AddWithValue(branchId);
-        query.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Uuid,
-            Value = (object?)after ?? DBNull.Value });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = (object?)after ?? DBNull.Value
+        });
         query.Parameters.AddWithValue(pageSize + 1);
         var headers = new List<PurchaseOrderHeader>(pageSize + 1);
         await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
@@ -100,7 +106,7 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
             next = headers[^1].Id;
         }
         var lines = await LoadLines(connection, transaction, organizationId,
-            headers.Select(item => item.Id).ToArray(), cancellationToken);
+            [.. headers.Select(item => item.Id)], cancellationToken);
         var items = headers.Select(item => ToResponse(item, lines.GetValueOrDefault(item.Id, []))).ToArray();
         await transaction.CommitAsync(cancellationToken);
         return new(items, next);
@@ -201,7 +207,7 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         Guid[] orderIds, CancellationToken cancellationToken)
     {
         var result = new Dictionary<Guid, List<PurchaseOrderLineResponse>>();
-        if (orderIds.Length == 0) return new();
+        if (orderIds.Length == 0) return [];
         await using var query = new NpgsqlCommand("""
             SELECT order_id,product_id,quantity,unit_cost,line_total
             FROM purchasing.purchase_order_lines

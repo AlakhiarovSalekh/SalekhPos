@@ -92,8 +92,13 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         ValidateScope(organizationId, branchId); ValidateOperation(operationId); ValidatePurchaseInput(input);
         var path = $"api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders";
-        var body = new { input.SupplierId, input.Currency, input.Reference,
-            Lines = input.Lines.Select(x => new { x.ProductId, x.Quantity, x.UnitCost }).ToArray() };
+        var body = new
+        {
+            input.SupplierId,
+            input.Currency,
+            input.Reference,
+            Lines = input.Lines.Select(x => new { x.ProductId, x.Quantity, x.UnitCost }).ToArray()
+        };
         var result = await PostAsync<PurchaseOrderSummary>(path, body, operationId, cancellationToken);
         ValidatePurchaseOrder(result, branchId);
         if (result.SupplierId != input.SupplierId || result.Currency != input.Currency)
@@ -148,7 +153,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         if (page.Items.Count > pageSize) throw new InvalidOperationException("Customer page is too large.");
         foreach (var item in page.Items) ValidateCustomer(item);
-        ValidateCursor(page.Items.Select(x => x.Id).ToArray(), page.NextCursor);
+        ValidateCursor([.. page.Items.Select(x => x.Id)], page.NextCursor);
     }
 
     private static void ValidateCustomer(CustomerSummary item)
@@ -163,7 +168,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         if (page.Items.Count > pageSize) throw new InvalidOperationException("Supplier page is too large.");
         foreach (var item in page.Items) ValidateSupplier(item);
-        ValidateCursor(page.Items.Select(x => x.Id).ToArray(), page.NextCursor);
+        ValidateCursor([.. page.Items.Select(x => x.Id)], page.NextCursor);
     }
 
     private static void ValidateSupplier(SupplierSummary item)
@@ -178,7 +183,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         if (page.Items.Count > pageSize) throw new InvalidOperationException("Employee page is too large.");
         foreach (var item in page.Items) ValidateEmployee(item, branchId);
-        ValidateCursor(page.Items.Select(x => x.Id).ToArray(), page.NextCursor);
+        ValidateCursor([.. page.Items.Select(x => x.Id)], page.NextCursor);
     }
 
     private static void ValidateEmployee(EmployeeSummary item, Guid branchId)
@@ -194,7 +199,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         if (page.Items.Count > pageSize) throw new InvalidOperationException("Purchase order page is too large.");
         foreach (var item in page.Items) ValidatePurchaseOrder(item, branchId);
-        ValidateCursor(page.Items.Select(x => x.Id).ToArray(), page.NextCursor);
+        ValidateCursor([.. page.Items.Select(x => x.Id)], page.NextCursor);
     }
 
     private static void ValidatePurchaseOrder(PurchaseOrderSummary item, Guid branchId)
@@ -288,7 +293,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     private static void ValidateEmployeeInput(CreateEmployeeInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        if (input.Code != input.Code.Trim().ToUpperInvariant() || input.Code.Length is < 1 or > 32
+        if (!input.Code.Equals(input.Code.Trim(), StringComparison.InvariantCultureIgnoreCase) || input.Code.Length is < 1 or > 32
             || input.Code.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
             || InvalidText(input.DisplayName, 160) || InvalidOptionalEmail(input.Email)
             || InvalidOptionalText(input.Phone, 40) || InvalidText(input.JobTitle, 100))
