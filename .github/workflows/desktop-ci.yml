@@ -24,7 +24,6 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: '1'
-  DOTNET_MULTILEVEL_LOOKUP: '0'
   NUGET_XMLDOC_MODE: skip
 
 jobs:
@@ -41,24 +40,23 @@ jobs:
           clean: true
           persist-credentials: false
 
-      - name: Configure writable .NET install directory
+      - name: Verify installed .NET SDKs
         shell: cmd
         run: |
-          if not exist "%RUNNER_TEMP%\dotnet" mkdir "%RUNNER_TEMP%\dotnet"
-          echo DOTNET_INSTALL_DIR=%RUNNER_TEMP%\dotnet>>"%GITHUB_ENV%"
+          where dotnet
+          dotnet --list-sdks
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.400'
+      - name: Select installed .NET 10.0.4xx patch
+        shell: cmd
+        run: |
+          > global.json echo {"sdk":{"version":"10.0.400","rollForward":"latestPatch","allowPrerelease":false}}
+          dotnet --version
 
       - name: Runner diagnostics
         shell: cmd
         run: |
           echo Runner: %RUNNER_NAME%
           echo OS: %RUNNER_OS%
-          echo DOTNET_INSTALL_DIR: %DOTNET_INSTALL_DIR%
-          dotnet --version
           dotnet --info
 
       - name: Restore desktop solution
