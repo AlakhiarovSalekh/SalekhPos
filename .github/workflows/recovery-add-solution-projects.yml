@@ -1,0 +1,59 @@
+name: Recovery Add Solution Projects
+
+on:
+  push:
+    branches:
+      - recovery/local-backend-20260918
+    paths:
+      - .github/workflows/recovery-add-solution-projects.yml
+
+permissions:
+  contents: write
+
+jobs:
+  add-projects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: recovery/local-backend-20260918
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Add Integrations and Support projects to solution
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet sln SalekhPos.sln add \
+            backend/src/Modules/Integrations/SalekhPos.Integrations.Api/SalekhPos.Integrations.Api.csproj \
+            backend/src/Modules/Integrations/SalekhPos.Integrations.Application/SalekhPos.Integrations.Application.csproj \
+            backend/src/Modules/Integrations/SalekhPos.Integrations.Contracts/SalekhPos.Integrations.Contracts.csproj \
+            backend/src/Modules/Integrations/SalekhPos.Integrations.Domain/SalekhPos.Integrations.Domain.csproj \
+            backend/src/Modules/Integrations/SalekhPos.Integrations.Infrastructure/SalekhPos.Integrations.Infrastructure.csproj \
+            backend/src/Modules/Support/SalekhPos.Support.Api/SalekhPos.Support.Api.csproj \
+            backend/src/Modules/Support/SalekhPos.Support.Application/SalekhPos.Support.Application.csproj \
+            backend/src/Modules/Support/SalekhPos.Support.Contracts/SalekhPos.Support.Contracts.csproj \
+            backend/src/Modules/Support/SalekhPos.Support.Domain/SalekhPos.Support.Domain.csproj \
+            backend/src/Modules/Support/SalekhPos.Support.Infrastructure/SalekhPos.Support.Infrastructure.csproj
+          git diff --check
+          git diff -- SalekhPos.sln
+
+      - name: Commit corrected solution
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- SalekhPos.sln; then
+            echo "Solution already contains all recovered projects."
+            exit 0
+          fi
+          git config user.name "SalekhPos CI Recovery"
+          git config user.email "293670084+AlakhiarovSalekh@users.noreply.github.com"
+          git add SalekhPos.sln
+          git commit -m "fix: add integrations and support projects to solution"
+          git push origin HEAD:recovery/local-backend-20260918
