@@ -1,0 +1,186 @@
+using Npgsql;
+using NpgsqlTypes;
+using SalekhPos.Support.Application;
+using SalekhPos.Support.Contracts;
+using SalekhPos.Support.Domain.Tickets;
+
+namespace SalekhPos.Support.Infrastructure.Support;
+
+public sealed class PostgresSupportService(NpgsqlDataSource? source) : ISupportService
+{
+    public async Task<SupportWriteResult<SupportTicketResponse>> CreateTicketAsync(SupportIdentity identity,
+        CreateSupportTicketCommand command, CancellationToken cancellationToken)
+    {
+        identity.Validate(); if (command.OperationId == Guid.Empty) throw new ArgumentException("Operation ID is required.");
+        var model = command.ToModel();
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, model.OrganizationId, identity, cancellationToken);
+        await Demand(connection, transaction, model.OrganizationId, model.BranchId, identity, "support.create", cancellationToken);
+        if (model.BranchId.HasValue) await EnsureBranch(connection, transaction, model.OrganizationId, model.BranchId.Value, cancellationToken);
+        await using var insert = new NpgsqlCommand("""
+            INSERT INTO support.tickets(organization_id,ticket_id,operation_id,branch_id,subject,description,priority,opened_by_issuer,opened_by_subject)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(organization_id,operation_id) DO NOTHING
+            RETURNING ticket_id,branch_id,subject,description,priority,status,version,opened_by_subject,created_at,updated_at
+            """, connection, transaction);
+        insert.Parameters.AddWithValue(model.OrganizationId); insert.Parameters.AddWithValue(model.Id); insert.Parameters.AddWithValue(command.OperationId);
+        insert.Parameters.Add(NullableUuid(model.BranchId)); insert.Parameters.AddWithValue(model.Subject); insert.Parameters.AddWithValue(model.Description);
+        insert.Parameters.AddWithValue(Snake(model.Priority)); insert.Parameters.AddWithValue(identity.Issuer); insert.Parameters.AddWithValue(identity.Subject);
+        SupportTicketResponse? result = null;
+        await using (var reader = await insert.ExecuteReaderAsync(cancellationToken)) if (await reader.ReadAsync(cancellationToken)) result = ReadTicket(reader);
+        var created = result is not null;
+        result ??= await ReadTicketByOperation(connection, transaction, model.OrganizationId, command.OperationId, cancellationToken)
+            ?? throw new SupportUnavailableException();
+        if (!created && (result.Id != model.Id || result.BranchId != model.BranchId || result.Subject != model.Subject
+            || result.Description != model.Description || result.Priority != Snake(model.Priority))) throw new SupportConflictException();
+        await transaction.CommitAsync(cancellationToken); return new(result, created);
+    }
+
+    public async Task<SupportTicketPage> ListTicketsAsync(SupportIdentity identity, Guid organizationId, int pageSize,
+        Guid? after, string? status, CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (organizationId == Guid.Empty || pageSize is < 1 or > 100 || after == Guid.Empty) throw new ArgumentException("Ticket query is invalid.");
+        string? normalizedStatus = null;
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<SupportTicketStatus>(status.Replace("_", string.Empty, StringComparison.Ordinal), true, out var parsed))
+                throw new ArgumentException("Ticket status is invalid.", nameof(status));
+            normalizedStatus = Snake(parsed);
+        }
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, null, identity, "support.view", cancellationToken);
+        await using var query = new NpgsqlCommand("""
+            SELECT ticket_id,branch_id,subject,description,priority,status,version,opened_by_subject,created_at,updated_at
+            FROM support.tickets WHERE organization_id=$1 AND ($2::uuid IS NULL OR ticket_id>$2)
+              AND ($3::text IS NULL OR status=$3) ORDER BY ticket_id LIMIT $4
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.Add(NullableUuid(after)); query.Parameters.Add(NullableText(normalizedStatus)); query.Parameters.AddWithValue(pageSize + 1);
+        var rows = new List<SupportTicketResponse>();
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken)) while (await reader.ReadAsync(cancellationToken)) rows.Add(ReadTicket(reader));
+        Guid? next = null; if (rows.Count > pageSize) { rows.RemoveAt(pageSize); next = rows[^1].Id; }
+        await transaction.CommitAsync(cancellationToken); return new(rows, next);
+    }
+
+    public async Task<SupportTicketDetailResponse> GetTicketAsync(SupportIdentity identity, Guid organizationId,
+        Guid ticketId, CancellationToken cancellationToken)
+    {
+        identity.Validate(); if (organizationId == Guid.Empty || ticketId == Guid.Empty) throw new ArgumentException("Ticket identity is invalid.");
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, null, identity, "support.view", cancellationToken);
+        var ticket = await ReadTicket(connection, transaction, organizationId, ticketId, cancellationToken) ?? throw new SupportNotFoundException();
+        await using var query = new NpgsqlCommand("""
+            SELECT diagnostic_id,ticket_id,kind,reference,sha256,added_by_subject,created_at
+            FROM support.diagnostic_references WHERE organization_id=$1 AND ticket_id=$2 ORDER BY created_at LIMIT 101
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(ticketId);
+        var diagnostics = new List<DiagnosticReferenceResponse>();
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken)) while (await reader.ReadAsync(cancellationToken)) diagnostics.Add(ReadDiagnostic(reader));
+        if (diagnostics.Count > 100) throw new SupportUnavailableException();
+        await transaction.CommitAsync(cancellationToken); return new(ticket, diagnostics);
+    }
+
+    public async Task<SupportTicketResponse> TransitionTicketAsync(SupportIdentity identity, Guid organizationId,
+        Guid ticketId, Guid operationId, TransitionSupportTicketRequest request, CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (organizationId == Guid.Empty || ticketId == Guid.Empty || operationId == Guid.Empty || request.ExpectedVersion < 1)
+            throw new ArgumentException("Ticket transition is invalid.");
+        if (!Enum.TryParse<SupportTicketStatus>(request.Status.Replace("_", string.Empty, StringComparison.Ordinal), true, out var next))
+            throw new ArgumentException("Ticket status is invalid.", nameof(request));
+        var note = SupportInput.Required(request.Note, 2000, nameof(request));
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, null, identity, "support.manage", cancellationToken);
+        await using (var replay = new NpgsqlCommand("SELECT ticket_id,to_status,note FROM support.ticket_transitions WHERE organization_id=$1 AND operation_id=$2", connection, transaction))
+        {
+            replay.Parameters.AddWithValue(organizationId); replay.Parameters.AddWithValue(operationId);
+            await using var reader = await replay.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                if (reader.GetGuid(0) != ticketId || reader.GetString(1) != Snake(next) || reader.GetString(2) != note) throw new SupportConflictException();
+                await reader.DisposeAsync(); var replayed = await ReadTicket(connection, transaction, organizationId, ticketId, cancellationToken) ?? throw new SupportNotFoundException();
+                await transaction.CommitAsync(cancellationToken); return replayed;
+            }
+        }
+        var current = await ReadTicket(connection, transaction, organizationId, ticketId, cancellationToken) ?? throw new SupportNotFoundException();
+        if (!Enum.TryParse<SupportTicketPriority>(current.Priority, true, out var priority)
+            || !Enum.TryParse<SupportTicketStatus>(current.Status.Replace("_", string.Empty, StringComparison.Ordinal), true, out var currentStatus))
+            throw new SupportUnavailableException();
+        _ = new SupportTicket(organizationId, current.Id, current.BranchId, current.Subject, current.Description, priority, currentStatus).TransitionTo(next);
+        await using (var update = new NpgsqlCommand("""
+            UPDATE support.tickets SET status=$4,version=version+1,updated_at=statement_timestamp()
+            WHERE organization_id=$1 AND ticket_id=$2 AND version=$3
+            """, connection, transaction))
+        {
+            update.Parameters.AddWithValue(organizationId); update.Parameters.AddWithValue(ticketId); update.Parameters.AddWithValue(request.ExpectedVersion); update.Parameters.AddWithValue(Snake(next));
+            if (await update.ExecuteNonQueryAsync(cancellationToken) != 1) throw new SupportConflictException();
+        }
+        await using (var audit = new NpgsqlCommand("""
+            INSERT INTO support.ticket_transitions(organization_id,transition_id,ticket_id,operation_id,from_status,to_status,note,transitioned_by_issuer,transitioned_by_subject)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            """, connection, transaction))
+        {
+            audit.Parameters.AddWithValue(organizationId); audit.Parameters.AddWithValue(Guid.NewGuid()); audit.Parameters.AddWithValue(ticketId); audit.Parameters.AddWithValue(operationId);
+            audit.Parameters.AddWithValue(current.Status); audit.Parameters.AddWithValue(Snake(next)); audit.Parameters.AddWithValue(note); audit.Parameters.AddWithValue(identity.Issuer); audit.Parameters.AddWithValue(identity.Subject);
+            await audit.ExecuteNonQueryAsync(cancellationToken);
+        }
+        var result = await ReadTicket(connection, transaction, organizationId, ticketId, cancellationToken) ?? throw new SupportNotFoundException();
+        await transaction.CommitAsync(cancellationToken); return result;
+    }
+
+    public async Task<SupportWriteResult<DiagnosticReferenceResponse>> AddDiagnosticAsync(SupportIdentity identity,
+        AddDiagnosticReferenceCommand command, CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (command.OrganizationId == Guid.Empty || command.TicketId == Guid.Empty || command.DiagnosticId == Guid.Empty || command.OperationId == Guid.Empty)
+            throw new ArgumentException("Diagnostic reference identity is invalid.");
+        var model = command.ToModel();
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, command.OrganizationId, identity, cancellationToken);
+        await Demand(connection, transaction, command.OrganizationId, null, identity, "support.manage", cancellationToken);
+        await using var insert = new NpgsqlCommand("""
+            INSERT INTO support.diagnostic_references(organization_id,diagnostic_id,ticket_id,operation_id,kind,reference,sha256,added_by_issuer,added_by_subject)
+            SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9 FROM support.tickets WHERE organization_id=$1 AND ticket_id=$3
+            ON CONFLICT(organization_id,operation_id) DO NOTHING
+            RETURNING diagnostic_id,ticket_id,kind,reference,sha256,added_by_subject,created_at
+            """, connection, transaction);
+        insert.Parameters.AddWithValue(command.OrganizationId); insert.Parameters.AddWithValue(command.DiagnosticId); insert.Parameters.AddWithValue(command.TicketId);
+        insert.Parameters.AddWithValue(command.OperationId); insert.Parameters.AddWithValue(model.Kind); insert.Parameters.AddWithValue(model.Reference);
+        insert.Parameters.AddWithValue(model.Sha256); insert.Parameters.AddWithValue(identity.Issuer); insert.Parameters.AddWithValue(identity.Subject);
+        DiagnosticReferenceResponse? result = null;
+        await using (var reader = await insert.ExecuteReaderAsync(cancellationToken)) if (await reader.ReadAsync(cancellationToken)) result = ReadDiagnostic(reader);
+        var created = result is not null;
+        result ??= await ReadDiagnosticByOperation(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
+        if (result is null) throw new SupportNotFoundException();
+        if (!created && (result.Id != command.DiagnosticId || result.TicketId != command.TicketId || result.Kind != model.Kind
+            || result.Reference != model.Reference || result.Sha256 != model.Sha256)) throw new SupportConflictException();
+        await transaction.CommitAsync(cancellationToken); return new(result, created);
+    }
+
+    private NpgsqlDataSource Data() => source ?? throw new SupportUnavailableException();
+    private static string Snake<T>(T value) where T : struct, Enum => value.ToString() switch
+    { "InProgress" => "in_progress", "WaitingForCustomer" => "waiting_for_customer", _ => value.ToString().ToLowerInvariant() };
+    private static NpgsqlParameter NullableUuid(Guid? value) => new() { NpgsqlDbType = NpgsqlDbType.Uuid, Value = value.HasValue ? value.Value : DBNull.Value };
+    private static NpgsqlParameter NullableText(string? value) => new() { NpgsqlDbType = NpgsqlDbType.Text, Value = value is null ? DBNull.Value : value };
+    private static SupportTicketResponse ReadTicket(NpgsqlDataReader r) => new(r.GetGuid(0), r.IsDBNull(1) ? null : r.GetGuid(1), r.GetString(2), r.GetString(3), r.GetString(4), r.GetString(5), r.GetInt32(6), r.GetString(7), r.GetFieldValue<DateTimeOffset>(8), r.GetFieldValue<DateTimeOffset>(9));
+    private static DiagnosticReferenceResponse ReadDiagnostic(NpgsqlDataReader r) => new(r.GetGuid(0), r.GetGuid(1), r.GetString(2), r.GetString(3), r.GetString(4), r.GetString(5), r.GetFieldValue<DateTimeOffset>(6));
+    private static async Task<SupportTicketResponse?> ReadTicketByOperation(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid op, CancellationToken ct)
+    { await using var q = new NpgsqlCommand("SELECT ticket_id,branch_id,subject,description,priority,status,version,opened_by_subject,created_at,updated_at FROM support.tickets WHERE organization_id=$1 AND operation_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(op); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadTicket(r) : null; }
+    private static async Task<SupportTicketResponse?> ReadTicket(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid id, CancellationToken ct)
+    { await using var q = new NpgsqlCommand("SELECT ticket_id,branch_id,subject,description,priority,status,version,opened_by_subject,created_at,updated_at FROM support.tickets WHERE organization_id=$1 AND ticket_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(id); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadTicket(r) : null; }
+    private static async Task<DiagnosticReferenceResponse?> ReadDiagnosticByOperation(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid op, CancellationToken ct)
+    { await using var q = new NpgsqlCommand("SELECT diagnostic_id,ticket_id,kind,reference,sha256,added_by_subject,created_at FROM support.diagnostic_references WHERE organization_id=$1 AND operation_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(op); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadDiagnostic(r) : null; }
+    private static async Task EnsureBranch(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid b, CancellationToken ct)
+    { await using var q = new NpgsqlCommand("SELECT EXISTS(SELECT FROM organization.branches WHERE organization_id=$1 AND branch_id=$2 AND is_active)", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(b); if (await q.ExecuteScalarAsync(ct) is not true) throw new SupportConflictException(); }
+    private static async Task Prepare(NpgsqlConnection c, NpgsqlTransaction t, Guid o, SupportIdentity i, CancellationToken ct)
+    { await using var safety = new NpgsqlCommand("SELECT current_user='salekhpos_runtime' AND EXISTS(SELECT FROM pg_class x JOIN pg_namespace n ON n.oid=x.relnamespace WHERE n.nspname='support' AND x.relname='tickets' AND x.relrowsecurity AND x.relforcerowsecurity AND x.relowner<>(SELECT oid FROM pg_roles WHERE rolname=current_user))", c, t); if (await safety.ExecuteScalarAsync(ct) is not true) throw new SupportUnavailableException(); await using var context = new NpgsqlCommand("SELECT set_config('app.organization_id',$1,true),set_config('app.issuer',$2,true),set_config('app.subject',$3,true)", c, t); context.Parameters.AddWithValue(o.ToString()); context.Parameters.AddWithValue(i.Issuer); context.Parameters.AddWithValue(i.Subject); await context.ExecuteNonQueryAsync(ct); }
+    private static async Task Demand(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid? b, SupportIdentity i, string permission, CancellationToken ct)
+    { await using var q = new NpgsqlCommand("SELECT EXISTS(SELECT FROM access.memberships m JOIN access.permission_grants g ON g.organization_id=m.organization_id AND g.membership_id=m.membership_id WHERE m.organization_id=$1 AND m.issuer=$2 AND m.subject=$3 AND m.is_active AND m.valid_from<=statement_timestamp() AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp()) AND g.permission=$4 AND (g.scope_kind='organization' OR ($5::uuid IS NOT NULL AND g.scope_kind='branch' AND g.branch_id=$5)))", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(i.Issuer); q.Parameters.AddWithValue(i.Subject); q.Parameters.AddWithValue(permission); q.Parameters.Add(NullableUuid(b)); if (await q.ExecuteScalarAsync(ct) is not true) throw new SupportDeniedException(); }
+}
