@@ -25,7 +25,6 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: '1'
   DOTNET_MULTILEVEL_LOOKUP: '0'
-  DOTNET_INSTALL_DIR: '${{ runner.temp }}\dotnet'
   NUGET_XMLDOC_MODE: skip
 
 jobs:
@@ -41,6 +40,13 @@ jobs:
         with:
           clean: true
           persist-credentials: false
+
+      - name: Configure writable .NET install directory
+        shell: pwsh
+        run: |
+          $dotnetDir = Join-Path $env:RUNNER_TEMP 'dotnet'
+          New-Item -ItemType Directory -Force -Path $dotnetDir | Out-Null
+          "DOTNET_INSTALL_DIR=$dotnetDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
