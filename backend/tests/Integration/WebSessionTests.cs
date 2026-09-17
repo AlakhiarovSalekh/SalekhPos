@@ -7,7 +7,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class WebSessionTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class WebSessionTests(AccessFixture fixture)
 {
     [Fact]
     public async Task DurableEncryptedTicketSurvivesStoreReplacementAndLogoutCannotBeUndoneByRenewal()

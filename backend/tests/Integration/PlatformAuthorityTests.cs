@@ -8,7 +8,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class PlatformAuthorityTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class PlatformAuthorityTests(AccessFixture fixture)
 {
     private const string AdminPath = "/api/v1/platform/super-admins";
     private string RootToken(long? authTime = null) => fixture.Token("platform-root",

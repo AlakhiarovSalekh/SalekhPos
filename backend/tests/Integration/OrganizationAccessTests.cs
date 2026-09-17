@@ -5,7 +5,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class OrganizationAccessTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class OrganizationAccessTests(AccessFixture fixture)
 {
     private static string Path(string query = "") => "/api/v1/access/organizations" + query;
 

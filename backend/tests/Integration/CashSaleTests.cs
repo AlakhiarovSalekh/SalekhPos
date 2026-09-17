@@ -6,7 +6,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class CashSaleTests(AccessFixture fixture) : IClassFixture<AccessFixture>, IDisposable
+[Collection(IntegrationTestCollection.Name)]
+public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
 {
     private readonly SemaphoreSlim saleShiftGate = new(1, 1);
     private readonly Dictionary<Guid, TrustedDeviceTestClient> shiftDevices = [];

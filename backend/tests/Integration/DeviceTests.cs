@@ -8,7 +8,8 @@ using SalekhPos.Devices.Application.Devices;
 using Xunit;
 namespace SalekhPos.IntegrationTests;
 
-public sealed class DeviceTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class DeviceTests(AccessFixture fixture)
 {
     private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'";
     private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);

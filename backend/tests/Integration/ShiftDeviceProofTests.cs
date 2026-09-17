@@ -9,7 +9,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class ShiftDeviceProofTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class ShiftDeviceProofTests(AccessFixture fixture)
 {
     private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 

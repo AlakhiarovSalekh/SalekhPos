@@ -8,7 +8,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class BranchSecurityTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class BranchSecurityTests(AccessFixture fixture)
 {
     private string Path(Guid? org = null) => $"/api/v1/organizations/{org ?? fixture.OrganizationA}/branches";
 

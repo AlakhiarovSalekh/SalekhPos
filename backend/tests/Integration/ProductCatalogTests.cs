@@ -7,7 +7,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class ProductCatalogTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class ProductCatalogTests(AccessFixture fixture)
 {
     private string Path(Guid? organization = null) => $"/api/v1/organizations/{organization ?? fixture.OrganizationA}/products";
 

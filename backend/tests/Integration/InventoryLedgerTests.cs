@@ -8,7 +8,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class InventoryLedgerTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class InventoryLedgerTests(AccessFixture fixture)
 {
     private string Path => $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/inventory";
     [Fact]

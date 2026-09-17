@@ -9,7 +9,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class TokenRevocationTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class TokenRevocationTests(AccessFixture fixture)
 {
     private string BranchPath => $"/api/v1/organizations/{fixture.OrganizationA}/branches";
     private const string RevokePath = "/api/v1/identity/revoke-current-token";

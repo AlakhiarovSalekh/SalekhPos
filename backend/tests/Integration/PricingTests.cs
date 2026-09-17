@@ -6,7 +6,8 @@ using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
-public sealed class PricingTests(AccessFixture fixture) : IClassFixture<AccessFixture>
+[Collection(IntegrationTestCollection.Name)]
+public sealed class PricingTests(AccessFixture fixture)
 {
     [Fact]
     public async Task BranchPriceOverridesBasePriceAndReplayIsSafe()
