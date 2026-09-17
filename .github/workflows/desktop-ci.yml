@@ -42,11 +42,10 @@ jobs:
           persist-credentials: false
 
       - name: Configure writable .NET install directory
-        shell: powershell
+        shell: cmd
         run: |
-          $dotnetDir = Join-Path $env:RUNNER_TEMP 'dotnet'
-          New-Item -ItemType Directory -Force -Path $dotnetDir | Out-Null
-          "DOTNET_INSTALL_DIR=$dotnetDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          if not exist "%RUNNER_TEMP%\dotnet" mkdir "%RUNNER_TEMP%\dotnet"
+          echo DOTNET_INSTALL_DIR=%RUNNER_TEMP%\dotnet>>"%GITHUB_ENV%"
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
@@ -54,22 +53,22 @@ jobs:
           dotnet-version: '10.0.400'
 
       - name: Runner diagnostics
-        shell: powershell
+        shell: cmd
         run: |
-          Write-Host "Runner: $env:RUNNER_NAME"
-          Write-Host "OS: $env:RUNNER_OS"
-          Write-Host "DOTNET_INSTALL_DIR: $env:DOTNET_INSTALL_DIR"
+          echo Runner: %RUNNER_NAME%
+          echo OS: %RUNNER_OS%
+          echo DOTNET_INSTALL_DIR: %DOTNET_INSTALL_DIR%
           dotnet --version
           dotnet --info
 
       - name: Restore desktop solution
-        shell: powershell
-        run: dotnet restore apps/desktop/SalekhPos.Desktop.sln --locked-mode
+        shell: cmd
+        run: dotnet restore apps\desktop\SalekhPos.Desktop.sln --locked-mode
 
       - name: Build desktop solution
-        shell: powershell
-        run: dotnet build apps/desktop/SalekhPos.Desktop.sln --configuration Release --no-restore
+        shell: cmd
+        run: dotnet build apps\desktop\SalekhPos.Desktop.sln --configuration Release --no-restore
 
       - name: Test desktop
-        shell: powershell
-        run: dotnet test apps/desktop/tests/SalekhPos.Desktop.Tests/SalekhPos.Desktop.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+        shell: cmd
+        run: dotnet test apps\desktop\tests\SalekhPos.Desktop.Tests\SalekhPos.Desktop.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
