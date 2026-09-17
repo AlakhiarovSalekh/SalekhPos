@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.ManagerAccountingWindow" Title="SalekhPos Accounting"
+        Width="1120" Height="780" MinWidth="860" MinHeight="620">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="18" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+      <StackPanel><TextBlock Text="Accounting control center" FontSize="24" FontWeight="SemiBold"/>
+        <TextBlock Text="Sales, tax, cash, purchase commitments and source journal evidence." Foreground="#607080"/></StackPanel>
+      <ComboBox Grid.Column="1" Name="WindowBox" SelectedIndex="2" Width="130">
+        <ComboBoxItem Content="24 hours" Tag="1"/><ComboBoxItem Content="7 days" Tag="7"/>
+        <ComboBoxItem Content="30 days" Tag="30"/><ComboBoxItem Content="90 days" Tag="90"/>
+      </ComboBox>
+      <Button Grid.Column="2" Content="Refresh" Click="RefreshClick"/>
+    </Grid>
+    <TextBlock Grid.Row="1" Name="StatusText" Foreground="#607080" TextWrapping="Wrap"/>
+    <ScrollViewer Grid.Row="2"><StackPanel Spacing="14">
+      <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+        <Border Background="White" Padding="14"><StackPanel><TextBlock Text="Net receipts"/><TextBlock Name="NetReceiptsText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="1" Background="White" Padding="14"><StackPanel><TextBlock Text="Gross sales"/><TextBlock Name="GrossSalesText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="2" Background="White" Padding="14"><StackPanel><TextBlock Text="Tax captured"/><TextBlock Name="TaxText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="3" Background="White" Padding="14"><StackPanel><TextBlock Text="Refunds / voids"/><TextBlock Name="RefundsText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+      </Grid>
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+        <Border Background="White" Padding="14"><StackPanel><TextBlock Text="Net cash movement"/><TextBlock Name="CashMovementText" FontSize="20" FontWeight="SemiBold"/></StackPanel></Border>
+        <Border Grid.Column="1" Background="White" Padding="14"><StackPanel><TextBlock Text="Purchase commitments"/><TextBlock Name="PurchaseCommitmentsText" FontSize="20" FontWeight="SemiBold"/></StackPanel></Border>
+        <Border Grid.Column="2" Background="White" Padding="14"><StackPanel><TextBlock Text="Closed-shift variance"/><TextBlock Name="ShiftVarianceText" FontSize="20" FontWeight="SemiBold"/></StackPanel></Border>
+      </Grid>
+      <TextBlock Text="Source journal" FontSize="18" FontWeight="SemiBold"/>
+      <ListBox Name="JournalList" Height="340"/>
+      <Button Name="LoadMoreButton" Content="Load more journal entries" Click="LoadMoreClick" IsVisible="False"/>
+    </StackPanel></ScrollViewer>
+  </Grid>
+</Window>

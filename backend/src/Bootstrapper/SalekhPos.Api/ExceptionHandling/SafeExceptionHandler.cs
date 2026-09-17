@@ -28,6 +28,7 @@ using SalekhPos.Notifications.Application.Notifications;
 using SalekhPos.Taxation.Application.TaxConfiguration;
 using SalekhPos.Localization.Application.Settings;
 using SalekhPos.Analytics.Application.Analytics;
+using SalekhPos.Accounting.Application.Journals;
 
 namespace SalekhPos.Api.ExceptionHandling;
 
@@ -100,13 +101,14 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             LocalizationConflictException => (409, "localization_conflict", "Localization settings conflict with current state"),
             LocalizationNotFoundException => (404, "localization_not_found", "Localization settings are unavailable"),
             AnalyticsDeniedException => (403, "analytics_access_denied", "Analytics access is not permitted"),
+            AccountingDeniedException => (403, "accounting_access_denied", "Accounting access is not permitted"),
             SalesConflictException => (409, "sale_operation_conflict", "The sale operation conflicts with current state"),
             SalePriceUnavailableException => (409, "sale_price_unavailable", "A current product price is unavailable"),
             InsufficientStockException => (409, "insufficient_stock", "Available stock is insufficient"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),
-            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NotificationUnavailableException or TaxUnavailableException or LocalizationUnavailableException or AnalyticsUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NotificationUnavailableException or TaxUnavailableException or LocalizationUnavailableException or AnalyticsUnavailableException or AccountingUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

@@ -72,6 +72,36 @@
           "Microsoft.IdentityModel.Tokens": "8.19.2"
         }
       },
+      "salekhpos.accounting.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Accounting.Application": "[1.0.0, )",
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.accounting.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.accounting.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.accounting.domain": {
+        "type": "Project"
+      },
+      "salekhpos.accounting.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Accounting.Application": "[1.0.0, )",
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.analytics.api": {
         "type": "Project",
         "dependencies": {

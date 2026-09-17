@@ -90,6 +90,9 @@ using SalekhPos.Localization.Infrastructure.Settings;
 using SalekhPos.Analytics.Api.Analytics;
 using SalekhPos.Analytics.Application.Analytics;
 using SalekhPos.Analytics.Infrastructure.Analytics;
+using SalekhPos.Accounting.Api.Journals;
+using SalekhPos.Accounting.Application.Journals;
+using SalekhPos.Accounting.Infrastructure.Journals;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -159,6 +162,7 @@ builder.Services.AddSingleton<INotificationCenter>(provider => new PostgresNotif
 builder.Services.AddSingleton<ITaxConfiguration>(provider => new PostgresTaxConfiguration(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ILocalizationSettings>(provider => new PostgresLocalizationSettings(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IAnalyticsReader>(provider => new PostgresAnalyticsReader(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IAccountingReader>(provider => new PostgresAccountingReader(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -249,6 +253,7 @@ app.MapNotificationEndpoints();
 app.MapTaxEndpoints();
 app.MapLocalizationEndpoints();
 app.MapAnalyticsEndpoints();
+app.MapAccountingEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapWebBusinessEndpoints();
@@ -258,6 +263,7 @@ app.MapWebCommerceExtensionsEndpoints();
 app.MapWebAuditEndpoints();
 app.MapWebGlobalConfigurationEndpoints();
 app.MapWebAnalyticsEndpoints();
+app.MapWebAccountingEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();

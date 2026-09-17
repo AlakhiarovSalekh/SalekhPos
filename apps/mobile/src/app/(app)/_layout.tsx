@@ -49,6 +49,7 @@ export default function AppLayout() {
         <Stack.Protected guard={hasAnyPermission(authorization, [permissions.taxationView, permissions.taxationManage])}><Stack.Screen name="taxation" /></Stack.Protected>
         <Stack.Protected guard={hasAnyPermission(authorization, [permissions.localizationView, permissions.localizationManage])}><Stack.Screen name="localization" /></Stack.Protected>
         <Stack.Protected guard={hasPermission(authorization, permissions.analyticsView)}><Stack.Screen name="analytics" /></Stack.Protected>
+        <Stack.Protected guard={hasPermission(authorization, permissions.accountingView)}><Stack.Screen name="accounting" /></Stack.Protected>
         <Stack.Protected guard={hasPermission(authorization, permissions.auditView)}><Stack.Screen name="audit" /></Stack.Protected>
       </Stack>
     </WorkspaceProvider>

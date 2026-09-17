@@ -59,5 +59,7 @@
     <ProjectReference Include="../../Modules/Localization/SalekhPos.Localization.Infrastructure/SalekhPos.Localization.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Analytics/SalekhPos.Analytics.Api/SalekhPos.Analytics.Api.csproj" />
     <ProjectReference Include="../../Modules/Analytics/SalekhPos.Analytics.Infrastructure/SalekhPos.Analytics.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Accounting/SalekhPos.Accounting.Api/SalekhPos.Accounting.Api.csproj" />
+    <ProjectReference Include="../../Modules/Accounting/SalekhPos.Accounting.Infrastructure/SalekhPos.Accounting.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

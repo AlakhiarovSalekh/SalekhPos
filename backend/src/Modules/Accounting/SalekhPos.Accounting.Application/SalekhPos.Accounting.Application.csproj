@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SalekhPos.Accounting.Domain/SalekhPos.Accounting.Domain.csproj" />
+    <ProjectReference Include="../SalekhPos.Accounting.Contracts/SalekhPos.Accounting.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -24,6 +24,7 @@ export const permissions = Object.freeze({
   purchaseOrdersCancel: "purchase_orders.cancel",
   reportsView: "reports.view",
   analyticsView: "reports.view",
+  accountingView: "accounting.view",
   loyaltyView: "loyalty.view",
   loyaltyManage: "loyalty.manage",
   auditView: "audit.view",

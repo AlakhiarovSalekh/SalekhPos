@@ -43,6 +43,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         AuditViewer = new HttpAuditViewer(authenticatedClient);
         GlobalConfiguration = new HttpGlobalConfiguration(authenticatedClient);
         AnalyticsViewer = new HttpAnalyticsViewer(authenticatedClient);
+        AccountingViewer = new HttpAccountingViewer(authenticatedClient);
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
@@ -56,6 +57,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     public IAuditViewer AuditViewer { get; }
     public IGlobalConfiguration GlobalConfiguration { get; }
     public IAnalyticsViewer AnalyticsViewer { get; }
+    public IAccountingViewer AccountingViewer { get; }
     public string Subject { get; }
 
     public void Dispose()
