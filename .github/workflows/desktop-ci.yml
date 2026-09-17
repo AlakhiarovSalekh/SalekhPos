@@ -1,13 +1,66 @@
-name: desktop ci
+name: Desktop Windows CI
+
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/desktop/**'
+      - '.github/workflows/desktop-ci.yml'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - 'Directory.Packages.props'
+      - 'NuGet.Config'
+      - 'global.json'
+
 permissions:
   contents: read
+
+concurrency:
+  group: desktop-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  NUGET_XMLDOC_MODE: skip
+
 jobs:
-  availability:
-    runs-on: ubuntu-24.04
+  desktop-windows:
+    name: Desktop Windows build and tests
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 30
+
     steps:
-      - name: Require implemented capability
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          persist-credentials: false
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.400'
+
+      - name: Runner diagnostics
+        shell: pwsh
         run: |
-          echo 'desktop ci is not implemented. See docs/development/progress.md.' >&2
-          exit 1
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "OS: $env:RUNNER_OS"
+          dotnet --version
+          dotnet --info
+
+      - name: Restore desktop solution
+        shell: pwsh
+        run: dotnet restore apps/desktop/SalekhPos.Desktop.sln --locked-mode
+
+      - name: Build desktop solution
+        shell: pwsh
+        run: dotnet build apps/desktop/SalekhPos.Desktop.sln --configuration Release --no-restore
+
+      - name: Test desktop
+        shell: pwsh
+        run: dotnet test apps/desktop/tests/SalekhPos.Desktop.Tests/SalekhPos.Desktop.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
