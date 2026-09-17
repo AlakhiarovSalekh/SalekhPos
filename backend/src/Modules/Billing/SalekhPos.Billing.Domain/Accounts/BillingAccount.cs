@@ -23,7 +23,7 @@ public sealed record BillingAccount
     public string? TaxIdentifier { get; }
     public DateTimeOffset CreatedAt { get; }
 
-    internal static string Required(string value, int maximum, string name)
+    public static string Required(string value, int maximum, string name)
     {
         value = value.Trim();
         if (value.Length is 0 || value.Length > maximum || value.Any(char.IsControl))
