@@ -61,5 +61,16 @@
     <ProjectReference Include="../../Modules/Analytics/SalekhPos.Analytics.Infrastructure/SalekhPos.Analytics.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Accounting/SalekhPos.Accounting.Api/SalekhPos.Accounting.Api.csproj" />
     <ProjectReference Include="../../Modules/Accounting/SalekhPos.Accounting.Infrastructure/SalekhPos.Accounting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\FeatureManagement\SalekhPos.FeatureManagement.Api\SalekhPos.FeatureManagement.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\FeatureManagement\SalekhPos.FeatureManagement.Infrastructure\SalekhPos.FeatureManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Fiscalization\SalekhPos.Fiscalization.Api\SalekhPos.Fiscalization.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Fiscalization\SalekhPos.Fiscalization.Application\SalekhPos.Fiscalization.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Fiscalization\SalekhPos.Fiscalization.Infrastructure\SalekhPos.Fiscalization.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\SalekhPos.Billing.Api\SalekhPos.Billing.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\SalekhPos.Billing.Application\SalekhPos.Billing.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\SalekhPos.Billing.Infrastructure\SalekhPos.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Api\SalekhPos.Subscriptions.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Application\SalekhPos.Subscriptions.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Infrastructure\SalekhPos.Subscriptions.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
