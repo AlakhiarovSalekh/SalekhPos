@@ -407,7 +407,12 @@ public sealed class PostgresStockTransferService(NpgsqlDataSource? source) : ISt
     {
         await using var command = new NpgsqlCommand("SELECT statement_timestamp()", connection, transaction);
         var value = await command.ExecuteScalarAsync(cancellationToken);
-        return value is DateTimeOffset timestamp ? timestamp : throw new WarehousingUnavailableException();
+        return value switch
+        {
+            DateTimeOffset timestamp when timestamp.Offset == TimeSpan.Zero => timestamp,
+            DateTime timestamp when timestamp.Kind == DateTimeKind.Utc => new DateTimeOffset(timestamp),
+            _ => throw new WarehousingUnavailableException()
+        };
     }
     private static bool Equivalent(StockTransfer transfer, Header header, IReadOnlyList<Line> lines)
     {

@@ -236,7 +236,12 @@ public sealed class PostgresAuditTrail(NpgsqlDataSource? source) : IAuditTrail
     {
         await using var command = new NpgsqlCommand("SELECT statement_timestamp()", connection, transaction);
         var value = await command.ExecuteScalarAsync(ct);
-        return value is DateTimeOffset timestamp ? timestamp : throw new AuditUnavailableException();
+        return value switch
+        {
+            DateTimeOffset timestamp when timestamp.Offset == TimeSpan.Zero => timestamp,
+            DateTime timestamp when timestamp.Kind == DateTimeKind.Utc => new DateTimeOffset(timestamp),
+            _ => throw new AuditUnavailableException()
+        };
     }
 
     private static byte[] ComputeHash(byte[] previousHash, long sequence, AuditIdentity identity,

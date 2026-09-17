@@ -233,8 +233,13 @@ public sealed class PostgresEmployeeDirectory(NpgsqlDataSource? source) : IEmplo
         NpgsqlTransaction transaction, CancellationToken cancellationToken)
     {
         await using var command = new NpgsqlCommand("SELECT statement_timestamp()", connection, transaction);
-        return await command.ExecuteScalarAsync(cancellationToken) is DateTimeOffset value
-            ? value : throw new EmployeeUnavailableException();
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return value switch
+        {
+            DateTimeOffset timestamp when timestamp.Offset == TimeSpan.Zero => timestamp,
+            DateTime timestamp when timestamp.Kind == DateTimeKind.Utc => new DateTimeOffset(timestamp),
+            _ => throw new EmployeeUnavailableException()
+        };
     }
 
     private const string EmployeeSelect = """
