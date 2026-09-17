@@ -1,0 +1,116 @@
+name: Preserve Local Workspace
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/local-snapshot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: preserve-local-workspace
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Snapshot C:\SalekhPos without modifying it
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+
+    steps:
+      - name: Preserve dirty workspace on a safety branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = 'C:\SalekhPos'
+          $snapshotBranch = "local-snapshot/run-$env:GITHUB_RUN_ID"
+
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'safe.directory'
+          $env:GIT_CONFIG_VALUE_0 = 'C:/SalekhPos'
+
+          if (-not (Test-Path (Join-Path $target '.git'))) {
+            throw "$target is not a Git repository."
+          }
+
+          $currentBranch = (& git -C $target rev-parse --abbrev-ref HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to read local branch.' }
+          if ($currentBranch -ne 'main') {
+            throw "Local workspace is on '$currentBranch', not main. Nothing was changed."
+          }
+
+          $statusBefore = @(& git -C $target status --porcelain=v1 --untracked-files=all)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to read local status.' }
+          if ($statusBefore.Count -eq 0) {
+            Write-Host 'Local workspace is already clean; no snapshot is required.'
+            exit 0
+          }
+
+          Write-Host "Found $($statusBefore.Count) local changed/untracked paths."
+
+          $untracked = @(& git -C $target ls-files --others --exclude-standard)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect untracked files.' }
+          $sensitivePattern = '(?i)(^|[\\/])\.env($|\.)|\.pem$|\.key$|\.pfx$|\.p12$|id_rsa|credentials?|secrets?(\.|$)'
+          $suspicious = @($untracked | Where-Object { $_ -match $sensitivePattern })
+          if ($suspicious.Count -gt 0) {
+            Write-Host 'Refusing to snapshot because potentially sensitive untracked files were found:'
+            $suspicious | ForEach-Object { Write-Host "  $_" }
+            throw 'Review sensitive files before snapshotting.'
+          }
+
+          $head = (& git -C $target rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to read local HEAD.' }
+
+          $snapshotCommit = $null
+          $indexTouched = $false
+          try {
+            & git -C $target add -A
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to stage local workspace for snapshot.' }
+            $indexTouched = $true
+
+            $tree = (& git -C $target write-tree).Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to write snapshot tree.' }
+
+            $env:GIT_AUTHOR_NAME = 'SalekhPos Local Snapshot'
+            $env:GIT_AUTHOR_EMAIL = '293670084+AlakhiarovSalekh@users.noreply.github.com'
+            $env:GIT_COMMITTER_NAME = 'SalekhPos Local Snapshot'
+            $env:GIT_COMMITTER_EMAIL = '293670084+AlakhiarovSalekh@users.noreply.github.com'
+
+            $snapshotCommit = ('chore: preserve local SalekhPos workspace' | & git -C $target commit-tree $tree -p $head).Trim()
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($snapshotCommit)) {
+              throw 'Unable to create snapshot commit object.'
+            }
+          }
+          finally {
+            if ($indexTouched) {
+              & git -C $target reset --mixed $head | Out-Null
+              if ($LASTEXITCODE -ne 0) { throw 'Unable to restore local index after snapshot creation.' }
+            }
+          }
+
+          & git -C $target update-ref "refs/heads/$snapshotBranch" $snapshotCommit
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create local safety ref.' }
+
+          $remote = "https://x-access-token:$env:GH_TOKEN@github.com/AlakhiarovSalekh/SalekhPos.git"
+          $refspec = "${snapshotCommit}:refs/heads/$snapshotBranch"
+          & git -C $target push $remote $refspec
+          if ($LASTEXITCODE -ne 0) {
+            throw "Snapshot commit exists locally as $snapshotBranch but push failed."
+          }
+
+          $statusAfter = @(& git -C $target status --porcelain=v1 --untracked-files=all)
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to verify local status after snapshot.' }
+
+          if (($statusBefore -join "`n") -ne ($statusAfter -join "`n")) {
+            throw 'Local workspace status changed while creating the snapshot. Inspect before continuing.'
+          }
+
+          Write-Host "SNAPSHOT_BRANCH=$snapshotBranch"
+          Write-Host "SNAPSHOT_COMMIT=$snapshotCommit"
+          Write-Host 'Local working tree and branch were left unchanged.'
