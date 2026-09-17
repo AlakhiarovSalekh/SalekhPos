@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Preserve dirty workspace on a safety branch
-        shell: pwsh
+        shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
