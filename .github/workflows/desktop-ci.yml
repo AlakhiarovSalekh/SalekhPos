@@ -42,7 +42,7 @@ jobs:
           persist-credentials: false
 
       - name: Configure writable .NET install directory
-        shell: pwsh
+        shell: powershell
         run: |
           $dotnetDir = Join-Path $env:RUNNER_TEMP 'dotnet'
           New-Item -ItemType Directory -Force -Path $dotnetDir | Out-Null
@@ -54,7 +54,7 @@ jobs:
           dotnet-version: '10.0.400'
 
       - name: Runner diagnostics
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Runner: $env:RUNNER_NAME"
           Write-Host "OS: $env:RUNNER_OS"
@@ -63,13 +63,13 @@ jobs:
           dotnet --info
 
       - name: Restore desktop solution
-        shell: pwsh
+        shell: powershell
         run: dotnet restore apps/desktop/SalekhPos.Desktop.sln --locked-mode
 
       - name: Build desktop solution
-        shell: pwsh
+        shell: powershell
         run: dotnet build apps/desktop/SalekhPos.Desktop.sln --configuration Release --no-restore
 
       - name: Test desktop
-        shell: pwsh
+        shell: powershell
         run: dotnet test apps/desktop/tests/SalekhPos.Desktop.Tests/SalekhPos.Desktop.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
