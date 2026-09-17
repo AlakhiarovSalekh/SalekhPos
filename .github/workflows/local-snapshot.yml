@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Preserve dirty workspace on a safety branch
-        shell: powershell
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
