@@ -33,41 +33,44 @@ jobs:
           @echo off
           setlocal EnableExtensions EnableDelayedExpansion
           set "TARGET=C:\SalekhPos"
+          set "GIT_CONFIG_COUNT=1"
+          set "GIT_CONFIG_KEY_0=safe.directory"
+          set "GIT_CONFIG_VALUE_0=C:/SalekhPos"
 
           if not exist "%TARGET%\.git" (
             echo ERROR: %TARGET% is not a Git repository.
             exit /b 10
           )
 
-          for /f "usebackq delims=" %%A in (`git -c safe.directory=C:/SalekhPos -C "%TARGET%" rev-parse --abbrev-ref HEAD`) do set "LOCAL_BRANCH=%%A"
+          for /f "usebackq delims=" %%A in (`git -C "%TARGET%" rev-parse --abbrev-ref HEAD`) do set "LOCAL_BRANCH=%%A"
           if /I not "!LOCAL_BRANCH!"=="main" (
             echo ERROR: Local workspace is on branch !LOCAL_BRANCH!, not main. Nothing was changed.
             exit /b 11
           )
 
-          for /f "delims=" %%A in ('git -c safe.directory=C:/SalekhPos -C "%TARGET%" status --porcelain') do (
+          for /f "delims=" %%A in ('git -C "%TARGET%" status --porcelain') do (
             echo ERROR: Local workspace has uncommitted or untracked changes. Nothing was changed.
-            git -c safe.directory=C:/SalekhPos -C "%TARGET%" status --short
+            git -C "%TARGET%" status --short
             exit /b 12
           )
 
           echo Fetching GitHub workspace commit into %TARGET%...
-          git -c safe.directory=C:/SalekhPos -C "%TARGET%" fetch --no-tags "%GITHUB_WORKSPACE%" refs/heads/main
+          git -C "%TARGET%" fetch --no-tags "%GITHUB_WORKSPACE%" refs/heads/main
           if errorlevel 1 exit /b 13
 
-          for /f "usebackq delims=" %%A in (`git -c safe.directory=C:/SalekhPos -C "%TARGET%" rev-parse FETCH_HEAD`) do set "FETCHED_SHA=%%A"
+          for /f "usebackq delims=" %%A in (`git -C "%TARGET%" rev-parse FETCH_HEAD`) do set "FETCHED_SHA=%%A"
           if /I not "!FETCHED_SHA!"=="%GITHUB_SHA%" (
             echo ERROR: Fetched commit !FETCHED_SHA! does not match workflow commit %GITHUB_SHA%. Nothing was merged.
             exit /b 14
           )
 
-          git -c safe.directory=C:/SalekhPos -C "%TARGET%" merge --ff-only FETCH_HEAD
+          git -C "%TARGET%" merge --ff-only FETCH_HEAD
           if errorlevel 1 (
             echo ERROR: Local main cannot be fast-forwarded safely. Nothing was overwritten.
             exit /b 15
           )
 
-          for /f "usebackq delims=" %%A in (`git -c safe.directory=C:/SalekhPos -C "%TARGET%" rev-parse HEAD`) do set "LOCAL_HEAD=%%A"
+          for /f "usebackq delims=" %%A in (`git -C "%TARGET%" rev-parse HEAD`) do set "LOCAL_HEAD=%%A"
           if /I not "!LOCAL_HEAD!"=="%GITHUB_SHA%" (
             echo ERROR: Local HEAD !LOCAL_HEAD! does not exactly match GitHub commit %GITHUB_SHA%.
             exit /b 16
