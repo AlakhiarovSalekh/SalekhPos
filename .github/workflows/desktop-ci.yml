@@ -24,6 +24,8 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: '1'
+  DOTNET_MULTILEVEL_LOOKUP: '0'
+  DOTNET_INSTALL_DIR: '${{ runner.temp }}\dotnet'
   NUGET_XMLDOC_MODE: skip
 
 jobs:
@@ -35,13 +37,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           clean: true
           persist-credentials: false
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.400'
 
@@ -50,6 +52,7 @@ jobs:
         run: |
           Write-Host "Runner: $env:RUNNER_NAME"
           Write-Host "OS: $env:RUNNER_OS"
+          Write-Host "DOTNET_INSTALL_DIR: $env:DOTNET_INSTALL_DIR"
           dotnet --version
           dotnet --info
 
