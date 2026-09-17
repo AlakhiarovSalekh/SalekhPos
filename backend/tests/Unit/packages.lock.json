@@ -422,6 +422,36 @@
           "xunit.extensibility.core": "[2.9.2]"
         }
       },
+      "salekhpos.accounting.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Accounting.Application": "[1.0.0, )",
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.accounting.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.accounting.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.accounting.domain": {
+        "type": "Project"
+      },
+      "salekhpos.accounting.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Accounting.Application": "[1.0.0, )",
+          "SalekhPos.Accounting.Contracts": "[1.0.0, )",
+          "SalekhPos.Accounting.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.analytics.api": {
         "type": "Project",
         "dependencies": {
@@ -456,6 +486,8 @@
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.11, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.11, )",
+          "SalekhPos.Accounting.Api": "[1.0.0, )",
+          "SalekhPos.Accounting.Infrastructure": "[1.0.0, )",
           "SalekhPos.Analytics.Api": "[1.0.0, )",
           "SalekhPos.Analytics.Infrastructure": "[1.0.0, )",
           "SalekhPos.Audit.Api": "[1.0.0, )",
