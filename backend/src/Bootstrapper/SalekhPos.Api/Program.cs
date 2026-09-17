@@ -183,7 +183,7 @@ builder.Services.AddRateLimiter(options =>
             ? RateLimitPartition.GetNoLimiter("health")
             : RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 300,
+                PermitLimit = builder.Environment.IsEnvironment("Testing") ? 100_000 : 300,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
                 AutoReplenishment = true

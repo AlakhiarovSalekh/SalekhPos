@@ -17,6 +17,9 @@ public sealed class DeviceTests(AccessFixture fixture)
     [Fact]
     public async Task RegistrationIsAuthorizedIdempotentAndTenantScoped()
     {
+        var syncOnlyOperator = "device-sync-" + Guid.NewGuid().ToString("N");
+        await fixture.AddMembershipAsync(syncOnlyOperator, fixture.OrganizationA, "organization");
+        await fixture.GrantAsync(syncOnlyOperator, fixture.OrganizationA, "sync.ingest");
         using var owner = Client("owner");
         var registerOperation = Guid.NewGuid();
         using var registerRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers") { Content = JsonContent.Create(new { code = "DEVREG-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), name = "Device Test Register" }) };
@@ -79,7 +82,7 @@ public sealed class DeviceTests(AccessFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
         using var invalidFinancials = await Sync(owner, id, credentialId, deviceKey, Guid.NewGuid(), 2, OfflinePayload(grandTotal: 10m));
         Assert.Equal(HttpStatusCode.BadRequest, invalidFinancials.StatusCode);
-        using var otherOperator = await Sync(Client("manager"), id, credentialId, deviceKey, Guid.NewGuid(), 2, OfflinePayload());
+        using var otherOperator = await Sync(Client(syncOnlyOperator), id, credentialId, deviceKey, Guid.NewGuid(), 2, OfflinePayload());
         Assert.Equal(HttpStatusCode.Forbidden, otherOperator.StatusCode);
         using var message = await ProvenGet(owner, id, credentialId, deviceKey, $"sync/messages/{messageId:D}", $"message:{messageId:D}");
         Assert.Equal(HttpStatusCode.OK, message.StatusCode);

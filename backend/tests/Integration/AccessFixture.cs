@@ -137,6 +137,7 @@ public sealed class AccessFixture : IAsyncLifetime
         INSERT INTO access.permission_grants(organization_id,grant_id,membership_id,permission,scope_kind)
         SELECT organization_id,$1,membership_id,$2,'organization' FROM access.memberships
         WHERE organization_id=$3 AND issuer=$4 AND subject=$5
+        ON CONFLICT DO NOTHING
         """, Guid.NewGuid(), permission, organization, Issuer, subject);
 
     public string Token(string subject = "alice", string? issuer = null, string? audience = null,

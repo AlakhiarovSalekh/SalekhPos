@@ -11,14 +11,8 @@ public sealed class AccountingTests(AccessFixture fixture)
     [Fact]
     public async Task SummaryAndJournalAreTenantScopedAndFinanciallyConsistent()
     {
-        var branchId = Guid.NewGuid();
+        var branchId = fixture.BranchA;
         var saleId = Guid.NewGuid();
-        await fixture.ExecuteAsync("""
-            INSERT INTO organization.branches(
-              organization_id,business_id,branch_id,code,name,time_zone_id)
-            VALUES($1,$2,$3,$4,'Accounting Branch','Etc/UTC')
-            """, fixture.OrganizationA, fixture.BusinessA, branchId,
-            $"ACC{branchId:N}"[..20]);
         await fixture.ExecuteAsync("""
             INSERT INTO sales.completed_sales(
               organization_id,sale_id,operation_id,branch_id,currency,net_total,tax_total,

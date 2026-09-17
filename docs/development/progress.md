@@ -1,3 +1,13 @@
+## September 17, 2026 - restored complete Native PostgreSQL gate reliability
+
+- Re-established the full Windows Native CI gate with a disposable PostgreSQL 18.6 runtime and executed every migration through 043, tenant/RLS and bounds checks, root-authority bootstrap checks, and logical backup/restore into a separate test database.
+- Removed cross-test state leakage without weakening production behavior: accounting integration coverage now reuses the fixture-owned branch, permission fixture grants are idempotent, device authorization coverage uses a dedicated sync-only operator, and only the explicit `Testing` environment receives an expanded request budget while the production rate limit remains 300 requests per minute.
+- Verified locally: requirement integrity 464 ranges; required structure 1,543 entries; architecture coverage 144 projects; Gitleaks history/working-tree scan 122 commits; shared API client 25/25; mobile 81/81 plus Android bundle export; web typecheck, ESLint and production build; locked .NET restore; Release build and formatting with zero warnings/errors; dependency audit with no known vulnerable direct/transitive packages; PostgreSQL migration/RLS/backup-restore; backend 182/182, desktop 156/156 and integration 94/94 tests (432 .NET tests), all with zero failures or skips.
+
+### Continue here
+
+Implement the first production Fiscalization vertical slice: immutable fiscal document state and provider-neutral submission/idempotent replay contracts, tenant-scoped PostgreSQL persistence with forced RLS, least-privilege runtime grants, auditable failure/retry evidence, versioned API endpoints and focused integration tests. Keep country/vendor adapters behind that boundary and do not claim legal-device certification until a real jurisdiction adapter is verified.
+
 ## September 16, 2026 - warehousing, promotions, loyalty and immutable audit
 
 - Added production vertical slices for stock transfers, promotions and loyalty across backend domain/application/contracts/infrastructure/API, PostgreSQL/RLS, web manager surfaces, mobile manager screens/services and desktop authenticated management UI.
