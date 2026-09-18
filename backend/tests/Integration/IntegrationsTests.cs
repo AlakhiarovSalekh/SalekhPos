@@ -12,13 +12,12 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Terminal_webhook_attempt_is_dead_lettered_and_not_released_again()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.view");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync(
+            "integrations.manage", "integrations.view", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -69,34 +68,52 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Dead_lettered_webhook_can_be_manually_requeued_with_audit()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
-            new { Provider = "generic.http", DisplayName = "Manual retry webhook",
-                Endpoint = "https://example.test/webhook", SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET" },
+            new
+            {
+                Provider = "generic.http",
+                DisplayName = "Manual retry webhook",
+                Endpoint = "https://example.test/webhook",
+                SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET"
+            },
             Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
         using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
         var connectionId = connectionJson.RootElement.GetProperty("id").GetGuid();
 
         using var enqueue = await Post(client, root + "/webhooks",
-            new { ConnectionId = connectionId, EventId = Guid.NewGuid(), EventType = "sale.completed",
-                PayloadSha256 = new string('b', 64), PayloadReference = "object://events/manual-retry" }, Guid.NewGuid());
+            new
+            {
+                ConnectionId = connectionId,
+                EventId = Guid.NewGuid(),
+                EventType = "sale.completed",
+                PayloadSha256 = new string('b', 64),
+                PayloadReference = "object://events/manual-retry"
+            },
+            Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, enqueue.StatusCode);
 
         using var lease = await client.PostAsJsonAsync(root + "/webhooks/lease", new { LeaseSeconds = 30 });
+        Assert.Equal(HttpStatusCode.OK, lease.StatusCode);
         using var leaseJson = JsonDocument.Parse(await lease.Content.ReadAsStringAsync());
         var deliveryId = leaseJson.RootElement.GetProperty("delivery").GetProperty("id").GetGuid();
         var leaseId = leaseJson.RootElement.GetProperty("leaseId").GetGuid();
 
         using var terminal = await client.PostAsJsonAsync(root + $"/webhooks/{deliveryId:D}/attempts",
-            new { LeaseId = leaseId, Succeeded = false, StatusCode = 422, ErrorCode = "http_422",
-                RetryAt = (DateTimeOffset?)null });
+            new
+            {
+                LeaseId = leaseId,
+                Succeeded = false,
+                StatusCode = 422,
+                ErrorCode = "http_422",
+                RetryAt = (DateTimeOffset?)null
+            });
         Assert.Equal(HttpStatusCode.OK, terminal.StatusCode);
 
         var operation = Guid.NewGuid();
@@ -120,7 +137,7 @@ public sealed class IntegrationsTests(AccessFixture fixture)
             FROM integrations.webhook_manual_retries
             WHERE organization_id=$1 AND operation_id=$2
             """);
-        audit.Parameters.AddWithValue(fixture.OrganizationA);
+        audit.Parameters.AddWithValue(organizationId);
         audit.Parameters.AddWithValue(operation);
         await using var auditReader = await audit.ExecuteReaderAsync();
         Assert.True(await auditReader.ReadAsync());
@@ -132,12 +149,11 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Stored_webhook_persists_immutable_tenant_payload_and_delivery_digest()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -176,11 +192,11 @@ public sealed class IntegrationsTests(AccessFixture fixture)
               ON p.organization_id=d.organization_id AND p.delivery_id=d.delivery_id
             WHERE d.organization_id=$1 AND d.delivery_id=$2
             """);
-        command.Parameters.AddWithValue(fixture.OrganizationA);
+        command.Parameters.AddWithValue(organizationId);
         command.Parameters.AddWithValue(deliveryId);
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        Assert.Equal($"pgpayload://{fixture.OrganizationA:D}/{deliveryId:D}", reader.GetString(0));
+        Assert.Equal($"pgpayload://{organizationId:D}/{deliveryId:D}", reader.GetString(0));
         Assert.Equal(digest, reader.GetString(1));
         Assert.InRange(reader.GetInt32(2), 1, 262_144);
     }
@@ -188,12 +204,11 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Duplicate_event_with_new_operation_is_a_conflict()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -221,6 +236,21 @@ public sealed class IntegrationsTests(AccessFixture fixture)
 
         using var duplicate = await Post(client, root + "/webhooks/stored", payload, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    private async Task<Guid> CreateWebhookTenantAsync(params string[] permissions)
+    {
+        var organizationId = Guid.NewGuid();
+        await fixture.ExecuteAsync(
+            "INSERT INTO organization.organizations(organization_id,name) VALUES($1,$2)",
+            organizationId,
+            "Webhook integration test " + organizationId.ToString("N"));
+        await fixture.AddMembershipAsync("owner", organizationId, null);
+        foreach (var permission in permissions)
+        {
+            await fixture.GrantAsync("owner", organizationId, permission);
+        }
+        return organizationId;
     }
 
     private static async Task<HttpResponseMessage> Post(HttpClient client, string path, object body, Guid operationId)
