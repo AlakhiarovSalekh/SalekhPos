@@ -109,8 +109,13 @@ public sealed class PostgresFiscalDocumentService(NpgsqlDataSource? source, IFis
         await InsertAttempt(connection, transaction, draft, attempt, outcome, result, attemptedAt, ct);
         var status = result.Accepted ? "accepted" : result.Retryable ? "submitted" : "rejected";
         await UpdateDocument(connection, transaction, draft, status, result.ProviderReference, attempt, attemptedAt, ct);
-        var updated = existing with { Status = status, Reference = result.ProviderReference,
-            AttemptCount = attempt, UpdatedAt = attemptedAt };
+        var updated = existing with
+        {
+            Status = status,
+            Reference = result.ProviderReference,
+            AttemptCount = attempt,
+            UpdatedAt = attemptedAt
+        };
         var response = await ToResponse(connection, transaction, draft.OrganizationId, updated, ct);
         await transaction.CommitAsync(ct);
         return new(response, created, true);
