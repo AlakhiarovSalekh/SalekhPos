@@ -158,7 +158,15 @@ public sealed class PostgresSupportService(NpgsqlDataSource? source) : ISupportS
         insert.Parameters.AddWithValue(command.OperationId); insert.Parameters.AddWithValue(model.Kind); insert.Parameters.AddWithValue(model.Reference);
         insert.Parameters.AddWithValue(model.Sha256); insert.Parameters.AddWithValue(identity.Issuer); insert.Parameters.AddWithValue(identity.Subject);
         DiagnosticReferenceResponse? result = null;
-        await using (var reader = await insert.ExecuteReaderAsync(cancellationToken)) if (await reader.ReadAsync(cancellationToken)) result = ReadDiagnostic(reader);
+        try
+        {
+            await using var reader = await insert.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken)) result = ReadDiagnostic(reader);
+        }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
+        {
+            throw new SupportConflictException();
+        }
         var created = result is not null;
         result ??= await ReadDiagnosticByOperation(connection, transaction, command.OrganizationId, command.OperationId, cancellationToken);
         if (result is null) throw new SupportNotFoundException();
