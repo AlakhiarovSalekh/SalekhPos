@@ -95,6 +95,34 @@ public sealed class IntegrationsTests(AccessFixture fixture)
         Assert.InRange(reader.GetInt32(2), 1, 262_144);
     }
 
+    [Fact]
+    public async Task Duplicate_event_with_new_operation_is_a_conflict()
+    {
+        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
+        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+
+        using var client = fixture.Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
+        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+
+        using var connectionResponse = await Post(client, root + "/connections",
+            new { Provider = "generic.http", DisplayName = "Duplicate event webhook",
+                Endpoint = "https://example.test/webhook", SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET" },
+            Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
+        using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
+        var connectionId = connectionJson.RootElement.GetProperty("id").GetGuid();
+        var eventId = Guid.NewGuid();
+        var payload = new { ConnectionId = connectionId, EventId = eventId, EventType = "sale.completed",
+            Payload = new { saleId = Guid.NewGuid() } };
+
+        using var first = await Post(client, root + "/webhooks/stored", payload, Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        using var duplicate = await Post(client, root + "/webhooks/stored", payload, Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> Post(HttpClient client, string path, object body, Guid operationId)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };

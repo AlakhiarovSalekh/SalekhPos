@@ -35,7 +35,7 @@ public sealed class PostgresWebhookOutboxService(NpgsqlDataSource? source) : IWe
             SELECT $1,$2,$3,$4,$5,$6,$7,$8
             FROM integrations.connections
             WHERE organization_id=$1 AND connection_id=$4 AND status='active'
-            ON CONFLICT(organization_id,operation_id) DO NOTHING
+            ON CONFLICT DO NOTHING
             RETURNING delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,
               last_status_code,last_error_code,created_at,updated_at
             """, connection, transaction);
