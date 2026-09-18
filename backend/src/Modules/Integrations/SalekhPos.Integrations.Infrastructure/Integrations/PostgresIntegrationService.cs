@@ -269,8 +269,8 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
 
                 var existing = await ReadDeliveryById(connection, transaction, organizationId, deliveryId,
                     cancellationToken);
-                if (existing is null) throw new IntegrationNotFoundException();
-                throw new IntegrationConflictException();
+                if (existing is not null) throw new IntegrationConflictException();
+                throw new IntegrationNotFoundException();
             }
             previousAttempts = (int)value;
         }
