@@ -15,34 +15,51 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 10
     steps:
-      - name: Audit C:\SalekhPos without changing it
-        shell: cmd
+      - name: Verify C:\SalekhPos matches preserved snapshot tree
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          @echo off
-          setlocal EnableExtensions
-          set "TARGET=C:\SalekhPos"
-          set "GIT_CONFIG_COUNT=1"
-          set "GIT_CONFIG_KEY_0=safe.directory"
-          set "GIT_CONFIG_VALUE_0=C:/SalekhPos"
+          $ErrorActionPreference = 'Stop'
+          $target = 'C:\SalekhPos'
+          $snapshot = '97b068bcfd69a2e2f84c2cd46af7420a5b31e7b3'
 
-          echo === LOCAL AUDIT ===
-          if not exist "%TARGET%\.git" (
-            echo ERROR: local repository missing
-            exit /b 10
-          )
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'safe.directory'
+          $env:GIT_CONFIG_VALUE_0 = 'C:/SalekhPos'
 
-          echo BRANCH:
-          git -C "%TARGET%" rev-parse --abbrev-ref HEAD
-          echo HEAD:
-          git -C "%TARGET%" rev-parse HEAD
-          echo ORIGIN:
-          git -C "%TARGET%" remote get-url origin
-          echo STATUS:
-          git -C "%TARGET%" status --short --branch --untracked-files=all
-          echo CHANGED_PATH_COUNT:
-          for /f %%C in ('git -C "%TARGET%" status --porcelain^| find /c /v ""') do echo %%C
-          echo MAIN_RELATION:
-          git -C "%TARGET%" rev-list --left-right --count HEAD...refs/remotes/origin/main 2>nul
-          echo SNAPSHOT_REF:
-          git -C "%TARGET%" show-ref refs/heads/local-snapshot/run-35281358590 2>nul
-          echo === END AUDIT ===
+          if (-not (Test-Path (Join-Path $target '.git'))) { throw 'Local repository missing.' }
+
+          $branch = (& git -C $target rev-parse --abbrev-ref HEAD).Trim()
+          $head = (& git -C $target rev-parse HEAD).Trim()
+          $before = @(& git -C $target status --porcelain=v1 --untracked-files=all)
+          & git -C $target diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) { throw 'Index has staged changes; refusing audit mutation.' }
+
+          $snapshotTree = (& git -C $target rev-parse "$snapshot^{tree}").Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Preserved snapshot commit is unavailable locally.' }
+
+          try {
+            & git -C $target add -A
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to stage workspace for tree comparison.' }
+            $currentTree = (& git -C $target write-tree).Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to write comparison tree.' }
+          }
+          finally {
+            & git -C $target reset --mixed $head | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to restore local index.' }
+          }
+
+          $after = @(& git -C $target status --porcelain=v1 --untracked-files=all)
+          if (@(Compare-Object -ReferenceObject $before -DifferenceObject $after -SyncWindow 0).Count -ne 0) {
+            throw 'Audit changed local workspace status.'
+          }
+
+          Write-Host "LOCAL_BRANCH=$branch"
+          Write-Host "LOCAL_HEAD=$head"
+          Write-Host "LOCAL_CHANGED_PATHS=$($before.Count)"
+          Write-Host "CURRENT_TREE=$currentTree"
+          Write-Host "SNAPSHOT_TREE=$snapshotTree"
+          Write-Host "SNAPSHOT_TREE_MATCH=$($currentTree -eq $snapshotTree)"
+
+          if ($currentTree -ne $snapshotTree) {
+            throw 'Current local workspace differs from the preserved safety snapshot.'
+          }
