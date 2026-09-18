@@ -24,3 +24,21 @@ public sealed record RecordNotificationDeliveryAttemptRequest(
     bool Succeeded,
     string? ErrorCode,
     DateTimeOffset? RetryAt);
+
+public sealed record NotificationDeliveryActivityResponse(
+    Guid Id,
+    Guid NotificationId,
+    string Channel,
+    string RecipientSubject,
+    string Status,
+    int AttemptCount,
+    DateTimeOffset? NextAttemptAt,
+    string? LastErrorCode,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    string Title,
+    string Severity);
+
+public sealed record NotificationDeliveryPage(
+    IReadOnlyList<NotificationDeliveryActivityResponse> Items,
+    Guid? NextCursor);
