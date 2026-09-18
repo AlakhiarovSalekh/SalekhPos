@@ -34,14 +34,14 @@ public sealed class PostgresSuperAdminRegistry(NpgsqlDataSource? source) : ISupe
     public Task<SuperAdminPage> ListAsync(PlatformIdentity identity, int pageSize, Guid? after,
         CancellationToken cancellationToken) =>
         ExecutePageAsync<SuperAdminResponse, SuperAdminPage>(
-            "SELECT value FROM system_administration.list_super_admins($1,$2,$3,$4)",
+            "SELECT system_administration.list_super_admins($1,$2,$3,$4)",
             [identity.Issuer, identity.Subject, after ?? (object)DBNull.Value, pageSize + 1],
             pageSize, item => item.Id, (items, next) => new(items, next), cancellationToken);
 
     public Task<PlatformAuthorityAuditPage> ListAuditAsync(PlatformIdentity identity, int pageSize, Guid? after,
         CancellationToken cancellationToken) =>
         ExecutePageAsync<PlatformAuthorityAuditResponse, PlatformAuthorityAuditPage>(
-            "SELECT value FROM system_administration.list_authority_audit($1,$2,$3,$4)",
+            "SELECT system_administration.list_authority_audit($1,$2,$3,$4)",
             [identity.Issuer, identity.Subject, after ?? (object)DBNull.Value, pageSize + 1],
             pageSize, item => item.OperationId, (items, next) => new(items, next), cancellationToken);
 

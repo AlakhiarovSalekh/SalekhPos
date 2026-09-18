@@ -12,13 +12,12 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Terminal_webhook_attempt_is_dead_lettered_and_not_released_again()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.view");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync(
+            "integrations.manage", "integrations.view", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -69,12 +68,11 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Stored_webhook_persists_immutable_tenant_payload_and_delivery_digest()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -113,11 +111,11 @@ public sealed class IntegrationsTests(AccessFixture fixture)
               ON p.organization_id=d.organization_id AND p.delivery_id=d.delivery_id
             WHERE d.organization_id=$1 AND d.delivery_id=$2
             """);
-        command.Parameters.AddWithValue(fixture.OrganizationA);
+        command.Parameters.AddWithValue(organizationId);
         command.Parameters.AddWithValue(deliveryId);
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        Assert.Equal($"pgpayload://{fixture.OrganizationA:D}/{deliveryId:D}", reader.GetString(0));
+        Assert.Equal($"pgpayload://{organizationId:D}/{deliveryId:D}", reader.GetString(0));
         Assert.Equal(digest, reader.GetString(1));
         Assert.InRange(reader.GetInt32(2), 1, 262_144);
     }
@@ -130,7 +128,7 @@ public sealed class IntegrationsTests(AccessFixture fixture)
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
-        var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
             new
@@ -158,6 +156,21 @@ public sealed class IntegrationsTests(AccessFixture fixture)
 
         using var duplicate = await Post(client, root + "/webhooks/stored", payload, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    private async Task<Guid> CreateWebhookTenantAsync(params string[] permissions)
+    {
+        var organizationId = Guid.NewGuid();
+        await fixture.ExecuteAsync(
+            "INSERT INTO organization.organizations(organization_id,name) VALUES($1,$2)",
+            organizationId,
+            "Webhook integration test " + organizationId.ToString("N"));
+        await fixture.AddMembershipAsync("owner", organizationId, null);
+        foreach (var permission in permissions)
+        {
+            await fixture.GrantAsync("owner", organizationId, permission);
+        }
+        return organizationId;
     }
 
     private static async Task<HttpResponseMessage> Post(HttpClient client, string path, object body, Guid operationId)
