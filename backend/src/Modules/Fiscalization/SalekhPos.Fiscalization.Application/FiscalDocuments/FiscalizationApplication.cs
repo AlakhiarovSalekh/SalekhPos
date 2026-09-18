@@ -59,7 +59,7 @@ public sealed class FiscalUnavailableException : Exception;
 
 public sealed class FiscalProviderRegistry(IEnumerable<IFiscalProvider> providers) : IFiscalProviderRegistry
 {
-    private readonly IReadOnlyDictionary<string, IFiscalProvider> values = providers.ToDictionary(
+    private readonly Dictionary<string, IFiscalProvider> values = providers.ToDictionary(
         provider => provider.Key, StringComparer.Ordinal);
 
     public IFiscalProvider Resolve(string providerKey) => values.TryGetValue(providerKey, out var provider)

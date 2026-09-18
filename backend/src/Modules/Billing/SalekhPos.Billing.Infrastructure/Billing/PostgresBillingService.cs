@@ -95,7 +95,7 @@ public sealed class PostgresBillingService(NpgsqlDataSource? source) : IBillingS
         await using var c = await Open(ct); await using var t = await c.BeginTransactionAsync(ct);
         await Prepare(c, t, organizationId, identity, ct); await Demand(c, t, organizationId, identity, "billing.manage", ct);
         var invoice = await LockedInvoice(c, t, organizationId, invoiceId, ct) ?? throw new BillingNotFoundException();
-        if (invoice.Currency != request.Currency.Trim().ToUpperInvariant() || invoice.Balance < request.Amount || invoice.Status is "paid" or "voided") throw new BillingConflictException("Charge is not admissible.");
+        if (!string.Equals(invoice.Currency, request.Currency.Trim(), StringComparison.OrdinalIgnoreCase) || invoice.Balance < request.Amount || invoice.Status is "paid" or "voided") throw new BillingConflictException("Charge is not admissible.");
         await using var q = new NpgsqlCommand("""
             INSERT INTO billing.charges(organization_id,charge_id,invoice_id,operation_id,request_hash,amount,currency,status,provider_reference,issuer,subject)
             VALUES($1,$2,$3,$4,$5,$6,$7,'succeeded',$8,$9,$10) ON CONFLICT(organization_id,operation_id) DO NOTHING
