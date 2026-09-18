@@ -50,7 +50,7 @@ public sealed class NotificationDispatchOptionsValidator : IValidateOptions<Noti
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
-    private static void ValidateIdentity(NotificationDispatchOptions options, ICollection<string> failures)
+    private static void ValidateIdentity(NotificationDispatchOptions options, List<string> failures)
     {
         try
         {
@@ -63,7 +63,7 @@ public sealed class NotificationDispatchOptionsValidator : IValidateOptions<Noti
         }
     }
 
-    private static void ValidateEndpoint(string endpoint, string name, ICollection<string> failures)
+    private static void ValidateEndpoint(string endpoint, string name, List<string> failures)
     {
         try
         {
@@ -75,7 +75,7 @@ public sealed class NotificationDispatchOptionsValidator : IValidateOptions<Noti
         }
     }
 
-    private static void ValidateEnvironmentVariable(string value, string name, ICollection<string> failures)
+    private static void ValidateEnvironmentVariable(string value, string name, List<string> failures)
     {
         value = value?.Trim() ?? string.Empty;
         if (value.Length is < 1 or > 128
