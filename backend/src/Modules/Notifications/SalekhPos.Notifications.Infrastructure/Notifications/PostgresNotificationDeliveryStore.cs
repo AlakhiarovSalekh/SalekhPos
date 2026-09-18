@@ -1,4 +1,5 @@
 using Npgsql;
+using NpgsqlTypes;
 using SalekhPos.Notifications.Application.Notifications;
 using SalekhPos.Notifications.Contracts.Notifications;
 
@@ -17,8 +18,8 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         CancellationToken cancellationToken)
     {
         identity.Validate();
-        status = OptionalFilter(status, ["pending", "delivering", "failed", "delivered", "dead_lettered"], "status");
-        channel = OptionalFilter(channel, ["email", "push"], "channel");
+        status = OptionalStatus(status);
+        channel = OptionalChannel(channel);
         if (organizationId == Guid.Empty || pageSize is < 1 or > 100 || after == Guid.Empty)
         {
             throw new ArgumentException("Notification delivery query is invalid.");
@@ -54,9 +55,21 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
             LIMIT $5
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
-        query.Parameters.AddWithValue(after.HasValue ? after.Value : DBNull.Value);
-        query.Parameters.AddWithValue(status is null ? DBNull.Value : status);
-        query.Parameters.AddWithValue(channel is null ? DBNull.Value : channel);
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = after.HasValue ? after.Value : DBNull.Value
+        });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = status is null ? DBNull.Value : status
+        });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = channel is null ? DBNull.Value : channel
+        });
         query.Parameters.AddWithValue(pageSize + 1);
 
         var rows = new List<NotificationDeliveryActivityResponse>(pageSize + 1);
@@ -241,18 +254,22 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         reader.GetString(10),
         reader.GetString(11));
 
-    private static string? OptionalFilter(
-        string? value,
-        IReadOnlyCollection<string> allowed,
-        string field)
+    private static string? OptionalStatus(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
         value = value.Trim().ToLowerInvariant();
-        if (!allowed.Contains(value))
-        {
-            throw new ArgumentException($"Notification delivery {field} is invalid.");
-        }
-        return value;
+        return value is "pending" or "delivering" or "failed" or "delivered" or "dead_lettered"
+            ? value
+            : throw new ArgumentException("Notification delivery status is invalid.");
+    }
+
+    private static string? OptionalChannel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        value = value.Trim().ToLowerInvariant();
+        return value is "email" or "push"
+            ? value
+            : throw new ArgumentException("Notification delivery channel is invalid.");
     }
 
     private static NotificationDeliveryResponse ReadDelivery(NpgsqlDataReader reader) => new(
