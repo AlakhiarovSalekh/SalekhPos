@@ -40,6 +40,24 @@ public sealed class WebhookDispatchWorkerTests
     }
 
     [Fact]
+    public async Task Missing_payload_provider_is_reported_as_temporarily_unavailable()
+    {
+        var resolver = new CompositeWebhookPayloadResolver([]);
+        await Assert.ThrowsAsync<SalekhPos.Integrations.Infrastructure.Webhooks.WebhookResolverUnavailableException>(
+            async () => await resolver.ResolveAsync("object://events/1", default));
+    }
+
+    [Fact]
+    public async Task Missing_environment_secret_is_reported_as_temporarily_unavailable()
+    {
+        const string name = "SALEKHPOS_MISSING_WEBHOOK_SECRET_FOR_TEST";
+        Environment.SetEnvironmentVariable(name, null);
+        var source = new EnvironmentWebhookSecretSource();
+        await Assert.ThrowsAsync<SalekhPos.Integrations.Infrastructure.Webhooks.WebhookResolverUnavailableException>(
+            async () => await source.ResolveAsync(new Uri("env://" + name), default));
+    }
+
+    [Fact]
     public void Dispatch_health_tracks_cycle_outcomes()
     {
         var health = new WebhookDispatchHealthState();

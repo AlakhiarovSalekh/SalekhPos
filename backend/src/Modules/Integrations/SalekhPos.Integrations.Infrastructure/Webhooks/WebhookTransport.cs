@@ -23,6 +23,11 @@ public interface IWebhookHttpSender
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
 }
 
+public sealed class WebhookResolverUnavailableException : Exception
+{
+    public WebhookResolverUnavailableException(string message) : base(message) { }
+}
+
 public sealed record WebhookTransportResult(bool Succeeded, int? StatusCode, string? ErrorCode, DateTimeOffset? RetryAt)
 {
     public RecordWebhookAttemptRequest ToAttempt(Guid leaseId) =>

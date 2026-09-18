@@ -80,7 +80,7 @@ public static class IntegrationEndpoints
                     result.Value)
                 : Results.Ok(result.Value);
         }
-        catch (ArgumentException)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
         {
             return Invalid();
         }

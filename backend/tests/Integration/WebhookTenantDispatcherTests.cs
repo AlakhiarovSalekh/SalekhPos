@@ -26,7 +26,7 @@ public sealed class WebhookTenantDispatcherTests
             new Secret(Enumerable.Repeat((byte)5, 32).ToArray()),
             new Sender(_ => new HttpResponseMessage(HttpStatusCode.OK)),
             TimeProvider.System);
-        var dispatcher = new WebhookTenantDispatcher(service, transport);
+        var dispatcher = new WebhookTenantDispatcher(service, transport, TimeProvider.System);
 
         var result = await dispatcher.DispatchDueAsync(
             new IntegrationIdentity("https://worker.example.test", "integration-worker"),

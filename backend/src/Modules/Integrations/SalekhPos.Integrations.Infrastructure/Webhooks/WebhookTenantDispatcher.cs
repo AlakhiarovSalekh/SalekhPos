@@ -7,7 +7,8 @@ public sealed record WebhookDispatchBatchResult(int Leased, int Delivered, int R
 
 public sealed class WebhookTenantDispatcher(
     IIntegrationService integrations,
-    WebhookTransport transport)
+    WebhookTransport transport,
+    TimeProvider timeProvider)
 {
     public async Task<WebhookDispatchBatchResult> DispatchDueAsync(
         IntegrationIdentity identity,
@@ -44,6 +45,14 @@ public sealed class WebhookTenantDispatcher(
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
+            }
+            catch (WebhookResolverUnavailableException)
+            {
+                result = new(false, null, "resolver_unavailable", timeProvider.GetUtcNow().AddMinutes(5));
+            }
+            catch (IntegrationNotFoundException)
+            {
+                result = new(false, null, "payload_not_found", null);
             }
             catch (Exception error) when (error is ArgumentException or InvalidOperationException)
             {

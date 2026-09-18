@@ -27,7 +27,7 @@ public sealed class CompositeWebhookPayloadResolver(IEnumerable<IWebhookPayloadS
     {
         var uri = Parse(reference);
         var source = registered.SingleOrDefault(candidate => candidate.Supports(uri))
-            ?? throw new InvalidOperationException("No webhook payload source supports the configured reference.");
+            ?? throw new WebhookResolverUnavailableException("No webhook payload source supports the configured reference.");
         return source.ResolveAsync(uri, cancellationToken);
     }
 
@@ -55,12 +55,12 @@ public sealed class CompositeWebhookSecretResolver(IEnumerable<IWebhookSecretSou
     {
         var uri = Parse(reference);
         var source = registered.SingleOrDefault(candidate => candidate.Supports(uri))
-            ?? throw new InvalidOperationException("No webhook secret source supports the configured reference.");
+            ?? throw new WebhookResolverUnavailableException("No webhook secret source supports the configured reference.");
         var secret = await source.ResolveAsync(uri, cancellationToken);
         if (secret.Length is < 32 or > 4096)
         {
             CryptographicOperations.ZeroMemory(secret);
-            throw new InvalidOperationException("Resolved webhook secret has an invalid length.");
+            throw new WebhookResolverUnavailableException("Resolved webhook secret has an invalid length.");
         }
 
         return secret;
@@ -105,10 +105,10 @@ public sealed class EnvironmentWebhookSecretSource : IWebhookSecretSource
         }
 
         var value = Environment.GetEnvironmentVariable(name)
-            ?? throw new InvalidOperationException("The referenced environment secret is unavailable.");
+            ?? throw new WebhookResolverUnavailableException("The referenced environment secret is unavailable.");
         if (value.Length is < 32 or > 4096 || value.Any(char.IsControl))
         {
-            throw new InvalidOperationException("The referenced environment secret is invalid.");
+            throw new WebhookResolverUnavailableException("The referenced environment secret is invalid.");
         }
 
         return ValueTask.FromResult(System.Text.Encoding.UTF8.GetBytes(value));
