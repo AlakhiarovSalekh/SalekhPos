@@ -118,17 +118,31 @@ public sealed class IntegrationsTests(AccessFixture fixture)
 
         var operation = Guid.NewGuid();
         const string reason = "Provider endpoint corrected by operator";
-        using var retried = await Post(client, root + $"/webhooks/{deliveryId:D}/retry",
-            new { Reason = reason }, operation);
-        Assert.Equal(HttpStatusCode.OK, retried.StatusCode);
-        using var retriedJson = JsonDocument.Parse(await retried.Content.ReadAsStringAsync());
-        Assert.Equal("pending", retriedJson.RootElement.GetProperty("status").GetString());
-        Assert.Equal(0, retriedJson.RootElement.GetProperty("attemptCount").GetInt32());
-        Assert.Equal(JsonValueKind.Null, retriedJson.RootElement.GetProperty("lastErrorCode").ValueKind);
+        var retries = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
+            Post(client, root + $"/webhooks/{deliveryId:D}/retry", new { Reason = reason }, operation)));
+        try
+        {
+            foreach (var response in retries)
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
 
-        using var replay = await Post(client, root + $"/webhooks/{deliveryId:D}/retry",
-            new { Reason = reason }, operation);
-        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+            using var retriedJson = JsonDocument.Parse(await retries[0].Content.ReadAsStringAsync());
+            Assert.Equal("pending", retriedJson.RootElement.GetProperty("status").GetString());
+            Assert.Equal(0, retriedJson.RootElement.GetProperty("attemptCount").GetInt32());
+            Assert.Equal(JsonValueKind.Null, retriedJson.RootElement.GetProperty("lastErrorCode").ValueKind);
+        }
+        finally
+        {
+            foreach (var response in retries)
+            {
+                response.Dispose();
+            }
+        }
+
+        using var conflictingReplay = await Post(client, root + $"/webhooks/{deliveryId:D}/retry",
+            new { Reason = "Different retry reason" }, operation);
+        Assert.Equal(HttpStatusCode.Conflict, conflictingReplay.StatusCode);
 
         await using var source = Npgsql.NpgsqlDataSource.Create(
             Environment.GetEnvironmentVariable("SALEKHPOS_TEST_ADMIN_CONNECTION")!);

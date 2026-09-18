@@ -242,6 +242,31 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
             var value = await state.ExecuteScalarAsync(cancellationToken);
             if (value is null)
             {
+                await using (var concurrentReplay = new NpgsqlCommand("""
+                    SELECT delivery_id,reason
+                    FROM integrations.webhook_manual_retries
+                    WHERE organization_id=$1 AND operation_id=$2
+                    """, connection, transaction))
+                {
+                    concurrentReplay.Parameters.AddWithValue(organizationId);
+                    concurrentReplay.Parameters.AddWithValue(operationId);
+                    await using var replayReader = await concurrentReplay.ExecuteReaderAsync(cancellationToken);
+                    if (await replayReader.ReadAsync(cancellationToken))
+                    {
+                        if (replayReader.GetGuid(0) != deliveryId || replayReader.GetString(1) != reason)
+                        {
+                            throw new IntegrationConflictException();
+                        }
+
+                        await replayReader.DisposeAsync();
+                        var replayed = await ReadDeliveryById(
+                            connection, transaction, organizationId, deliveryId, cancellationToken)
+                            ?? throw new IntegrationNotFoundException();
+                        await transaction.CommitAsync(cancellationToken);
+                        return replayed;
+                    }
+                }
+
                 var existing = await ReadDeliveryById(connection, transaction, organizationId, deliveryId,
                     cancellationToken);
                 if (existing is null) throw new IntegrationNotFoundException();
