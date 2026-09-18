@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 15, fontWeight: "700" },
   input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, color: colors.text, backgroundColor: colors.surface, fontSize: 16 },
   notice: { padding: 16, gap: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  warning: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.warningBorder, backgroundColor: colors.warningBackground },
-  warningText: { color: colors.warningText, fontSize: 14 },
+  warning: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.warning, backgroundColor: colors.warningSurface },
+  warningText: { color: colors.warning, fontSize: 14 },
   error: { color: colors.danger, fontSize: 16, lineHeight: 22 },
 });
