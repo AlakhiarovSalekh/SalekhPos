@@ -1,7 +1,7 @@
 import { getCsrfToken, requestJson } from "@/features/sales/api";
 import { uuid } from "@/lib/boundedJson";
-import { parseNotification, parseNotificationPage, parseNotificationPreferences } from "./parsers";
-import type { NotificationItem, NotificationPage, NotificationPreferences } from "./types";
+import { parseNotification, parseNotificationDeliveryPage, parseNotificationPage, parseNotificationPreferences } from "./parsers";
+import type { NotificationDeliveryPage, NotificationDeliveryStatus, NotificationItem, NotificationPage, NotificationPreferences } from "./types";
 
 const root = (organizationId: string) =>
   `/bff/api/v1/organizations/${uuid(organizationId, "organization")}`;
@@ -16,6 +16,27 @@ async function mutation<T>(url: string, body: unknown, parser: (value: unknown) 
 export function getNotifications(organizationId: string, unreadOnly = false, signal?: AbortSignal): Promise<NotificationPage> {
   const query = new URLSearchParams({ pageSize: "100", unreadOnly: String(unreadOnly) });
   return requestJson(`${root(organizationId)}/notifications?${query}`, parseNotificationPage, signal ? { signal } : undefined);
+}
+
+
+export function getNotificationDeliveries(
+  organizationId: string,
+  input: {
+    status?: NotificationDeliveryStatus;
+    channel?: "email" | "push";
+    after?: string;
+  } = {},
+  signal?: AbortSignal
+): Promise<NotificationDeliveryPage> {
+  const query = new URLSearchParams({ pageSize: "25" });
+  if (input.status) query.set("status", input.status);
+  if (input.channel) query.set("channel", input.channel);
+  if (input.after) query.set("after", uuid(input.after, "delivery cursor"));
+  return requestJson(
+    `${root(organizationId)}/notification-deliveries?${query}`,
+    parseNotificationDeliveryPage,
+    signal ? { signal } : undefined
+  );
 }
 
 export function markNotificationRead(organizationId: string, notificationId: string): Promise<NotificationItem> {
