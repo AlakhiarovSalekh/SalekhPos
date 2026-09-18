@@ -104,14 +104,20 @@ public sealed class IntegrationWebhookHostedService(
                 }
                 catch (IntegrationDeniedException)
                 {
-                    logger.LogDebug("Webhook dispatcher has no dispatch grant for organization {OrganizationId}",
-                        organization.Id);
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("Webhook dispatcher has no dispatch grant for organization {OrganizationId}",
+                            organization.Id);
+                    }
                 }
                 catch (IntegrationConflictException)
                 {
                     health.RecordFailure();
-                    logger.LogWarning("Webhook delivery state changed concurrently for organization {OrganizationId}",
-                        organization.Id);
+                    if (logger.IsEnabled(LogLevel.Warning))
+                    {
+                        logger.LogWarning("Webhook delivery state changed concurrently for organization {OrganizationId}",
+                            organization.Id);
+                    }
                 }
             }
 

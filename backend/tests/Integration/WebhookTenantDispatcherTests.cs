@@ -24,7 +24,7 @@ public sealed class WebhookTenantDispatcherTests
         var service = new FakeIntegrationService(lease);
         var transport = new WebhookTransport(
             new Payload(payload),
-            new Secret(Enumerable.Repeat((byte)5, 32).ToArray()),
+            new Secret([.. Enumerable.Repeat((byte)5, 32)]),
             new Sender(_ => new HttpResponseMessage(HttpStatusCode.OK)),
             TimeProvider.System);
         var dispatcher = new WebhookTenantDispatcher(service, transport, TimeProvider.System);
@@ -56,7 +56,7 @@ public sealed class WebhookTenantDispatcherTests
         var service = new FakeIntegrationService(lease);
         var transport = new WebhookTransport(
             new UnavailablePayload(),
-            new Secret(Enumerable.Repeat((byte)5, 32).ToArray()),
+            new Secret([.. Enumerable.Repeat((byte)5, 32)]),
             new Sender(_ => new HttpResponseMessage(HttpStatusCode.OK)),
             TimeProvider.System);
         var dispatcher = new WebhookTenantDispatcher(service, transport,

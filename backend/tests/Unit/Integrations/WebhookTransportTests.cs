@@ -12,7 +12,7 @@ public sealed class WebhookTransportTests
     public async Task Dispatch_signs_verified_payload_and_accepts_success()
     {
         var payload = Encoding.UTF8.GetBytes("{\"sale\":\"ok\"}");
-        var secret = Enumerable.Repeat((byte)7, 32).ToArray();
+        byte[] secret = [.. Enumerable.Repeat((byte)7, 32)];
         HttpRequestMessage? captured = null;
         var transport = new WebhookTransport(new Payload(payload), new Secret(secret), new Sender(request =>
         {
@@ -39,7 +39,7 @@ public sealed class WebhookTransportTests
         {
             Delivery = Lease(payload).Delivery with { PayloadSha256 = new string('a', 64) }
         };
-        var transport = new WebhookTransport(new Payload(payload), new Secret(Enumerable.Repeat((byte)1, 32).ToArray()),
+        var transport = new WebhookTransport(new Payload(payload), new Secret([.. Enumerable.Repeat((byte)1, 32)]),
             new Sender(_ => { called = true; return new HttpResponseMessage(HttpStatusCode.OK); }),
             new FixedTimeProvider(DateTimeOffset.UtcNow));
 
@@ -55,7 +55,7 @@ public sealed class WebhookTransportTests
     public async Task Dispatch_classifies_retryable_http_status()
     {
         var payload = Encoding.UTF8.GetBytes("{}");
-        var transport = new WebhookTransport(new Payload(payload), new Secret(Enumerable.Repeat((byte)2, 32).ToArray()),
+        var transport = new WebhookTransport(new Payload(payload), new Secret([.. Enumerable.Repeat((byte)2, 32)]),
             new Sender(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)),
             new FixedTimeProvider(DateTimeOffset.Parse("2026-09-18T10:00:00Z")));
 

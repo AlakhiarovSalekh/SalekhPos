@@ -11,7 +11,7 @@ public static class WebhookSignature
     public static string Sign(ReadOnlySpan<byte> secret, long unixTimestampSeconds, ReadOnlySpan<byte> payload)
     {
         ValidateSecret(secret);
-        if (unixTimestampSeconds < 0) throw new ArgumentOutOfRangeException(nameof(unixTimestampSeconds));
+        ArgumentOutOfRangeException.ThrowIfNegative(unixTimestampSeconds);
 
         var prefix = Encoding.ASCII.GetBytes(unixTimestampSeconds.ToString(CultureInfo.InvariantCulture) + ".");
         var canonical = GC.AllocateUninitializedArray<byte>(checked(prefix.Length + payload.Length));

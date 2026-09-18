@@ -19,9 +19,9 @@ public interface IWebhookSecretSource
 
 public sealed class CompositeWebhookPayloadResolver(IEnumerable<IWebhookPayloadSource> sources) : IWebhookPayloadResolver
 {
-    private readonly IReadOnlyList<IWebhookPayloadSource> registered = sources.ToArray();
+    private readonly IWebhookPayloadSource[] registered = [.. sources];
 
-    public bool IsReady => registered.Count > 0;
+    public bool IsReady => registered.Length > 0;
 
     public ValueTask<ReadOnlyMemory<byte>> ResolveAsync(string reference, CancellationToken cancellationToken)
     {
@@ -47,9 +47,9 @@ public sealed class CompositeWebhookPayloadResolver(IEnumerable<IWebhookPayloadS
 
 public sealed class CompositeWebhookSecretResolver(IEnumerable<IWebhookSecretSource> sources) : IWebhookSecretResolver
 {
-    private readonly IReadOnlyList<IWebhookSecretSource> registered = sources.ToArray();
+    private readonly IWebhookSecretSource[] registered = [.. sources];
 
-    public bool IsReady => registered.Count > 0;
+    public bool IsReady => registered.Length > 0;
 
     public async ValueTask<byte[]> ResolveAsync(string reference, CancellationToken cancellationToken)
     {
