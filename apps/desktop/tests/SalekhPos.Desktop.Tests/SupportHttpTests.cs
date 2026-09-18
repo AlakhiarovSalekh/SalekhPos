@@ -46,7 +46,7 @@ public sealed class SupportHttpTests
     public async Task DetailRejectsCrossTicketDiagnostics()
     {
         var organization = Guid.NewGuid(); var ticket = Guid.NewGuid(); var other = Guid.NewGuid();
-        using var client = Client(_ => Json($$"""{"ticket":{"id":"{{ticket:D}}","branchId":null,"subject":"Issue","description":"Details","priority":"low","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"},"diagnostics":[{"id":"{{Guid.NewGuid():D}}","ticketId":"{{other:D}}","kind":"log","reference":"object://1","sha256":"{{new string('a',64)}}","addedBySubject":"manager","createdAt":"2026-09-18T08:10:00Z"}]}"""));
+        using var client = Client(_ => Json($$"""{"ticket":{"id":"{{ticket:D}}","branchId":null,"subject":"Issue","description":"Details","priority":"low","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"},"diagnostics":[{"id":"{{Guid.NewGuid():D}}","ticketId":"{{other:D}}","kind":"log","reference":"object://1","sha256":"{{new string('a', 64)}}","addedBySubject":"manager","createdAt":"2026-09-18T08:10:00Z"}]}"""));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new HttpSupportManager(client).ReadAsync(organization, ticket, default));
     }
