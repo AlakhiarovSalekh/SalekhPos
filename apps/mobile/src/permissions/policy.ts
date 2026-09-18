@@ -33,6 +33,9 @@ export const permissions = Object.freeze({
   taxationManage: "taxation.manage",
   localizationView: "localization.view",
   localizationManage: "localization.manage",
+  supportView: "support.view",
+  supportCreate: "support.create",
+  supportManage: "support.manage",
 } as const);
 
 export function hasPermission(authorization: SessionAuthorization, permission: string): boolean {
