@@ -13,7 +13,7 @@ public sealed record NotificationDispatchHealthSnapshot(
 
 public sealed class NotificationDispatchHealthState
 {
-    private readonly object gate = new();
+    private readonly System.Threading.Lock gate = new();
     private NotificationDispatchHealthSnapshot snapshot = new(0, 0, 0, 0, 0, 0, 0, 0, null);
 
     public NotificationDispatchHealthSnapshot Snapshot()
