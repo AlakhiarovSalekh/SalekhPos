@@ -26,8 +26,8 @@ public sealed class WebhookTransportTests
         Assert.Null(result.RetryAt);
         Assert.NotNull(captured);
         Assert.True(captured!.Headers.Contains("X-SalekhPos-Signature"));
-        Assert.Equal("1800266400", captured.Headers.GetValues("X-SalekhPos-Timestamp").Single());
-        Assert.All(secret, value => Assert.Equal(0, value));
+        Assert.Equal("1789725600", captured.Headers.GetValues("X-SalekhPos-Timestamp").Single());
+        Assert.All(secret, value => Assert.Equal((byte)0, value));
     }
 
     [Fact]
