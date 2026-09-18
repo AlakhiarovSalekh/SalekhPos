@@ -7,11 +7,14 @@ using SalekhPos.Worker.Dispatchers;
 using SalekhPos.Worker.HealthChecks;
 using SalekhPos.Worker.Schedulers;
 using SalekhPos.Worker.Integrations;
+using SalekhPos.Worker.Notifications;
 using SalekhPos.Authorization.Application;
 using SalekhPos.Authorization.Infrastructure;
 using SalekhPos.Integrations.Application;
 using SalekhPos.Integrations.Infrastructure.Integrations;
 using SalekhPos.Integrations.Infrastructure.Webhooks;
+using SalekhPos.Notifications.Application.Notifications;
+using SalekhPos.Notifications.Infrastructure.Notifications;
 
 namespace SalekhPos.Worker.DependencyInjection;
 
@@ -28,14 +31,20 @@ public static class WorkerServiceCollectionExtensions
         services.AddOptions<WebhookDispatchOptions>()
             .Bind(configuration.GetSection(WebhookDispatchOptions.SectionName))
             .ValidateOnStart();
+        services.AddOptions<NotificationDispatchOptions>()
+            .Bind(configuration.GetSection(NotificationDispatchOptions.SectionName))
+            .ValidateOnStart();
 
         services.TryAddSingleton<IValidateOptions<WebhookDispatchOptions>, WebhookDispatchOptionsValidator>();
+        services.TryAddSingleton<IValidateOptions<NotificationDispatchOptions>, NotificationDispatchOptionsValidator>();
         services.TryAddSingleton(provider => new AccessDatabase(
             configuration.GetConnectionString("Application"),
             configuration.GetValue<bool>("Database:AllowLocalInsecureTransport")));
         services.TryAddSingleton<IAccessibleOrganizationReader, OrganizationAccessReader>();
         services.TryAddSingleton<IIntegrationService>(provider =>
             new PostgresIntegrationService(provider.GetRequiredService<AccessDatabase>().DataSource));
+        services.TryAddSingleton<INotificationDeliveryStore>(provider =>
+            new PostgresNotificationDeliveryStore(provider.GetRequiredService<AccessDatabase>().DataSource));
         services.TryAddSingleton<IWebhookHttpSender, SafeWebhookHttpSender>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookPayloadSource, PostgresWebhookPayloadSource>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookSecretSource, EnvironmentWebhookSecretSource>());
@@ -48,7 +57,11 @@ public static class WorkerServiceCollectionExtensions
         services.TryAddSingleton<WebhookTransport>();
         services.TryAddSingleton<WebhookTenantDispatcher>();
         services.TryAddSingleton<WebhookDispatchHealthState>();
+        services.TryAddSingleton<NotificationProviderTransport>();
+        services.TryAddSingleton<NotificationTenantDispatcher>();
+        services.TryAddSingleton<NotificationDispatchHealthState>();
         services.AddSingleton<IHostedService, IntegrationWebhookHostedService>();
+        services.AddSingleton<IHostedService, NotificationDeliveryHostedService>();
         return services.AddWorkerRuntimeServices();
     }
 
