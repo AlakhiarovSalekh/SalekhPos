@@ -826,6 +826,19 @@
           "SalekhPos.Identity.Application": "[1.0.0, )"
         }
       },
+      "salekhpos.integrations.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )",
+          "SalekhPos.Integrations.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.integrations.domain": {
+        "type": "Project"
+      },
       "salekhpos.inventory.api": {
         "type": "Project",
         "dependencies": {
@@ -1266,6 +1279,19 @@
           "SalekhPos.Suppliers.Contracts": "[1.0.0, )",
           "SalekhPos.Suppliers.Domain": "[1.0.0, )"
         }
+      },
+      "salekhpos.support.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Support.Contracts": "[1.0.0, )",
+          "SalekhPos.Support.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.support.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.support.domain": {
+        "type": "Project"
       },
       "salekhpos.sync.api": {
         "type": "Project",
