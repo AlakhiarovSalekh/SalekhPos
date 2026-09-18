@@ -26,7 +26,7 @@ CREATE TABLE fiscalization.documents(
   PRIMARY KEY(organization_id,document_id),
   UNIQUE(organization_id,sale_id,document_type),
   FOREIGN KEY(organization_id,branch_id) REFERENCES organization.branches(organization_id,branch_id),
-  FOREIGN KEY(organization_id,sale_id) REFERENCES sales.sales(organization_id,sale_id),
+  FOREIGN KEY(organization_id,sale_id) REFERENCES sales.completed_sales(organization_id,sale_id),
   CHECK(provider_reference IS NULL OR (provider_reference=btrim(provider_reference) AND char_length(provider_reference) BETWEEN 1 AND 200))
 );
 
