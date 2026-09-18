@@ -48,10 +48,16 @@ jobs:
       - name: Node apps
         run: ./scripts/ci/check-node.ps1
       - name: Restore
-        run: ./scripts/dotnet.ps1 restore SalekhPos.sln --locked-mode -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low
+        run: |
+          & ./scripts/dotnet.ps1 @('restore','SalekhPos.sln','--locked-mode','-p:NuGetAudit=true','-p:NuGetAuditMode=all','-p:NuGetAuditLevel=low')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build
-        run: ./scripts/dotnet.ps1 build SalekhPos.sln --configuration Release --no-restore -warnaserror
+        run: |
+          & ./scripts/dotnet.ps1 @('build','SalekhPos.sln','--configuration','Release','--no-restore','-warnaserror')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Format
-        run: ./scripts/dotnet.ps1 format SalekhPos.sln --verify-no-changes --no-restore --severity info
+        run: |
+          & ./scripts/dotnet.ps1 @('format','SalekhPos.sln','--verify-no-changes','--no-restore','--severity','info')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Dependencies
         run: ./scripts/ci/check-dependencies.ps1 -ReportDirectory (Join-Path $env:RUNNER_TEMP 'fast-gate-reports')
