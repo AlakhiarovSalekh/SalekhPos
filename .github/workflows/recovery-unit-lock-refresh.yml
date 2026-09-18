@@ -1,0 +1,53 @@
+name: Recovery Unit Lock Refresh
+
+on:
+  push:
+    branches:
+      - recovery-lock-refresh-20260918
+    paths:
+      - .github/workflows/recovery-unit-lock-refresh.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-unit-lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: recovery-lock-refresh-20260918
+          fetch-depth: 0
+
+      - name: Setup exact repository SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+
+      - name: Refresh unit-test NuGet lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore backend/tests/Unit/SalekhPos.Tests.csproj --force-evaluate
+          git diff --check
+          git status --short
+          git diff --exit-code -- . ':!backend/tests/Unit/packages.lock.json' || {
+            echo "Unexpected files changed by restore."
+            exit 1
+          }
+
+      - name: Commit refreshed lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- backend/tests/Unit/packages.lock.json; then
+            echo "Unit lock file already current."
+            exit 0
+          fi
+          git config user.name "SalekhPos CI Recovery"
+          git config user.email "293670084+AlakhiarovSalekh@users.noreply.github.com"
+          git add backend/tests/Unit/packages.lock.json
+          git commit -m "fix: refresh unit test NuGet lock"
+          git push origin HEAD:recovery-lock-refresh-20260918
