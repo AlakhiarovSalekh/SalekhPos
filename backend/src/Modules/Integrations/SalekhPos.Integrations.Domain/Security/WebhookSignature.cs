@@ -33,16 +33,21 @@ public static class WebhookSignature
             return false;
         }
 
-        Span<byte> supplied = stackalloc byte[32];
-        if (!Convert.TryFromHexString(signature.AsSpan(3), supplied, out var written) || written != supplied.Length)
+        byte[] supplied;
+        try
+        {
+            supplied = Convert.FromHexString(signature[3..]);
+        }
+        catch (FormatException)
         {
             return false;
         }
 
         var expectedText = Sign(secret, unixTimestampSeconds, payload);
-        Span<byte> expected = stackalloc byte[32];
-        _ = Convert.TryFromHexString(expectedText.AsSpan(3), expected, out _);
-        return CryptographicOperations.FixedTimeEquals(expected, supplied);
+        var expected = Convert.FromHexString(expectedText[3..]);
+        return supplied.Length == 32
+            && expected.Length == 32
+            && CryptographicOperations.FixedTimeEquals(expected, supplied);
     }
 
     private static void ValidateSecret(ReadOnlySpan<byte> secret)

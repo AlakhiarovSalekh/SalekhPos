@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - feature/platform-workers-finalization
-    paths:
-      - .github/workflows/platform-workers-recovery.yml
 
 permissions:
   contents: write
