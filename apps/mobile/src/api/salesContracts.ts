@@ -59,9 +59,17 @@ function currency(value: unknown, field: string): string {
   return value;
 }
 
+function decimalPlaces(value: number): number {
+  const [coefficient, exponentText] = value.toString().toLowerCase().split("e");
+  const fractionLength = coefficient?.split(".")[1]?.length ?? 0;
+  const exponent = Number(exponentText ?? "0");
+  return Math.max(0, fractionLength - exponent);
+}
+
 function amount(value: unknown, field: string, minimum = 0): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < minimum
-      || Math.abs(value) > 999_999_999_999_999 || !Number.isSafeInteger(value * 1_000_000)) {
+      || Math.abs(value) > 999_999_999_999_999 || decimalPlaces(value) > 6
+      || !Number.isSafeInteger(Math.round(value * 1_000_000))) {
     throw new SalesContractError(field);
   }
   return value;
