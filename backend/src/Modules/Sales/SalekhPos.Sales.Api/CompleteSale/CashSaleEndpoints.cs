@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Primitives;
 using SalekhPos.Sales.Application.CompleteSale;
 using SalekhPos.Sales.Contracts.CompleteSale;
 
@@ -39,16 +40,27 @@ public static class CashSaleEndpoints
 
         app.MapPost("/api/v1/organizations/{organizationId:guid}/branches/{branchId:guid}/sales/cash",
             async (Guid organizationId, Guid branchId, CompleteCashSaleRequest request, HttpContext context,
-                ICashSaleCompletion completion, CancellationToken cancellationToken) =>
+                ISalesDeviceRequestAuthorizer proof, ICashSaleCompletion completion,
+                CancellationToken cancellationToken) =>
             {
                 if (!Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId)
                     || operationId == Guid.Empty || request.Lines is null) return Invalid();
+                var identity = Identity(context);
+                var deviceId = DeviceId(context);
+                if (!context.Items.TryGetValue(SalesRequestBodyDigestMiddleware.DigestItemKey, out var digestValue)
+                    || digestValue is not string digest)
+                    throw new SalesRequestAuthenticationException();
+                await proof.VerifyAsync(new(identity, organizationId, branchId, deviceId, "POST",
+                    CashPath(organizationId, branchId), $"cash-sale:{operationId:D}", digest,
+                    new(Header(context, "X-SalekhPos-Device-Credential"),
+                        Header(context, "X-SalekhPos-Device-Timestamp"),
+                        Header(context, "X-SalekhPos-Device-Nonce"),
+                        Header(context, "X-SalekhPos-Device-Signature"))), cancellationToken);
                 try
                 {
-                    var command = new CompleteCashSaleCommand(organizationId, branchId, request.ShiftId, Guid.NewGuid(), operationId,
-                        request.Lines,
-                        request.CashReceived, request.SuspendedCartId);
-                    var result = await completion.CompleteAsync(Identity(context), command, cancellationToken);
+                    var command = new CompleteCashSaleCommand(organizationId, branchId, deviceId, request.ShiftId,
+                        Guid.NewGuid(), operationId, request.Lines, request.CashReceived, request.SuspendedCartId);
+                    var result = await completion.CompleteAsync(identity, command, cancellationToken);
                     return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/sales/{result.Sale.Id:D}", result.Sale)
                         : Results.Ok(result.Sale);
                 }
@@ -57,6 +69,26 @@ public static class CashSaleEndpoints
             }).RequireAuthorization().RequireRateLimiting("business");
     }
 
+    private static Guid DeviceId(HttpContext context)
+    {
+        var value = Header(context, "X-SalekhPos-Device-Id");
+        if (value is null || !Guid.TryParseExact(value, "D", out var deviceId) || deviceId == Guid.Empty
+            || !string.Equals(value, deviceId.ToString("D"), StringComparison.Ordinal))
+            throw new SalesRequestAuthenticationException();
+        return deviceId;
+    }
+    private static string? Header(HttpContext context, string name)
+    {
+        StringValues values = context.Request.Headers[name];
+        return values.Count switch
+        {
+            0 => null,
+            1 => values[0],
+            _ => throw new SalesRequestAuthenticationException()
+        };
+    }
+    private static string CashPath(Guid organizationId, Guid branchId) =>
+        $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/sales/cash";
     private static SalesIdentity Identity(HttpContext context) =>
         new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
     private static IResult Invalid() => Results.Problem(statusCode: 400, title: "The cash sale request is invalid",

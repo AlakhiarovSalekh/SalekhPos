@@ -16,8 +16,18 @@ public sealed record SalesIdentity
     }
 }
 
-public sealed record CompleteCashSaleCommand(Guid OrganizationId, Guid BranchId, Guid ShiftId, Guid SaleId, Guid OperationId,
-    IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived, Guid? SuspendedCartId = null);
+public sealed record SalesDeviceRequestProofHeaders(string? CredentialId, string? Timestamp, string? Nonce,
+    string? Signature);
+public sealed record SalesDeviceRequestProofContext(SalesIdentity Identity, Guid OrganizationId, Guid BranchId,
+    Guid DeviceId, string Method, string CanonicalPath, string OperationIdentity, string BodyDigest,
+    SalesDeviceRequestProofHeaders Headers);
+public interface ISalesDeviceRequestAuthorizer
+{
+    Task VerifyAsync(SalesDeviceRequestProofContext context, CancellationToken cancellationToken);
+}
+public sealed record CompleteCashSaleCommand(Guid OrganizationId, Guid BranchId, Guid DeviceId, Guid ShiftId,
+    Guid SaleId, Guid OperationId, IReadOnlyList<CompleteCashSaleLineRequest> Lines, decimal CashReceived,
+    Guid? SuspendedCartId = null);
 public sealed record CashSaleWriteResult(CompletedSaleResponse Sale, bool Created);
 public interface ICashSaleCompletion
 {
@@ -32,6 +42,7 @@ public interface ISaleReader
         Guid? after, CancellationToken cancellationToken);
 }
 public sealed class SalesDeniedException : Exception;
+public sealed class SalesRequestAuthenticationException : Exception;
 public sealed class SalesConflictException : Exception;
 public sealed class InsufficientStockException : Exception;
 public sealed class SalePriceUnavailableException : Exception;

@@ -96,6 +96,14 @@ internal sealed class TrustedDeviceTestClient(Guid deviceId, Guid credentialId, 
             overrides);
     }
 
+    public async Task<HttpResponseMessage> CompleteCashSaleAsync(AccessFixture fixture, HttpClient client,
+        Guid operationId, byte[] body, ShiftProofOverrides? overrides = null)
+    {
+        var path = $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/sales/cash";
+        return await SendShiftWriteAsync(fixture, client, path, operationId, $"cash-sale:{operationId:D}", body,
+            overrides);
+    }
+
     public async Task<HttpResponseMessage> CloseShiftAsync(AccessFixture fixture, HttpClient client, Guid registerId,
         Guid shiftId, Guid operationId, decimal countedCash, ShiftProofOverrides? overrides = null)
     {

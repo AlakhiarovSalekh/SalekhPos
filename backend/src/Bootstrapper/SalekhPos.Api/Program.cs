@@ -167,6 +167,7 @@ builder.Services.AddSingleton<IDeviceRequestProofVerifier>(provider => new Postg
     provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISyncDeviceRequestAuthorizer, SyncDeviceRequestAuthorizer>();
 builder.Services.AddSingleton<IShiftDeviceRequestAuthorizer, ShiftDeviceRequestAuthorizer>();
+builder.Services.AddSingleton<ISalesDeviceRequestAuthorizer, SalesDeviceRequestAuthorizer>();
 builder.Services.AddSingleton<ISyncIngestion>(provider => new PostgresSyncIngestion(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ICustomerDirectory>(provider => new PostgresCustomerDirectory(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISupplierDirectory>(provider => new PostgresSupplierDirectory(provider.GetRequiredService<AccessDatabase>().DataSource));
@@ -247,6 +248,7 @@ app.UseAuthorization();
 app.UseAuditCapture();
 app.UseSyncRequestBodyDigest();
 app.UseShiftRequestBodyDigest();
+app.UseSalesRequestBodyDigest();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" })).AllowAnonymous();
 app.MapGet("/health/ready", async (AuthenticationState authentication, BranchAccessReader reader,

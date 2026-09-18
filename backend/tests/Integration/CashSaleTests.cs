@@ -12,6 +12,7 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
     private readonly SemaphoreSlim saleShiftGate = new(1, 1);
     private readonly Dictionary<Guid, TrustedDeviceTestClient> shiftDevices = [];
     private Guid? saleShiftId;
+    private Guid? saleRegisterId;
     [Fact]
     public async Task ShiftOpeningIsIdempotentPermissionCheckedAndLimitedToOnePerRegister()
     {
@@ -179,6 +180,61 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
         var item = stockBody.RootElement.GetProperty("items").EnumerateArray()
             .Single(value => value.GetProperty("productId").GetGuid() == productId);
         Assert.Equal(3m, item.GetProperty("quantity").GetDecimal());
+    }
+
+    [Fact]
+    public async Task CashSaleRequiresTrustedDeviceProofAndMatchingRegister()
+    {
+        var productId = await PrepareProduct(7m, 2m);
+        var shiftId = await EnsureSaleShift();
+        var registerId = saleRegisterId ?? throw new InvalidOperationException("The sale register is unavailable.");
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity = 1m } },
+            cashReceived = 7m,
+            suspendedCartId = (Guid?)null
+        });
+        using var owner = Client("owner");
+
+        using var unsignedRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
+        { Content = new ByteArrayContent(body) };
+        unsignedRequest.Content.Headers.ContentType = new("application/json");
+        unsignedRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var unsigned = await owner.SendAsync(unsignedRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, unsigned.StatusCode);
+
+        var tamperedOperation = Guid.NewGuid();
+        var signedBody = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity = 1m } },
+            cashReceived = 8m,
+            suspendedCartId = (Guid?)null
+        });
+        using var tampered = await shiftDevices[registerId].CompleteCashSaleAsync(
+            fixture, owner, tamperedOperation, body, new(SignedBody: signedBody));
+        Assert.Equal(HttpStatusCode.Unauthorized, tampered.StatusCode);
+
+        using var registerRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        {
+            Content = JsonContent.Create(new
+            {
+                code = "SALE-X-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
+                name = "Wrong Sale Register"
+            })
+        };
+        registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var registerResponse = await owner.SendAsync(registerRequest);
+        registerResponse.EnsureSuccessStatusCode();
+        using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
+        var otherRegisterId = registerBody.RootElement.GetProperty("id").GetGuid();
+        using var otherDevice = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, otherRegisterId);
+        using var wrongRegister = await otherDevice.CompleteCashSaleAsync(
+            fixture, owner, Guid.NewGuid(), body);
+        Assert.Equal(HttpStatusCode.Conflict, wrongRegister.StatusCode);
     }
 
     [Fact]
@@ -536,12 +592,16 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
         Guid operationId, string subject = "owner", Guid? suspendedCartId = null)
     {
         var shiftId = await EnsureSaleShift();
+        var registerId = saleRegisterId ?? throw new InvalidOperationException("The sale register is unavailable.");
         using var client = Client(subject);
-        using var request = new HttpRequestMessage(HttpMethod.Post,
-            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
-        { Content = JsonContent.Create(new { shiftId, lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
-        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
-        return await client.SendAsync(request);
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity } },
+            cashReceived,
+            suspendedCartId
+        });
+        return await shiftDevices[registerId].CompleteCashSaleAsync(fixture, client, operationId, body);
     }
 
     private async Task<Guid> EnsureSaleShift()
@@ -556,9 +616,12 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
             registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
             using var registerResponse = await owner.SendAsync(registerRequest); registerResponse.EnsureSuccessStatusCode();
             using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
-            using var shiftResponse = await OpenShift(owner, registerBody.RootElement.GetProperty("id").GetGuid(), Guid.NewGuid(), 0m); shiftResponse.EnsureSuccessStatusCode();
+            saleRegisterId = registerBody.RootElement.GetProperty("id").GetGuid();
+            using var shiftResponse = await OpenShift(owner, saleRegisterId.Value, Guid.NewGuid(), 0m);
+            shiftResponse.EnsureSuccessStatusCode();
             using var shiftBody = JsonDocument.Parse(await shiftResponse.Content.ReadAsStringAsync());
-            saleShiftId = shiftBody.RootElement.GetProperty("id").GetGuid(); return saleShiftId.Value;
+            saleShiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
+            return saleShiftId.Value;
         }
         finally { saleShiftGate.Release(); }
     }
