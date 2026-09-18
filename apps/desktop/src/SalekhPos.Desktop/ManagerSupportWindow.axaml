@@ -18,8 +18,8 @@
     <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="14">
       <ScrollViewer><StackPanel Spacing="10">
         <TextBlock Text="Create branch ticket" FontSize="18" FontWeight="SemiBold"/>
-        <TextBox Name="SubjectBox" Watermark="Subject" MaxLength="200"/>
-        <TextBox Name="DescriptionBox" Watermark="Description" AcceptsReturn="True" TextWrapping="Wrap" Height="100" MaxLength="8000"/>
+        <TextBox Name="SubjectBox" PlaceholderText="Subject" MaxLength="200"/>
+        <TextBox Name="DescriptionBox" PlaceholderText="Description" AcceptsReturn="True" TextWrapping="Wrap" Height="100" MaxLength="8000"/>
         <ComboBox Name="PriorityBox" SelectedIndex="1">
           <ComboBoxItem Content="low"/><ComboBoxItem Content="normal"/><ComboBoxItem Content="high"/><ComboBoxItem Content="urgent"/>
         </ComboBox>
@@ -36,13 +36,13 @@
         <TextBlock Name="DetailDescription" TextWrapping="Wrap"/>
         <TextBlock Text="Transition" FontSize="16" FontWeight="SemiBold"/>
         <ComboBox Name="TransitionStatusBox"/>
-        <TextBox Name="TransitionNoteBox" Watermark="Transition note" AcceptsReturn="True" TextWrapping="Wrap" MaxLength="2000"/>
+        <TextBox Name="TransitionNoteBox" PlaceholderText="Transition note" AcceptsReturn="True" TextWrapping="Wrap" MaxLength="2000"/>
         <Button Name="TransitionButton" Content="Apply transition" Click="TransitionClick" IsEnabled="False"/>
         <TextBlock Text="Diagnostics" FontSize="16" FontWeight="SemiBold"/>
         <ListBox Name="DiagnosticList" Height="160"/>
-        <TextBox Name="DiagnosticKindBox" Text="log" Watermark="Kind" MaxLength="64"/>
-        <TextBox Name="DiagnosticReferenceBox" Watermark="Reference" MaxLength="512"/>
-        <TextBox Name="DiagnosticShaBox" Watermark="SHA-256" MaxLength="64"/>
+        <TextBox Name="DiagnosticKindBox" Text="log" PlaceholderText="Kind" MaxLength="64"/>
+        <TextBox Name="DiagnosticReferenceBox" PlaceholderText="Reference" MaxLength="512"/>
+        <TextBox Name="DiagnosticShaBox" PlaceholderText="SHA-256" MaxLength="64"/>
         <Button Name="DiagnosticButton" Content="Attach diagnostic reference" Click="DiagnosticClick" IsEnabled="False"/>
       </StackPanel></ScrollViewer>
     </Grid>
