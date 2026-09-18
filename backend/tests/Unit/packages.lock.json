@@ -1452,7 +1452,9 @@
           "SalekhPos.Authorization.Application": "[1.0.0, )",
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Integrations.Application": "[1.0.0, )",
-          "SalekhPos.Integrations.Infrastructure": "[1.0.0, )"
+          "SalekhPos.Integrations.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Notifications.Application": "[1.0.0, )",
+          "SalekhPos.Notifications.Infrastructure": "[1.0.0, )"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {

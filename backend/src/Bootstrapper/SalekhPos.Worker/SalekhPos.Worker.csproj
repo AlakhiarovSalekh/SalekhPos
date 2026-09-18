@@ -7,5 +7,7 @@
     <ProjectReference Include="../../Modules/Authorization/SalekhPos.Authorization.Infrastructure/SalekhPos.Authorization.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Integrations/SalekhPos.Integrations.Application/SalekhPos.Integrations.Application.csproj" />
     <ProjectReference Include="../../Modules/Integrations/SalekhPos.Integrations.Infrastructure/SalekhPos.Integrations.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/SalekhPos.Notifications.Application/SalekhPos.Notifications.Application.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/SalekhPos.Notifications.Infrastructure/SalekhPos.Notifications.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
