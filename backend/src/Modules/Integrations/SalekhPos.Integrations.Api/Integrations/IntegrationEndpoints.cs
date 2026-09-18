@@ -21,6 +21,7 @@ public static class IntegrationEndpoints
         group.MapPost("/webhooks/stored", EnqueueStoredWebhook);
         group.MapPost("/webhooks/lease", LeaseWebhook);
         group.MapPost("/webhooks/{deliveryId:guid}/attempts", RecordAttempt);
+        group.MapPost("/webhooks/{deliveryId:guid}/retry", RetryDeadLetter);
     }
 
     private static IntegrationIdentity Identity(HttpContext context) => new(context.User.FindFirst("iss")!.Value, context.User.FindFirst("sub")!.Value);
@@ -81,6 +82,23 @@ public static class IntegrationEndpoints
                 : Results.Ok(result.Value);
         }
         catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            return Invalid();
+        }
+    }
+
+    private static async Task<IResult> RetryDeadLetter(Guid organizationId, Guid deliveryId,
+        RetryWebhookDeliveryRequest request, HttpContext context, IIntegrationService service,
+        IAntiforgery antiforgery, CancellationToken cancellationToken)
+    {
+        var operation = await Operation(context, antiforgery);
+        if (operation is null) return Invalid();
+        try
+        {
+            return Results.Ok(await service.RetryDeadLetterAsync(
+                Identity(context), organizationId, deliveryId, operation.Value, request.Reason, cancellationToken));
+        }
+        catch (ArgumentException)
         {
             return Invalid();
         }

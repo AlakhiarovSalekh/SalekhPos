@@ -56,6 +56,8 @@ public interface IIntegrationService
     Task<WebhookDeliveryResponse> RecordAttemptAsync(IntegrationIdentity identity, Guid organizationId, Guid deliveryId, RecordWebhookAttemptRequest request, CancellationToken cancellationToken);
     Task<WebhookDeliveryResponse> DeferLeaseAsync(IntegrationIdentity identity, Guid organizationId,
         Guid deliveryId, DeferWebhookLeaseCommand command, CancellationToken cancellationToken);
+    Task<WebhookDeliveryResponse> RetryDeadLetterAsync(IntegrationIdentity identity, Guid organizationId,
+        Guid deliveryId, Guid operationId, string reason, CancellationToken cancellationToken);
 }
 
 public sealed class IntegrationDeniedException : Exception;
