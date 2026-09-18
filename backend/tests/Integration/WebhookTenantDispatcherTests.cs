@@ -4,6 +4,7 @@ using System.Text;
 using SalekhPos.Integrations.Application;
 using SalekhPos.Integrations.Contracts;
 using SalekhPos.Integrations.Infrastructure.Webhooks;
+using Xunit;
 
 namespace SalekhPos.IntegrationTests;
 
