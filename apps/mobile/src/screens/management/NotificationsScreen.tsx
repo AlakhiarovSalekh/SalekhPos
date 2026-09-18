@@ -32,8 +32,10 @@ type DeliveryStatusFilter = (typeof deliveryStatuses)[number];
 type DeliveryChannelFilter = (typeof deliveryChannels)[number];
 
 function nextValue<T extends string>(values: readonly T[], value: T): T {
+  const first = values[0];
+  if (first === undefined) throw new Error("Filter values are required.");
   const index = values.indexOf(value);
-  return values[(index + 1) % values.length] ?? values[0];
+  return values[(index + 1) % values.length] ?? first;
 }
 
 function statusLabel(value: DeliveryStatusFilter): string {
