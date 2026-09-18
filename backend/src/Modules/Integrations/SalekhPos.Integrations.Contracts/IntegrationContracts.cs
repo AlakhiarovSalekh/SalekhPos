@@ -8,6 +8,8 @@ public sealed record DisableIntegrationConnectionRequest(string Reason);
 
 public sealed record EnqueueWebhookRequest(Guid ConnectionId, Guid EventId, string EventType,
     string PayloadSha256, string PayloadReference);
+public sealed record EnqueueStoredWebhookRequest(Guid ConnectionId, Guid EventId, string EventType,
+    System.Text.Json.JsonElement Payload);
 public sealed record WebhookDeliveryResponse(Guid Id, Guid ConnectionId, Guid EventId, string EventType,
     string PayloadSha256, string Status, int AttemptCount, DateTimeOffset? NextAttemptAt,
     int? LastStatusCode, string? LastErrorCode, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);

@@ -18,11 +18,18 @@ spec:
         - name: salekhpos-worker
           image: ghcr.io/alakhiarovsalekh/salekhpos-worker:latest
           imagePullPolicy: IfNotPresent
-          ports: [ { name: http, containerPort: 8080 } ]
-          envFrom: [ { configMapRef: { name: salekhpos-runtime } } ]
+          envFrom:
+            - configMapRef: { name: salekhpos-runtime }
+            - secretRef: { name: salekhpos-webhook-secrets, optional: true }
           env:
             - name: ConnectionStrings__Application
               valueFrom: { secretKeyRef: { name: salekhpos-database, key: connection-string } }
+            - name: Integrations__WebhookDispatch__Issuer
+              valueFrom:
+                secretKeyRef: { name: salekhpos-worker-identity, key: issuer, optional: true }
+            - name: Integrations__WebhookDispatch__Subject
+              valueFrom:
+                secretKeyRef: { name: salekhpos-worker-identity, key: subject, optional: true }
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

@@ -7,3 +7,7 @@ data:
   Worker__MaxConcurrency: "8"
   Worker__QueueCapacity: "1024"
   Worker__RetryMaxAttempts: "5"
+  Integrations__WebhookDispatch__Enabled: "false"
+  Integrations__WebhookDispatch__PollInterval: "00:00:05"
+  Integrations__WebhookDispatch__OrganizationPageSize: "50"
+  Integrations__WebhookDispatch__MaximumDeliveriesPerOrganization: "20"

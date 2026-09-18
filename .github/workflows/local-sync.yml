@@ -1,9 +1,6 @@
 name: Local Workspace Sync
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

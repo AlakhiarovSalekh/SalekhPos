@@ -82,9 +82,19 @@ public sealed class PlatformAuthorityTests(AccessFixture fixture)
         var admin = (await created.Content.ReadFromJsonAsync<SuperAdminResponse>())!;
         Assert.False(admin.IsRoot);
         Assert.True(admin.IsActive);
+        using var list = await SendAsync(HttpMethod.Get, AdminPath + "?pageSize=100", RootToken());
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var page = (await list.Content.ReadFromJsonAsync<SuperAdminPage>())!;
+        Assert.Contains(page.Items, item => item.Id == admin.Id && item.Subject == subject && item.IsActive);
+        using var auditList = await SendAsync(HttpMethod.Get, "/api/v1/platform/authority-audit?pageSize=100", RootToken());
+        Assert.Equal(HttpStatusCode.OK, auditList.StatusCode);
+        var auditPage = (await auditList.Content.ReadFromJsonAsync<PlatformAuthorityAuditPage>())!;
+        Assert.Contains(auditPage.Items, item => item.Action == "super_admin.registered" && item.TargetId == admin.Id);
         var supportToken = fixture.Token(subject, acr: "urn:salekhpos:test:mfa", authTime: DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         using var authority = await SendAsync(HttpMethod.Get, "/api/v1/platform/authority", supportToken);
         Assert.Equal(new PlatformAuthority(false, true), await authority.Content.ReadFromJsonAsync<PlatformAuthority>());
+        using var supportAudit = await SendAsync(HttpMethod.Get, "/api/v1/platform/authority-audit?pageSize=10", supportToken);
+        Assert.Equal(HttpStatusCode.OK, supportAudit.StatusCode);
         using var denied = await SendAsync(HttpMethod.Post, AdminPath, supportToken,
             new RegisterSuperAdminRequest(Guid.NewGuid(), "unauthorized", "Attempt delegation"));
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);

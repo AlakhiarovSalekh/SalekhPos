@@ -6,6 +6,12 @@ using Microsoft.Extensions.Options;
 using SalekhPos.Worker.Dispatchers;
 using SalekhPos.Worker.HealthChecks;
 using SalekhPos.Worker.Schedulers;
+using SalekhPos.Worker.Integrations;
+using SalekhPos.Authorization.Application;
+using SalekhPos.Authorization.Infrastructure;
+using SalekhPos.Integrations.Application;
+using SalekhPos.Integrations.Infrastructure.Integrations;
+using SalekhPos.Integrations.Infrastructure.Webhooks;
 
 namespace SalekhPos.Worker.DependencyInjection;
 
@@ -19,6 +25,30 @@ public static class WorkerServiceCollectionExtensions
         services.AddOptions<WorkerOptions>()
             .Bind(configuration.GetSection(WorkerOptions.SectionName))
             .ValidateOnStart();
+        services.AddOptions<WebhookDispatchOptions>()
+            .Bind(configuration.GetSection(WebhookDispatchOptions.SectionName))
+            .ValidateOnStart();
+
+        services.TryAddSingleton<IValidateOptions<WebhookDispatchOptions>, WebhookDispatchOptionsValidator>();
+        services.TryAddSingleton(provider => new AccessDatabase(
+            configuration.GetConnectionString("Application"),
+            configuration.GetValue<bool>("Database:AllowLocalInsecureTransport")));
+        services.TryAddSingleton<IAccessibleOrganizationReader, OrganizationAccessReader>();
+        services.TryAddSingleton<IIntegrationService>(provider =>
+            new PostgresIntegrationService(provider.GetRequiredService<AccessDatabase>().DataSource));
+        services.TryAddSingleton<IWebhookHttpSender, SafeWebhookHttpSender>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookPayloadSource, PostgresWebhookPayloadSource>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookSecretSource, EnvironmentWebhookSecretSource>());
+        services.TryAddSingleton<CompositeWebhookPayloadResolver>();
+        services.TryAddSingleton<CompositeWebhookSecretResolver>();
+        services.TryAddSingleton<IWebhookPayloadResolver>(provider =>
+            provider.GetRequiredService<CompositeWebhookPayloadResolver>());
+        services.TryAddSingleton<IWebhookSecretResolver>(provider =>
+            provider.GetRequiredService<CompositeWebhookSecretResolver>());
+        services.TryAddSingleton<WebhookTransport>();
+        services.TryAddSingleton<WebhookTenantDispatcher>();
+        services.TryAddSingleton<WebhookDispatchHealthState>();
+        services.AddSingleton<IHostedService, IntegrationWebhookHostedService>();
         return services.AddWorkerRuntimeServices();
     }
 

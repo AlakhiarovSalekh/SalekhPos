@@ -108,6 +108,7 @@ using SalekhPos.Subscriptions.Infrastructure.Subscriptions;
 using SalekhPos.Integrations.Api.Integrations;
 using SalekhPos.Integrations.Application;
 using SalekhPos.Integrations.Infrastructure.Integrations;
+using SalekhPos.Integrations.Infrastructure.Webhooks;
 using SalekhPos.Support.Api.Support;
 using SalekhPos.Support.Application;
 using SalekhPos.Support.Infrastructure.Support;
@@ -189,6 +190,8 @@ builder.Services.AddSingleton<IFiscalDocumentService>(provider => new PostgresFi
 builder.Services.AddSingleton<IBillingService>(provider => new PostgresBillingService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISubscriptionService>(provider => new PostgresSubscriptionService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IIntegrationService>(provider => new PostgresIntegrationService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IWebhookOutboxService>(provider => new PostgresWebhookOutboxService(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ISupportService>(provider => new PostgresSupportService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
@@ -303,6 +306,7 @@ app.MapWebFiscalizationEndpoints();
 app.MapWebIntegrationEndpoints();
 app.MapWebBillingEndpoints();
 app.MapWebSubscriptionEndpoints();
+app.MapWebPlatformAdministrationEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();
