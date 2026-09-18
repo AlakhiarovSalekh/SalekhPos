@@ -12,6 +12,7 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
     private readonly SemaphoreSlim saleShiftGate = new(1, 1);
     private readonly Dictionary<Guid, TrustedDeviceTestClient> shiftDevices = [];
     private Guid? saleShiftId;
+    private Guid? saleRegisterId;
     [Fact]
     public async Task ShiftOpeningIsIdempotentPermissionCheckedAndLimitedToOnePerRegister()
     {
@@ -536,12 +537,16 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
         Guid operationId, string subject = "owner", Guid? suspendedCartId = null)
     {
         var shiftId = await EnsureSaleShift();
+        var registerId = saleRegisterId ?? throw new InvalidOperationException("The sale register is unavailable.");
         using var client = Client(subject);
-        using var request = new HttpRequestMessage(HttpMethod.Post,
-            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
-        { Content = JsonContent.Create(new { shiftId, lines = new[] { new { productId, quantity } }, cashReceived, suspendedCartId }) };
-        request.Headers.Add("Idempotency-Key", operationId.ToString("D"));
-        return await client.SendAsync(request);
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity } },
+            cashReceived,
+            suspendedCartId
+        });
+        return await shiftDevices[registerId].CompleteCashSaleAsync(fixture, client, operationId, body);
     }
 
     private async Task<Guid> EnsureSaleShift()
@@ -556,9 +561,12 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
             registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
             using var registerResponse = await owner.SendAsync(registerRequest); registerResponse.EnsureSuccessStatusCode();
             using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
-            using var shiftResponse = await OpenShift(owner, registerBody.RootElement.GetProperty("id").GetGuid(), Guid.NewGuid(), 0m); shiftResponse.EnsureSuccessStatusCode();
+            saleRegisterId = registerBody.RootElement.GetProperty("id").GetGuid();
+            using var shiftResponse = await OpenShift(owner, saleRegisterId.Value, Guid.NewGuid(), 0m);
+            shiftResponse.EnsureSuccessStatusCode();
             using var shiftBody = JsonDocument.Parse(await shiftResponse.Content.ReadAsStringAsync());
-            saleShiftId = shiftBody.RootElement.GetProperty("id").GetGuid(); return saleShiftId.Value;
+            saleShiftId = shiftBody.RootElement.GetProperty("id").GetGuid();
+            return saleShiftId.Value;
         }
         finally { saleShiftGate.Release(); }
     }
