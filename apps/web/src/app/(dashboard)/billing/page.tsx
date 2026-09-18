@@ -1,0 +1,1 @@
+import{BillingWorkspace}from"@/features/billing/BillingWorkspace";export default function Page(){return <BillingWorkspace/>}

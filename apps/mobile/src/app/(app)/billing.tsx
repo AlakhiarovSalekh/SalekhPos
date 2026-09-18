@@ -1,0 +1,1 @@
+import{BillingScreen}from"@/screens/management/BillingScreen";export default function Route(){return <BillingScreen/>}

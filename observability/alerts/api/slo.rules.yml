@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: ApiSlo
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "API 5xx ratio exceeds 2%"
+          runbook: "docs/runbooks/apislo.md"

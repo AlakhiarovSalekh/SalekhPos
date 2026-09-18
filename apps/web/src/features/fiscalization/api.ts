@@ -1,0 +1,6 @@
+import{getCsrfToken,requestJson}from"@/features/sales/api";import{uuid}from"@/lib/boundedJson";import{parseFiscalDocument,parseFiscalSubmission}from"./parsers";import type{FiscalDocument,FiscalSubmission}from"./types";
+const root=(org:string)=>`/bff/api/v1/organizations/${uuid(org,"organization")}/fiscal-documents`;
+async function csrf(){return{"content-type":"application/json","X-CSRF-TOKEN":await getCsrfToken()}}
+export function readFiscal(org:string,id:string,signal?:AbortSignal):Promise<FiscalDocument>{return requestJson(`${root(org)}/${uuid(id,"document")}`,parseFiscalDocument,signal?{signal}:undefined)}
+export async function submitFiscal(org:string,branch:string,input:{documentId:string;saleId:string;providerKey:string;documentType:string;currency:string;grossAmount:number;payload:string}):Promise<FiscalSubmission>{return requestJson(`${root(org)}/branches/${uuid(branch,"branch")}`,parseFiscalSubmission,{method:"POST",headers:await csrf(),body:JSON.stringify({...input,documentId:uuid(input.documentId,"document"),saleId:uuid(input.saleId,"sale"),currency:input.currency.trim().toUpperCase()})})}
+export async function retryFiscal(org:string,id:string):Promise<FiscalSubmission>{return requestJson(`${root(org)}/${uuid(id,"document")}/retry`,parseFiscalSubmission,{method:"POST",headers:await csrf(),body:"{}"})}

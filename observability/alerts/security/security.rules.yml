@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: AuthorizationDenialsSpike
+        expr: sum(rate(salekhpos_authorization_denied_total[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "Authorization denials spiked"
+          runbook: "docs/runbooks/authorizationdenialsspike.md"

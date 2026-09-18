@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: salekhpos-api, namespace: salekhpos }
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels: { salekhpos.io/environment: staging }

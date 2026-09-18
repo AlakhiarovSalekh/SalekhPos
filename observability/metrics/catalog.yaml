@@ -1,0 +1,23 @@
+version: 1
+required:
+  - name: salekhpos_http_request_duration_seconds
+    labels: [route, method, status_class]
+    cardinality: bounded
+  - name: salekhpos_db_operation_duration_seconds
+    labels: [module, operation, outcome]
+    cardinality: bounded
+  - name: salekhpos_worker_jobs_total
+    labels: [job_type, outcome]
+    cardinality: bounded
+  - name: salekhpos_webhook_deliveries_total
+    labels: [provider, outcome]
+    cardinality: bounded
+  - name: salekhpos_fiscal_submissions_total
+    labels: [provider, outcome]
+    cardinality: bounded
+forbidden_labels:
+  - organization_id
+  - user_id
+  - email
+  - subject
+  - token

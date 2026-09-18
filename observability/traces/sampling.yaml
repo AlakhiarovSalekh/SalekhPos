@@ -1,0 +1,18 @@
+version: 1
+default_probability: 0.05
+rules:
+  - name: errors
+    condition: status == error
+    probability: 1.0
+  - name: fiscalization
+    condition: route_prefix == "/api/v1/organizations/*/fiscal-documents"
+    probability: 0.25
+  - name: billing
+    condition: route_prefix == "/api/v1/organizations/*/billing"
+    probability: 0.20
+  - name: webhook-worker
+    condition: service == "salekhpos-worker"
+    probability: 0.20
+privacy:
+  capture_request_bodies: false
+  capture_response_bodies: false

@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: CommerceFailures
+        expr: sum(rate(salekhpos_billing_operations_total{outcome="failed"}[10m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "Billing/subscription operations are failing"
+          runbook: "docs/runbooks/commercefailures.md"

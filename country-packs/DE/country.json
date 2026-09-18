@@ -1,0 +1,11 @@
+{
+  "code": "DE",
+  "name": "Germany",
+  "currency": "EUR",
+  "timeZones": [
+    "Europe/Berlin"
+  ],
+  "defaultLocale": "de-DE",
+  "status": "skeleton",
+  "note": "Provider-specific tax and fiscal rules must be certified before activation."
+}

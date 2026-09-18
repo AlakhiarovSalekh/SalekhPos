@@ -1,0 +1,9 @@
+id: csrf-bff-mutation
+category: security
+scenario: "POST /bff mutation without CSRF token"
+expected: "403"
+assertion: "Cookie-authenticated mutations require valid antiforgery evidence."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: salekhpos
+  namespace: salekhpos
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "64k"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [pos.example.com]
+      secretName: salekhpos-tls
+  rules:
+    - host: pos.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: { service: { name: salekhpos-api, port: { number: 80 } } }
+          - path: /auth
+            pathType: Prefix
+            backend: { service: { name: salekhpos-api, port: { number: 80 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: salekhpos-web, port: { number: 80 } } }

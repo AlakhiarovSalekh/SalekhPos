@@ -29,6 +29,12 @@ using SalekhPos.Taxation.Application.TaxConfiguration;
 using SalekhPos.Localization.Application.Settings;
 using SalekhPos.Analytics.Application.Analytics;
 using SalekhPos.Accounting.Application.Journals;
+using SalekhPos.FeatureManagement.Application.Features;
+using SalekhPos.Fiscalization.Application.FiscalDocuments;
+using SalekhPos.Billing.Application.Billing;
+using SalekhPos.Subscriptions.Application.Subscriptions;
+using SalekhPos.Integrations.Application;
+using SalekhPos.Support.Application;
 
 namespace SalekhPos.Api.ExceptionHandling;
 
@@ -102,13 +108,32 @@ public sealed partial class SafeExceptionHandler(IProblemDetailsService problems
             LocalizationNotFoundException => (404, "localization_not_found", "Localization settings are unavailable"),
             AnalyticsDeniedException => (403, "analytics_access_denied", "Analytics access is not permitted"),
             AccountingDeniedException => (403, "accounting_access_denied", "Accounting access is not permitted"),
+            FeatureDeniedException => (403, "feature_access_denied", "Feature access is not permitted"),
+            FeatureNotFoundException => (404, "feature_not_found", "The feature is unavailable"),
+            FiscalDeniedException => (403, "fiscalization_access_denied", "Fiscalization access is not permitted"),
+            FiscalConflictException => (409, "fiscalization_conflict", "The fiscal document conflicts with current state"),
+            FiscalNotFoundException => (404, "fiscalization_not_found", "The fiscal document is unavailable"),
+            FiscalNotRetryableException => (409, "fiscalization_not_retryable", "The fiscal document cannot be retried"),
+            FiscalProviderNotConfiguredException => (503, "fiscalization_provider_unavailable", "The fiscal provider is not configured"),
+            BillingDeniedException => (403, "billing_access_denied", "Billing access is not permitted"),
+            BillingConflictException => (409, "billing_conflict", "The billing operation conflicts with current state"),
+            BillingNotFoundException => (404, "billing_not_found", "The billing record is unavailable"),
+            SubscriptionDeniedException => (403, "subscription_access_denied", "Subscription access is not permitted"),
+            SubscriptionConflictException => (409, "subscription_conflict", "The subscription operation conflicts with current state"),
+            SubscriptionNotFoundException => (404, "subscription_not_found", "The subscription is unavailable"),
+            IntegrationDeniedException => (403, "integration_access_denied", "Integration access is not permitted"),
+            IntegrationConflictException => (409, "integration_conflict", "The integration operation conflicts with current state"),
+            IntegrationNotFoundException => (404, "integration_not_found", "The integration record is unavailable"),
+            SupportDeniedException => (403, "support_access_denied", "Support access is not permitted"),
+            SupportConflictException => (409, "support_conflict", "The support operation conflicts with current state"),
+            SupportNotFoundException => (404, "support_not_found", "The support ticket is unavailable"),
             SalesConflictException => (409, "sale_operation_conflict", "The sale operation conflicts with current state"),
             SalePriceUnavailableException => (409, "sale_price_unavailable", "A current product price is unavailable"),
             InsufficientStockException => (409, "insufficient_stock", "Available stock is insufficient"),
             PlatformAccessDeniedException => (403, "platform_access_denied", "Platform access is not permitted"),
             PlatformConflictException => (409, "platform_operation_conflict", "The platform operation conflicts with current state"),
             PlatformUnavailableException => (503, "platform_unavailable", "Platform administration is temporarily unavailable"),
-            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NotificationUnavailableException or TaxUnavailableException or LocalizationUnavailableException or AnalyticsUnavailableException or AccountingUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
+            AccessUnavailableException or CatalogUnavailableException or InventoryUnavailableException or PricingUnavailableException or SalesUnavailableException or SalesCartUnavailableException or SaleVoidUnavailableException or PaymentsUnavailableException or ReturnsUnavailableException or StoreUnavailableException or ShiftUnavailableException or DeviceUnavailableException or SyncUnavailableException or IdentityUnavailableException or CustomerUnavailableException or SupplierUnavailableException or PurchasingUnavailableException or EmployeeUnavailableException or ReportingUnavailableException or WarehousingUnavailableException or PromotionsUnavailableException or LoyaltyUnavailableException or AuditUnavailableException or NotificationUnavailableException or TaxUnavailableException or LocalizationUnavailableException or AnalyticsUnavailableException or AccountingUnavailableException or FeatureUnavailableException or FiscalUnavailableException or BillingUnavailableException or SubscriptionUnavailableException or IntegrationUnavailableException or SupportUnavailableException or NpgsqlException or TimeoutException => (503, "service_unavailable", "The service is temporarily unavailable"),
             BadHttpRequestException bad => (bad.StatusCode, "invalid_request", "The request is invalid"),
             _ => (500, "internal_error", "The request could not be completed")
         };

@@ -1,0 +1,12 @@
+{
+  "timestampWindowSeconds": 300,
+  "nonceTtlSeconds": 600,
+  "nonceMaxLength": 128,
+  "store": "durable",
+  "duplicateResponseStatus": 409,
+  "scope": [
+    "organization",
+    "connection",
+    "nonce"
+  ]
+}

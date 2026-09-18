@@ -1,0 +1,49 @@
+{
+  "uid": "sp-billing",
+  "title": "Billing Operations",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "salekhpos"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Billing operations",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(salekhpos_billing_operations_total[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Billing failures",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(salekhpos_billing_operations_total{outcome=\"failed\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

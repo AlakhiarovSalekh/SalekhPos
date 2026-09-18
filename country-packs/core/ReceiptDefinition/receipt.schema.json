@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "ReceiptDefinition",
+  "required": [
+    "requiredFields",
+    "maxLineLength"
+  ],
+  "properties": {
+    "requiredFields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxLineLength": {
+      "type": "integer",
+      "minimum": 20,
+      "maximum": 200
+    }
+  }
+}

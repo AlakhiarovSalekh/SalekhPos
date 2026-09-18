@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "InvoiceDefinition",
+  "required": [
+    "numberPattern",
+    "requiredFields"
+  ],
+  "properties": {
+    "numberPattern": {
+      "type": "string"
+    },
+    "requiredFields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+id: rls-tenant-isolation
+category: security
+scenario: "Runtime session changes app.organization_id"
+expected: "isolated"
+assertion: "FORCE RLS prevents cross-tenant reads and writes."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

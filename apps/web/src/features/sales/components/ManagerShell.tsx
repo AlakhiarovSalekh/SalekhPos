@@ -27,6 +27,12 @@ export function ManagerShell({ organizationId, branchId, branchName, children }:
         <Link href="/reporting">Reports</Link>
         <Link href="/analytics">Analytics</Link>
         <Link href="/accounting">Accounting</Link>
+        <Link href="/support">Support</Link>
+        <Link href="/feature-management">Features</Link>
+        <Link href="/fiscalization">Fiscalization</Link>
+        <Link href="/integrations">Integrations</Link>
+        <Link href="/billing">Billing</Link>
+        <Link href="/subscriptions">Subscriptions</Link>
         <Link href="/dashboard">Account</Link>
       </nav>
       <div className="scope-chip" title={branchId}>{branchName ?? (branchId ? `Branch ${branchId.slice(0, 8)}` : "Choose a branch")}</div>

@@ -1,0 +1,1 @@
+import{SubscriptionsWorkspace}from"@/features/subscriptions/SubscriptionsWorkspace";export default function Page(){return <SubscriptionsWorkspace/>}

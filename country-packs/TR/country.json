@@ -1,0 +1,11 @@
+{
+  "code": "TR",
+  "name": "Türkiye",
+  "currency": "TRY",
+  "timeZones": [
+    "Europe/Istanbul"
+  ],
+  "defaultLocale": "tr-TR",
+  "status": "skeleton",
+  "note": "Provider-specific tax and fiscal rules must be certified before activation."
+}

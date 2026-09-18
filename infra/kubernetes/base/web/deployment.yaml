@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: salekhpos-web, namespace: salekhpos }
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector: { matchLabels: { app.kubernetes.io/name: salekhpos-web } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: salekhpos-web, app.kubernetes.io/part-of: salekhpos } }
+    spec:
+      serviceAccountName: salekhpos-web
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: salekhpos-web
+          image: ghcr.io/alakhiarovsalekh/salekhpos-web:latest
+          imagePullPolicy: IfNotPresent
+          ports: [ { name: http, containerPort: 3000 } ]
+          envFrom: [ { configMapRef: { name: salekhpos-runtime } } ]
+          env:
+            - name: ConnectionStrings__Application
+              valueFrom: { secretKeyRef: { name: salekhpos-database, key: connection-string } }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          readinessProbe: { httpGet: { path: /health/ready, port: http }, periodSeconds: 10, failureThreshold: 3 }
+          livenessProbe: { httpGet: { path: /health/live, port: http }, periodSeconds: 20, failureThreshold: 3 }
+          volumeMounts: [ { name: tmp, mountPath: /tmp } ]
+      volumes: [ { name: tmp, emptyDir: {} } ]
+      terminationGracePeriodSeconds: 45

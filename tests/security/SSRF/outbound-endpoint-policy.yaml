@@ -1,0 +1,9 @@
+id: ssrf-outbound-endpoint
+category: security
+scenario: "Integration endpoint resolves to loopback/private/link-local"
+expected: "400"
+assertion: "Outbound integrations reject unsafe network destinations."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

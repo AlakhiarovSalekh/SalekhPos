@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: WorkerQueueAge
+        expr: max(salekhpos_worker_oldest_queued_seconds) > 120
+        for: 10m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "Worker queue age exceeds two minutes"
+          runbook: "docs/runbooks/workerqueueage.md"

@@ -1,0 +1,11 @@
+{
+  "mode": "required",
+  "providerKey": "az.default",
+  "timeoutSeconds": 15,
+  "retryPolicy": {
+    "maxAttempts": 5,
+    "baseDelaySeconds": 5,
+    "maxDelaySeconds": 300
+  },
+  "storeProviderEvidence": true
+}

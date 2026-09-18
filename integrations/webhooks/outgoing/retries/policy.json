@@ -1,0 +1,37 @@
+{
+  "maxAttempts": 12,
+  "scheduleSeconds": [
+    5,
+    15,
+    30,
+    60,
+    120,
+    300,
+    600,
+    1200,
+    1800,
+    3600,
+    7200,
+    14400
+  ],
+  "retryStatusCodes": [
+    408,
+    425,
+    429,
+    500,
+    502,
+    503,
+    504
+  ],
+  "terminalStatusCodes": [
+    400,
+    401,
+    403,
+    404,
+    409,
+    410,
+    422
+  ],
+  "honorRetryAfter": true,
+  "maxRetryAfterSeconds": 21600
+}

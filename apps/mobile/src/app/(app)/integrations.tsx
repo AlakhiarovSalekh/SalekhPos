@@ -1,0 +1,1 @@
+import{IntegrationsScreen}from"@/screens/management/IntegrationsScreen";export default function Route(){return <IntegrationsScreen/>}

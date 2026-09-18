@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: salekhpos-runtime, namespace: salekhpos }
+data:
+  ASPNETCORE_URLS: http://0.0.0.0:8080
+  DOTNET_EnableDiagnostics: "0"
+  Worker__MaxConcurrency: "8"
+  Worker__QueueCapacity: "1024"
+  Worker__RetryMaxAttempts: "5"

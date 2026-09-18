@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "TaxDefinition",
+  "required": [
+    "code",
+    "ratePercent",
+    "pricesIncludeTax"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "ratePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "pricesIncludeTax": {
+      "type": "boolean"
+    }
+  }
+}

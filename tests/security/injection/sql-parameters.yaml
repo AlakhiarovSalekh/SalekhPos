@@ -1,0 +1,9 @@
+id: sql-parameterization
+category: security
+scenario: "Input contains SQL metacharacters"
+expected: "no-injection"
+assertion: "Database operations use parameters; input cannot alter SQL structure."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

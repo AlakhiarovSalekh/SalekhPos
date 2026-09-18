@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: SalekhPos
+    orgId: 1
+    folder: SalekhPos
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

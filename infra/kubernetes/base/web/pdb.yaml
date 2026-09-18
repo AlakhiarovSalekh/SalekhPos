@@ -1,0 +1,6 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: salekhpos-web, namespace: salekhpos }
+spec:
+  minAvailable: 2
+  selector: { matchLabels: { app.kubernetes.io/name: salekhpos-web } }

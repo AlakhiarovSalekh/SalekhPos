@@ -1,0 +1,1 @@
+import{FeatureManagementScreen}from"@/screens/management/FeatureManagementScreen";export default function Route(){return <FeatureManagementScreen/>}
