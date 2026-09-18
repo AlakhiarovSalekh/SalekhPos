@@ -2,12 +2,12 @@ import type { SessionAuthorization } from "@/security/session";
 
 export type MobileRoute =
   | "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner"
-  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/notifications" | "/taxation" | "/localization" | "/analytics" | "/accounting" | "/audit";
+  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/notifications" | "/taxation" | "/localization" | "/analytics" | "/accounting" | "/audit" | "/support";
 
 export type NavigationLabelKey =
   | "navigation.dashboard" | "navigation.organizations" | "navigation.stores"
   | "navigation.products" | "navigation.inventory" | "navigation.scanner"
-  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.notifications" | "navigation.taxation" | "navigation.localization" | "navigation.analytics" | "navigation.accounting" | "navigation.audit";
+  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.notifications" | "navigation.taxation" | "navigation.localization" | "navigation.analytics" | "navigation.accounting" | "navigation.audit" | "navigation.support";
 
 export type NavigationItem = Readonly<{
   id: string;
@@ -50,6 +50,8 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
   Object.freeze({ id: "analytics", labelKey: "navigation.analytics" as const, route: "/analytics" as const, requiredPermissions: ["reports.view"] }),
   Object.freeze({ id: "accounting", labelKey: "navigation.accounting" as const, route: "/accounting" as const, requiredPermissions: ["accounting.view"] }),
   Object.freeze({ id: "audit", labelKey: "navigation.audit" as const, route: "/audit" as const, requiredPermissions: ["audit.view"] }),
+  Object.freeze({ id: "support", labelKey: "navigation.support" as const, route: "/support" as const,
+    requiredAnyPermissions: ["support.view", "support.create", "support.manage"] }),
 ]);
 
 export function canAccessNavigationItem(
