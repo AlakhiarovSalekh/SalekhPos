@@ -28,6 +28,10 @@ public sealed class SubscriptionTests(AccessFixture fixture)
         var createBody=new{OperationId=operation,SubscriptionId=subscription,PlanId=planA,PeriodStart=start,PeriodEnd=end,Trial=false};
         using var created=await client.PostAsJsonAsync(root+"/",createBody);Assert.Equal(HttpStatusCode.OK,created.StatusCode);
         using var replay=await client.PostAsJsonAsync(root+"/",createBody);Assert.Equal(HttpStatusCode.OK,replay.StatusCode);
+        using var secondActive=await client.PostAsJsonAsync(root+"/",new{
+            OperationId=Guid.NewGuid(),SubscriptionId=Guid.NewGuid(),PlanId=planA,
+            PeriodStart=start,PeriodEnd=end,Trial=false});
+        Assert.Equal(HttpStatusCode.Conflict,secondActive.StatusCode);
         using var entitlement=await client.GetAsync($"{root}/{subscription:D}/entitlements");Assert.Equal(HttpStatusCode.OK,entitlement.StatusCode);
         using var json=JsonDocument.Parse(await entitlement.Content.ReadAsStringAsync());
         Assert.Equal(1,json.RootElement.GetProperty("limits").GetProperty("stores").GetInt64());

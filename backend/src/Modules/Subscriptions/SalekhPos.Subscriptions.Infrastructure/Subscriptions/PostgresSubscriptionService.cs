@@ -67,7 +67,15 @@ public sealed class PostgresSubscriptionService(NpgsqlDataSource? source) : ISub
         insert.Parameters.AddWithValue(model.PeriodEnd);
         insert.Parameters.AddWithValue(identity.Issuer);
         insert.Parameters.AddWithValue(identity.Subject);
-        var row = await ReadSubscriptionRow(insert, cancellationToken);
+        SubRow? row;
+        try
+        {
+            row = await ReadSubscriptionRow(insert, cancellationToken);
+        }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
+        {
+            throw new SubscriptionConflictException("An active subscription already exists.");
+        }
         if (row is null)
         {
             var replay = await ReadByOperation(connection, transaction, organizationId, request.OperationId, cancellationToken);
