@@ -4,14 +4,13 @@ import { Pressable, Text, View } from "react-native";
 
 import type { CompletedSale, SaleSummary } from "@/api/salesContracts";
 import { useApiClient } from "@/api/ApiContext";
-import { AppButton, LoadingSurface, textStyles } from "@/components/primitives";
+import { AppButton, LoadingSurface, Screen, textStyles } from "@/components/primitives";
 import { EmptyState, SafeErrorNotice, ScreenHeader, operationStyles } from "@/components/operations";
 import { appendPage, firstPageState, type PaginationState } from "@/features/pagination";
 import { useLocalization } from "@/localization/LocalizationProvider";
 import { createMobileSalesOperations } from "@/services/salesOperations";
 import { mapSafeError, type SafeAppError } from "@/services/safeError";
 import { useWorkspace } from "@/state/workspace";
-import { Screen } from "@/components/primitives";
 
 const PAGE_SIZE = 25;
 
