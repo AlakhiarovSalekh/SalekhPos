@@ -11,18 +11,9 @@ import type { PropsWithChildren } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useLocalization } from "@/localization/LocalizationProvider";
+import { colors } from "./themeColors";
 
-export const colors = Object.freeze({
-  background: "#F4F7FB",
-  surface: "#FFFFFF",
-  text: "#10213A",
-  muted: "#53657D",
-  primary: "#075E54",
-  primaryPressed: "#06483F",
-  onPrimary: "#FFFFFF",
-  border: "#C7D2E0",
-  danger: "#A6192E",
-});
+export { colors } from "./themeColors";
 
 export function Screen({ children }: PropsWithChildren) {
   return (

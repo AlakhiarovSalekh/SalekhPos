@@ -19,7 +19,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <LocalizationProvider>
         <AppErrorBoundary>
-          <StatusBar style="dark" />
+          <StatusBar style="auto" />
           <SessionProvider>
             <RootNavigator />
           </SessionProvider>
