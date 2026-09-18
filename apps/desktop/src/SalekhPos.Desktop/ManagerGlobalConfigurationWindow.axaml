@@ -6,7 +6,7 @@
       <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12" Margin="8">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <StackPanel><TextBlock Text="Notification center" FontSize="24" FontWeight="SemiBold"/>
-            <TextBlock Text="Review your inbox and delivery preferences." Foreground="#607080"/></StackPanel>
+            <TextBlock Text="Review your inbox and delivery preferences." Foreground="{DynamicResource AppMutedTextBrush}"/></StackPanel>
           <Button Grid.Column="1" Content="Refresh" Click="RefreshNotificationsClick"/>
         </Grid>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
@@ -17,14 +17,14 @@
           <Button Content="Save preferences" Click="SavePreferencesClick"/>
         </StackPanel>
         <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8">
-          <TextBlock Name="NotificationStatusText" Foreground="#607080" TextWrapping="Wrap"/>
+          <TextBlock Name="NotificationStatusText" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"/>
           <ListBox Grid.Row="1" Name="NotificationsList">
             <ListBox.ItemTemplate><DataTemplate x:CompileBindings="False">
-              <Border BorderBrush="#D9DEE3" BorderThickness="0,0,0,1" Padding="4,10">
+              <Border BorderBrush="{DynamicResource AppDividerBrush}" BorderThickness="0,0,0,1" Padding="4,10">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                   <StackPanel><TextBlock Text="{Binding Heading}" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Body}" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Meta}" Foreground="#607080"/></StackPanel>
+                    <TextBlock Text="{Binding Meta}" Foreground="{DynamicResource AppMutedTextBrush}"/></StackPanel>
                   <Button Grid.Column="1" Content="Mark read" Tag="{Binding Id}" Click="MarkReadClick"/>
                 </Grid>
               </Border>
@@ -36,7 +36,7 @@
     <TabItem Header="Taxation">
       <ScrollViewer><StackPanel Spacing="14" Margin="8">
         <TextBlock Text="Tax configuration" FontSize="24" FontWeight="SemiBold"/>
-        <TextBlock Text="Manage tax profiles, effective rates, and calculation previews." Foreground="#607080"/>
+        <TextBlock Text="Manage tax profiles, effective rates, and calculation previews." Foreground="{DynamicResource AppMutedTextBrush}"/>
         <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="10">
           <TextBox Name="ProfileCodeBox" PlaceholderText="Profile code" MaxLength="40"/>
           <TextBox Grid.Column="1" Name="ProfileNameBox" PlaceholderText="Profile name" MaxLength="120"/>
@@ -56,14 +56,14 @@
           <TextBox Grid.Column="1" Name="CalculateCategoryBox" PlaceholderText="Category code"/>
           <Button Grid.Column="2" Content="Calculate tax" Click="CalculateTaxClick"/>
         </Grid>
-        <TextBlock Name="TaxStatusText" Foreground="#607080" TextWrapping="Wrap"/>
+        <TextBlock Name="TaxStatusText" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"/>
         <ListBox Name="RatesList" Height="260"/>
       </StackPanel></ScrollViewer>
     </TabItem>
     <TabItem Header="Localization">
       <ScrollViewer><StackPanel Spacing="14" Margin="8">
         <TextBlock Text="Organization localization" FontSize="24" FontWeight="SemiBold"/>
-        <TextBlock Text="Configure country, locale, currency, timezone and supported locales." Foreground="#607080"/>
+        <TextBlock Text="Configure country, locale, currency, timezone and supported locales." Foreground="{DynamicResource AppMutedTextBrush}"/>
         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
           <TextBox Name="LocCountryBox" PlaceholderText="Country code" MaxLength="2"/>
           <TextBox Grid.Column="1" Name="LocCurrencyBox" PlaceholderText="Currency" MaxLength="3"/>
@@ -75,7 +75,7 @@
           <TextBox Name="LocFirstDayBox" Text="1" PlaceholderText="First day of week (1-7)"/>
           <Button Grid.Column="1" Content="Save localization" Click="SaveLocalizationClick"/>
         </Grid>
-        <TextBlock Name="LocalizationStatusText" Foreground="#607080" TextWrapping="Wrap"/>
+        <TextBlock Name="LocalizationStatusText" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"/>
       </StackPanel></ScrollViewer>
     </TabItem>
   </TabControl>

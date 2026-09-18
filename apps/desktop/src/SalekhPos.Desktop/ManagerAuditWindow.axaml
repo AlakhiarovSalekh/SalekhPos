@@ -2,7 +2,7 @@
         x:Class="SalekhPos.Desktop.ManagerAuditWindow" Title="SalekhPos Audit" Width="980" Height="720" MinWidth="760" MinHeight="520">
   <Grid RowDefinitions="Auto,Auto,*" Margin="18" RowSpacing="12">
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-      <StackPanel><TextBlock Text="Audit trail" FontSize="24" FontWeight="SemiBold"/><TextBlock Text="Immutable tenant activity evidence and integrity verification." Foreground="#607080"/></StackPanel>
+      <StackPanel><TextBlock Text="Audit trail" FontSize="24" FontWeight="SemiBold"/><TextBlock Text="Immutable tenant activity evidence and integrity verification." Foreground="{DynamicResource AppMutedTextBrush}"/></StackPanel>
       <Button Grid.Column="1" Content="Verify chain" Click="VerifyClick"/>
     </Grid>
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -10,10 +10,10 @@
       <Button Grid.Column="1" Content="Refresh" Click="RefreshClick"/>
     </Grid>
     <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="10">
-      <TextBlock Name="StatusText" TextWrapping="Wrap" Foreground="#607080"/>
+      <TextBlock Name="StatusText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
       <ListBox Grid.Row="1" Name="EventsList">
-        <ListBox.ItemTemplate><DataTemplate x:CompileBindings="False"><Border BorderBrush="#D9DEE3" BorderThickness="0,0,0,1" Padding="4,10"><StackPanel>
-          <TextBlock Text="{Binding Heading}" FontWeight="SemiBold"/><TextBlock Text="{Binding Actor}"/><TextBlock Text="{Binding Target}" Foreground="#607080"/><TextBlock Text="{Binding Hash}" FontFamily="Consolas" FontSize="11" Foreground="#607080"/>
+        <ListBox.ItemTemplate><DataTemplate x:CompileBindings="False"><Border BorderBrush="{DynamicResource AppDividerBrush}" BorderThickness="0,0,0,1" Padding="4,10"><StackPanel>
+          <TextBlock Text="{Binding Heading}" FontWeight="SemiBold"/><TextBlock Text="{Binding Actor}"/><TextBlock Text="{Binding Target}" Foreground="{DynamicResource AppMutedTextBrush}"/><TextBlock Text="{Binding Hash}" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource AppMutedTextBrush}"/>
         </StackPanel></Border></DataTemplate></ListBox.ItemTemplate>
       </ListBox>
     </Grid>

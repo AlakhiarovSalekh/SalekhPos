@@ -4,20 +4,20 @@
   <Grid RowDefinitions="Auto,Auto,*" Margin="18" RowSpacing="12">
     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
       <StackPanel><TextBlock Text="Business analytics" FontSize="24" FontWeight="SemiBold"/>
-        <TextBlock Text="Revenue, sales trends, stock health and store comparison." Foreground="#607080"/></StackPanel>
+        <TextBlock Text="Revenue, sales trends, stock health and store comparison." Foreground="{DynamicResource AppMutedTextBrush}"/></StackPanel>
       <ComboBox Grid.Column="1" Name="WindowBox" SelectedIndex="2" Width="130">
         <ComboBoxItem Content="24 hours" Tag="1"/><ComboBoxItem Content="7 days" Tag="7"/>
         <ComboBoxItem Content="30 days" Tag="30"/><ComboBoxItem Content="90 days" Tag="90"/>
       </ComboBox>
       <Button Grid.Column="2" Content="Refresh" Click="RefreshClick"/>
     </Grid>
-    <TextBlock Grid.Row="1" Name="StatusText" Foreground="#607080" TextWrapping="Wrap"/>
+    <TextBlock Grid.Row="1" Name="StatusText" Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"/>
     <ScrollViewer Grid.Row="2"><StackPanel Spacing="14">
       <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
-        <Border Background="White" Padding="14"><StackPanel><TextBlock Text="Net revenue"/><TextBlock Name="NetRevenueText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
-        <Border Grid.Column="1" Background="White" Padding="14"><StackPanel><TextBlock Text="Sales"/><TextBlock Name="SalesText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
-        <Border Grid.Column="2" Background="White" Padding="14"><StackPanel><TextBlock Text="Average ticket"/><TextBlock Name="AverageText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
-        <Border Grid.Column="3" Background="White" Padding="14"><StackPanel><TextBlock Text="Returns"/><TextBlock Name="ReturnsText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Background="{DynamicResource AppSurfaceBrush}" Padding="14"><StackPanel><TextBlock Text="Net revenue"/><TextBlock Name="NetRevenueText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="1" Background="{DynamicResource AppSurfaceBrush}" Padding="14"><StackPanel><TextBlock Text="Sales"/><TextBlock Name="SalesText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="2" Background="{DynamicResource AppSurfaceBrush}" Padding="14"><StackPanel><TextBlock Text="Average ticket"/><TextBlock Name="AverageText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
+        <Border Grid.Column="3" Background="{DynamicResource AppSurfaceBrush}" Padding="14"><StackPanel><TextBlock Text="Returns"/><TextBlock Name="ReturnsText" FontSize="24" FontWeight="Bold"/></StackPanel></Border>
       </Grid>
       <TextBlock Text="Stock health" FontSize="18" FontWeight="SemiBold"/><TextBlock Name="StockText"/>
       <TextBlock Text="Daily trend" FontSize="18" FontWeight="SemiBold"/><ListBox Name="TrendList" Height="220"/>
