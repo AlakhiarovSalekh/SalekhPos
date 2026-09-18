@@ -1,6 +1,25 @@
-export type MobileThemeScheme = "light" | "dark" | null | undefined;
+export type MobileThemeScheme = "light" | "dark" | "unspecified" | null | undefined;
 
-export const lightColors = Object.freeze({
+export type MobileColors = Readonly<{
+  background: string;
+  surface: string;
+  surfaceMuted: string;
+  text: string;
+  muted: string;
+  primary: string;
+  primaryPressed: string;
+  onPrimary: string;
+  border: string;
+  danger: string;
+  warningBackground: string;
+  warningBorder: string;
+  warningText: string;
+  successBackground: string;
+  successBorder: string;
+  successText: string;
+}>;
+
+export const lightColors: MobileColors = Object.freeze({
   background: "#F4F7FB",
   surface: "#FFFFFF",
   surfaceMuted: "#EEF3F8",
@@ -19,7 +38,7 @@ export const lightColors = Object.freeze({
   successText: "#185C3A",
 });
 
-export const darkColors = Object.freeze({
+export const darkColors: MobileColors = Object.freeze({
   background: "#07110F",
   surface: "#0F1D19",
   surfaceMuted: "#13251F",
@@ -37,8 +56,6 @@ export const darkColors = Object.freeze({
   successBorder: "#2C6A53",
   successText: "#8FE0BE",
 });
-
-export type MobileColors = typeof lightColors;
 
 export function resolveMobileColors(scheme: MobileThemeScheme): MobileColors {
   return scheme === "dark" ? darkColors : lightColors;
