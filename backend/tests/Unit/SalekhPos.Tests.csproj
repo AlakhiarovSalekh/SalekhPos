@@ -11,6 +11,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Bootstrapper/SalekhPos.Api/SalekhPos.Api.csproj" />
     <ProjectReference Include="../../src/Bootstrapper/SalekhPos.Worker/SalekhPos.Worker.csproj" />
     <ProjectReference Include="../../src/Modules/Organizations/SalekhPos.Organizations.Domain/SalekhPos.Organizations.Domain.csproj" />
@@ -18,11 +23,13 @@
     <ProjectReference Include="../../src/Modules/Inventory/SalekhPos.Inventory.Domain/SalekhPos.Inventory.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Pricing/SalekhPos.Pricing.Domain/SalekhPos.Pricing.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Sales/SalekhPos.Sales.Domain/SalekhPos.Sales.Domain.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Modules\Payments\SalekhPos.Payments.Domain\SalekhPos.Payments.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Modules\FeatureManagement\SalekhPos.FeatureManagement.Domain\SalekhPos.FeatureManagement.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Billing\SalekhPos.Billing.Domain\SalekhPos.Billing.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Subscriptions\SalekhPos.Subscriptions.Domain\SalekhPos.Subscriptions.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Payments/SalekhPos.Payments.Domain/SalekhPos.Payments.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/FeatureManagement/SalekhPos.FeatureManagement.Domain/SalekhPos.FeatureManagement.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Billing/SalekhPos.Billing.Domain/SalekhPos.Billing.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Subscriptions/SalekhPos.Subscriptions.Domain/SalekhPos.Subscriptions.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Integrations/SalekhPos.Integrations.Domain/SalekhPos.Integrations.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Integrations/SalekhPos.Integrations.Application/SalekhPos.Integrations.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Support/SalekhPos.Support.Domain/SalekhPos.Support.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Support/SalekhPos.Support.Application/SalekhPos.Support.Application.csproj" />
   </ItemGroup>
 </Project>
