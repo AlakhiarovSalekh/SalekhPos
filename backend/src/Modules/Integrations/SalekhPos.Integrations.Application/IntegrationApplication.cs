@@ -43,6 +43,7 @@ public sealed record EnqueueWebhookCommand(Guid OrganizationId, Guid DeliveryId,
 }
 
 public sealed record IntegrationWriteResult<T>(T Value, bool Created);
+public sealed record DeferWebhookLeaseCommand(Guid LeaseId, string ErrorCode, DateTimeOffset RetryAt);
 
 public interface IIntegrationService
 {
@@ -53,6 +54,8 @@ public interface IIntegrationService
     Task<WebhookDeliveryPage> ListDeliveriesAsync(IntegrationIdentity identity, Guid organizationId, int pageSize, Guid? after, CancellationToken cancellationToken);
     Task<LeasedWebhookResponse?> LeaseNextWebhookAsync(IntegrationIdentity identity, Guid organizationId, LeaseWebhookRequest request, CancellationToken cancellationToken);
     Task<WebhookDeliveryResponse> RecordAttemptAsync(IntegrationIdentity identity, Guid organizationId, Guid deliveryId, RecordWebhookAttemptRequest request, CancellationToken cancellationToken);
+    Task<WebhookDeliveryResponse> DeferLeaseAsync(IntegrationIdentity identity, Guid organizationId,
+        Guid deliveryId, DeferWebhookLeaseCommand command, CancellationToken cancellationToken);
 }
 
 public sealed class IntegrationDeniedException : Exception;

@@ -186,6 +186,55 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
         await transaction.CommitAsync(cancellationToken); return result;
     }
 
+    public async Task<WebhookDeliveryResponse> DeferLeaseAsync(IntegrationIdentity identity, Guid organizationId,
+        Guid deliveryId, DeferWebhookLeaseCommand command, CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (organizationId == Guid.Empty || deliveryId == Guid.Empty || command.LeaseId == Guid.Empty
+            || command.RetryAt <= DateTimeOffset.UtcNow || command.RetryAt > DateTimeOffset.UtcNow.AddHours(24))
+        {
+            throw new ArgumentException("Webhook lease deferral is invalid.");
+        }
+
+        var error = IntegrationInput.Required(command.ErrorCode, 100, nameof(command.ErrorCode));
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, identity, "integrations.dispatch", cancellationToken);
+
+        await using var update = new NpgsqlCommand("""
+            UPDATE integrations.webhook_deliveries SET
+              status='failed',
+              lease_id=NULL,
+              lease_expires_at=NULL,
+              next_attempt_at=$5,
+              last_status_code=NULL,
+              last_error_code=$4,
+              updated_at=statement_timestamp()
+            WHERE organization_id=$1 AND delivery_id=$2 AND status='delivering' AND lease_id=$3
+            RETURNING delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,
+              last_status_code,last_error_code,created_at,updated_at
+            """, connection, transaction);
+        update.Parameters.AddWithValue(organizationId);
+        update.Parameters.AddWithValue(deliveryId);
+        update.Parameters.AddWithValue(command.LeaseId);
+        update.Parameters.AddWithValue(error);
+        update.Parameters.AddWithValue(command.RetryAt);
+
+        WebhookDeliveryResponse result;
+        await using (var reader = await update.ExecuteReaderAsync(cancellationToken))
+        {
+            if (!await reader.ReadAsync(cancellationToken))
+            {
+                throw new IntegrationConflictException();
+            }
+            result = ReadDelivery(reader);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
     public async Task<WebhookDeliveryResponse> RecordAttemptAsync(IntegrationIdentity identity, Guid organizationId,
         Guid deliveryId, RecordWebhookAttemptRequest request, CancellationToken cancellationToken)
     {
