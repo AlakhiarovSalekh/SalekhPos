@@ -1,0 +1,86 @@
+name: Recovery PostgreSQL Gate
+
+on:
+  push:
+    branches:
+      - recovery-pg-gate-20260918
+    paths:
+      - .github/workflows/recovery-pg-gate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-migrations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout recovery commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: fa901077fb907323bcc4e793844578fdd50920fd
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Apply every migration and SQL regression test
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $env:GITHUB_WORKSPACE
+          $image = 'postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
+          $name = 'salekhpos-pg-fast-' + [guid]::NewGuid().ToString('N')
+          $container = $null
+          try {
+            $env:POSTGRES_PASSWORD = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+            $runtimePassword = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+            $container = (& docker run --detach --rm --name $name --publish '127.0.0.1::5432' --env POSTGRES_PASSWORD --env POSTGRES_DB=salekhpos_test --env POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 $image | Select-Object -Last 1).Trim()
+            if ($LASTEXITCODE -ne 0 -or $container -notmatch '^[a-f0-9]{64}$') { throw 'PostgreSQL container failed to start.' }
+
+            $ready = $false
+            for ($i = 0; $i -lt 60; $i++) {
+              & docker exec $container pg_isready -h 127.0.0.1 -U postgres -d salekhpos_test *> $null
+              if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+              Start-Sleep -Seconds 1
+            }
+            if (-not $ready) { throw 'PostgreSQL did not become ready.' }
+
+            $psql = @('exec','-i',$container,'psql','-X','-U','postgres','-d','salekhpos_test','-v','ON_ERROR_STOP=1')
+            "CREATE ROLE salekhpos_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD '$runtimePassword';" | & docker @psql
+            if ($LASTEXITCODE -ne 0) { throw 'Runtime role provisioning failed.' }
+
+            & docker exec $container mkdir -p /checks/migrations
+            $testTarget = $container + ':/checks/tests'
+            & docker cp (Join-Path $root 'tests/integration/database') $testTarget
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to copy SQL tests.' }
+
+            $migrations = @(& (Join-Path $root 'scripts/ci/get-migrations.ps1') -RepositoryRoot $root)
+            $tests = @(Get-ChildItem -LiteralPath (Join-Path $root 'tests/integration/database') -Filter '*.sql' | Sort-Object Name)
+            foreach ($migration in $migrations) {
+              $version = $migration.Name.Substring(0,3)
+              Write-Host "MIGRATION=$($migration.Name)"
+              $migrationTarget = $container + ':/checks/migrations/' + $migration.Name
+              & docker cp $migration.FullName $migrationTarget
+              if ($LASTEXITCODE -ne 0) { throw "Copy failed for $($migration.Name)." }
+
+              foreach ($test in $tests | Where-Object { $_.Name.StartsWith($version + '_') -and $_.Name.EndsWith('_before.sql') }) {
+                & docker @($psql + @('-f',('/checks/tests/' + $test.Name)))
+                if ($LASTEXITCODE -ne 0) { throw "Before-test failed: $($test.Name)" }
+              }
+
+              & docker @($psql + @('-f',('/checks/migrations/' + $migration.Name)))
+              if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($migration.Name)" }
+
+              foreach ($test in $tests | Where-Object { $_.Name.StartsWith($version + '_') -and -not $_.Name.EndsWith('_before.sql') }) {
+                & docker @($psql + @('-f',('/checks/tests/' + $test.Name)))
+                if ($LASTEXITCODE -ne 0) { throw "SQL test failed: $($test.Name)" }
+              }
+            }
+            Write-Host "PASS: $($migrations.Count) migrations and $($tests.Count) SQL regression files."
+          }
+          finally {
+            if ($container -and $container -match '^[a-f0-9]{64}$') {
+              & docker rm --force --volumes $container | Out-Null
+            }
+          }
