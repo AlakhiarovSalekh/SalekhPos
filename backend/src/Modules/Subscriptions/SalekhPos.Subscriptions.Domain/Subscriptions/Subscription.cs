@@ -34,7 +34,8 @@ public sealed class Subscription
         if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.Trialing)) throw new InvalidOperationException("Subscription cannot become past due.");
         Status = SubscriptionStatus.PastDue;
     }
-    public void ScheduleCancellation() {
+    public void ScheduleCancellation()
+    {
         if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired) throw new InvalidOperationException("Subscription is final.");
         CancelAtPeriodEnd = true;
     }
