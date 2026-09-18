@@ -72,5 +72,12 @@
     <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Api\SalekhPos.Subscriptions.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Application\SalekhPos.Subscriptions.Application.csproj" />
     <ProjectReference Include="..\..\Modules\Subscriptions\SalekhPos.Subscriptions.Infrastructure\SalekhPos.Subscriptions.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Integrations\SalekhPos.Integrations.Api\SalekhPos.Integrations.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Integrations\SalekhPos.Integrations.Application\SalekhPos.Integrations.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Integrations\SalekhPos.Integrations.Infrastructure\SalekhPos.Integrations.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Support\SalekhPos.Support.Api\SalekhPos.Support.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Support\SalekhPos.Support.Application\SalekhPos.Support.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Support\SalekhPos.Support.Contracts\SalekhPos.Support.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\Support\SalekhPos.Support.Infrastructure\SalekhPos.Support.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
