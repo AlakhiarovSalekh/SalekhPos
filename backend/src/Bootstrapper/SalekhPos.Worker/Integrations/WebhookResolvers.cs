@@ -89,16 +89,22 @@ public sealed class EnvironmentWebhookSecretSource : IWebhookSecretSource
     public ValueTask<byte[]> ResolveAsync(Uri reference, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var original = reference.OriginalString;
+        var prefix = "env://";
+        var name = original.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? original[prefix.Length..]
+            : string.Empty;
         if (!Supports(reference)
-            || !string.IsNullOrEmpty(reference.AbsolutePath.Trim('/'))
-            || string.IsNullOrWhiteSpace(reference.Host)
-            || reference.Host.Length > 128
-            || reference.Host.Any(character => !(char.IsAsciiLetterOrDigit(character) || character == '_')))
+            || name.Length is < 1 or > 128
+            || name.Contains('/')
+            || name.Contains('?')
+            || name.Contains('#')
+            || name.Any(character => !(char.IsAsciiLetterOrDigit(character) || character == '_')))
         {
             throw new ArgumentException("Environment secret reference is invalid.", nameof(reference));
         }
 
-        var value = Environment.GetEnvironmentVariable(reference.Host)
+        var value = Environment.GetEnvironmentVariable(name)
             ?? throw new InvalidOperationException("The referenced environment secret is unavailable.");
         if (value.Length is < 32 or > 4096 || value.Any(char.IsControl))
         {

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using SalekhPos.Authorization.Infrastructure;
 using SalekhPos.Integrations.Application;
+using SalekhPos.Integrations.Infrastructure.Webhooks;
 
 namespace SalekhPos.Worker.Integrations;
 
