@@ -115,6 +115,14 @@ public sealed class SupportTests(AccessFixture fixture)
         });
         Assert.Equal(HttpStatusCode.Conflict, changedDiagnostic.StatusCode);
 
+        using var duplicateEvidence = await Post(client, diagnosticPath, Guid.NewGuid(), new
+        {
+            Kind = "log",
+            Reference = "object://support/diagnostic-1",
+            Sha256 = digest
+        });
+        Assert.Equal(HttpStatusCode.Conflict, duplicateEvidence.StatusCode);
+
         using var list = await client.GetAsync($"{root}?pageSize=50&status=in_progress");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
         using var page = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
@@ -122,13 +130,13 @@ public sealed class SupportTests(AccessFixture fixture)
             item => item.GetProperty("id").GetGuid() == ticketId);
     }
 
-    private static Task<HttpResponseMessage> Post(HttpClient client, string path, Guid operationId, object body)
+    private static async Task<HttpResponseMessage> Post(HttpClient client, string path, Guid operationId, object body)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, path)
+        using var request = new HttpRequestMessage(HttpMethod.Post, path)
         {
             Content = JsonContent.Create(body)
         };
         request.Headers.TryAddWithoutValidation("Idempotency-Key", operationId.ToString("D"));
-        return client.SendAsync(request);
+        return await client.SendAsync(request);
     }
 }
