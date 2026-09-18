@@ -40,16 +40,37 @@ public sealed class PostgresNotificationCenter(NpgsqlDataSource? source) : INoti
         insert.Parameters.AddWithValue(model.RecipientSubject); insert.Parameters.AddWithValue(model.Title);
         insert.Parameters.AddWithValue(model.Body); insert.Parameters.AddWithValue(model.Severity.ToString().ToLowerInvariant());
         Row? created = null;
-        await using (var reader = await insert.ExecuteReaderAsync(ct)) if (await reader.ReadAsync(ct)) created = Read(reader);
+        await using (var reader = await insert.ExecuteReaderAsync(ct))
+        {
+            if (await reader.ReadAsync(ct))
+            {
+                created = Read(reader);
+            }
+        }
+
+        var wasCreated = created is not null;
         if (created is null)
         {
             created = await ReadByOperation(connection, transaction, model.OrganizationId, command.OperationId, ct)
                 ?? throw new NotificationUnavailableException();
-            if (created.Recipient != model.RecipientSubject || created.Title != model.Title || created.Body != model.Body)
+            if (created.Recipient != model.RecipientSubject
+                || created.Title != model.Title
+                || created.Body != model.Body
+                || created.BranchId != model.BranchId
+                || !string.Equals(created.Severity, model.Severity.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
                 throw new NotificationConflictException();
+            }
         }
+        else
+        {
+            await EnqueueExternalDeliveries(
+                connection, transaction, identity.Issuer, model.OrganizationId, created.Id,
+                created.Recipient, ct);
+        }
+
         await transaction.CommitAsync(ct);
-        return new(ToResponse(created), created.Id == model.Id);
+        return new(ToResponse(created), wasCreated);
     }
     public async Task<NotificationPage> ListMineAsync(NotificationIdentity identity, Guid organizationId,
         int pageSize, Guid? after, bool unreadOnly, CancellationToken ct)
@@ -135,6 +156,41 @@ public sealed class PostgresNotificationCenter(NpgsqlDataSource? source) : INoti
         if (await reader.ReadAsync(ct)) result = new(reader.GetBoolean(0), reader.GetBoolean(1), reader.GetBoolean(2), reader.GetFieldValue<DateTimeOffset>(3));
         else result = new(true, false, false, DateTimeOffset.UnixEpoch);
         await transaction.CommitAsync(ct); return result;
+    }
+
+    private static async Task EnqueueExternalDeliveries(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string issuer,
+        Guid organizationId,
+        Guid notificationId,
+        string recipientSubject,
+        CancellationToken ct)
+    {
+        await using var insert = new NpgsqlCommand("""
+            INSERT INTO notifications.external_deliveries(
+              organization_id,delivery_id,notification_id,channel,recipient_subject)
+            SELECT $1,x.delivery_id,$2,x.channel,$3
+            FROM (
+              SELECT $4::uuid AS delivery_id,'email'::text AS channel
+              WHERE EXISTS(
+                SELECT FROM notifications.preferences p
+                WHERE p.organization_id=$1 AND p.issuer=$6 AND p.subject=$3 AND p.email_enabled)
+              UNION ALL
+              SELECT $5::uuid,'push'::text
+              WHERE EXISTS(
+                SELECT FROM notifications.preferences p
+                WHERE p.organization_id=$1 AND p.issuer=$6 AND p.subject=$3 AND p.push_enabled)
+            ) x
+            ON CONFLICT(organization_id,notification_id,channel) DO NOTHING
+            """, connection, transaction);
+        insert.Parameters.AddWithValue(organizationId);
+        insert.Parameters.AddWithValue(notificationId);
+        insert.Parameters.AddWithValue(recipientSubject);
+        insert.Parameters.AddWithValue(Guid.NewGuid());
+        insert.Parameters.AddWithValue(Guid.NewGuid());
+        insert.Parameters.AddWithValue(issuer);
+        await insert.ExecuteNonQueryAsync(ct);
     }
 
     private static async Task<Row?> ReadByOperation(NpgsqlConnection c, NpgsqlTransaction t, Guid organizationId, Guid operationId, CancellationToken ct)
