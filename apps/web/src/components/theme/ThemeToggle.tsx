@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { oppositeTheme, resolveTheme, type Theme } from "./theme";
+import { useSyncExternalStore } from "react";
+import { normalizeTheme, oppositeTheme, resolveTheme, type Theme } from "./theme";
 
 const storageKey = "salekhpos-theme";
+const changeEvent = "salekhpos-theme-change";
 
 function browserTheme(): Theme {
   return resolveTheme(
@@ -12,19 +13,35 @@ function browserTheme(): Theme {
   );
 }
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme | null>(null);
+function snapshot(): Theme {
+  return normalizeTheme(document.documentElement.dataset.theme ?? null) ?? browserTheme();
+}
 
-  useEffect(() => {
-    setTheme(browserTheme());
-  }, []);
+function subscribe(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const handleThemeChange = () => onStoreChange();
+  const handleSystemChange = () => {
+    if (normalizeTheme(window.localStorage.getItem(storageKey)) !== null) return;
+    document.documentElement.dataset.theme = media.matches ? "dark" : "light";
+    onStoreChange();
+  };
+
+  window.addEventListener(changeEvent, handleThemeChange);
+  media.addEventListener("change", handleSystemChange);
+  return () => {
+    window.removeEventListener(changeEvent, handleThemeChange);
+    media.removeEventListener("change", handleSystemChange);
+  };
+}
+
+export function ThemeToggle() {
+  const theme = useSyncExternalStore(subscribe, snapshot, () => "light");
 
   function toggle() {
-    const current = theme ?? browserTheme();
-    const next = oppositeTheme(current);
+    const next = oppositeTheme(theme);
     document.documentElement.dataset.theme = next;
     window.localStorage.setItem(storageKey, next);
-    setTheme(next);
+    window.dispatchEvent(new Event(changeEvent));
   }
 
   const dark = theme === "dark";
