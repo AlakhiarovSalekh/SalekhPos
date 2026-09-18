@@ -163,7 +163,7 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         return value;
     }
 
-    private async Task Prepare(
+    private static async Task Prepare(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         Guid organizationId,
