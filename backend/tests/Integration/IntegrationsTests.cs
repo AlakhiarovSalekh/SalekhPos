@@ -123,8 +123,7 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     [Fact]
     public async Task Duplicate_event_with_new_operation_is_a_conflict()
     {
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.manage");
-        await fixture.GrantAsync("owner", fixture.OrganizationA, "integrations.dispatch");
+        var organizationId = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
 
         using var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
