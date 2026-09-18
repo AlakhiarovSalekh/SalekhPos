@@ -16,13 +16,13 @@ public sealed class SupportHttpTests
         using var client = Client(request =>
         {
             captured = request.RequestUri!.PathAndQuery;
-            return Json($$"""{"items":[{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"high","status":"open","version":0,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}],"nextCursor":null}""");
+            return Json($$"""{"items":[{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"high","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}],"nextCursor":null}""");
         });
         var page = await new HttpSupportManager(client).ListAsync(organization, 50, null, "open", default);
         Assert.Single(page.Items);
         Assert.Equal($"/api/v1/organizations/{organization:D}/support/tickets?pageSize=50&status=open", captured);
 
-        using var invalid = Client(_ => Json($$"""{"items":[{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"blocker","status":"open","version":0,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}],"nextCursor":null}"""));
+        using var invalid = Client(_ => Json($$"""{"items":[{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"blocker","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}],"nextCursor":null}"""));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new HttpSupportManager(invalid).ListAsync(organization, 50, null, null, default));
     }
@@ -35,7 +35,7 @@ public sealed class SupportHttpTests
         using var client = Client(request =>
         {
             header = request.Headers.GetValues("Idempotency-Key").Single();
-            return Json($$"""{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"normal","status":"open","version":0,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}""");
+            return Json($$"""{"id":"{{ticket:D}}","branchId":"{{branch:D}}","subject":"Printer","description":"Offline","priority":"normal","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"}""");
         });
         var result = await new HttpSupportManager(client).CreateAsync(organization,
             new(branch, "Printer", "Offline", "normal"), operation, default);
@@ -46,7 +46,7 @@ public sealed class SupportHttpTests
     public async Task DetailRejectsCrossTicketDiagnostics()
     {
         var organization = Guid.NewGuid(); var ticket = Guid.NewGuid(); var other = Guid.NewGuid();
-        using var client = Client(_ => Json($$"""{"ticket":{"id":"{{ticket:D}}","branchId":null,"subject":"Issue","description":"Details","priority":"low","status":"open","version":0,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"},"diagnostics":[{"id":"{{Guid.NewGuid():D}}","ticketId":"{{other:D}}","kind":"log","reference":"object://1","sha256":"{{new string('a',64)}}","addedBySubject":"manager","createdAt":"2026-09-18T08:10:00Z"}]}"""));
+        using var client = Client(_ => Json($$"""{"ticket":{"id":"{{ticket:D}}","branchId":null,"subject":"Issue","description":"Details","priority":"low","status":"open","version":1,"openedBySubject":"operator","createdAt":"2026-09-18T08:00:00Z","updatedAt":"2026-09-18T08:00:00Z"},"diagnostics":[{"id":"{{Guid.NewGuid():D}}","ticketId":"{{other:D}}","kind":"log","reference":"object://1","sha256":"{{new string('a',64)}}","addedBySubject":"manager","createdAt":"2026-09-18T08:10:00Z"}]}"""));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new HttpSupportManager(client).ReadAsync(organization, ticket, default));
     }
