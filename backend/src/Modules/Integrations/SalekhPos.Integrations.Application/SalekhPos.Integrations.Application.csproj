@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../SalekhPos.Integrations.Domain/SalekhPos.Integrations.Domain.csproj" /><ProjectReference Include="../SalekhPos.Integrations.Contracts/SalekhPos.Integrations.Contracts.csproj" /></ItemGroup></Project>

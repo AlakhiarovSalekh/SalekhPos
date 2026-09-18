@@ -4,6 +4,7 @@ Set-StrictMode -Version Latest
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $taskPnpm = Join-Path $taskRoot 'scripts/pnpm.ps1'
 $taskPreviousCi = $env:CI
+$taskPreviousExpoOffline = $env:EXPO_OFFLINE
 $taskMobileExport = Join-Path ([IO.Path]::GetTempPath()) ('salekhpos-mobile-export-ci-' + [guid]::NewGuid().ToString('N'))
 $env:CI = 'true'
 
@@ -19,6 +20,7 @@ try {
     Invoke-Pnpm @('--filter', '@salekhpos/packages-api-client', 'build')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'typecheck')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'test')
+    $env:EXPO_OFFLINE = '1'
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'exec', 'expo', 'install', '--check')
     Invoke-Pnpm @('--filter', '@salekhpos/apps-mobile', 'exec', 'expo', 'export', '--platform', 'android', '--output-dir', $taskMobileExport)
     Invoke-Pnpm @('--filter', '@salekhpos/web', 'typecheck')
@@ -28,5 +30,6 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $taskMobileExport) { Remove-Item -LiteralPath $taskMobileExport -Recurse -Force }
+    $env:EXPO_OFFLINE = $taskPreviousExpoOffline
     $env:CI = $taskPreviousCi
 }

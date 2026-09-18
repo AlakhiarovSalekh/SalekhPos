@@ -494,6 +494,9 @@
           "SalekhPos.Audit.Infrastructure": "[1.0.0, )",
           "SalekhPos.Authorization.Api": "[1.0.0, )",
           "SalekhPos.Authorization.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Billing.Api": "[1.0.0, )",
+          "SalekhPos.Billing.Application": "[1.0.0, )",
+          "SalekhPos.Billing.Infrastructure": "[1.0.0, )",
           "SalekhPos.Catalog.Api": "[1.0.0, )",
           "SalekhPos.Catalog.Infrastructure": "[1.0.0, )",
           "SalekhPos.Customers.Api": "[1.0.0, )",
@@ -502,6 +505,11 @@
           "SalekhPos.Devices.Infrastructure": "[1.0.0, )",
           "SalekhPos.Employees.Api": "[1.0.0, )",
           "SalekhPos.Employees.Infrastructure": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Api": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Api": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Application": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Infrastructure": "[1.0.0, )",
           "SalekhPos.Identity.Api": "[1.0.0, )",
           "SalekhPos.Identity.Infrastructure": "[1.0.0, )",
           "SalekhPos.Inventory.Api": "[1.0.0, )",
@@ -531,6 +539,9 @@
           "SalekhPos.ShiftManagement.Infrastructure": "[1.0.0, )",
           "SalekhPos.Stores.Api": "[1.0.0, )",
           "SalekhPos.Stores.Infrastructure": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Api": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Application": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Infrastructure": "[1.0.0, )",
           "SalekhPos.Suppliers.Api": "[1.0.0, )",
           "SalekhPos.Suppliers.Infrastructure": "[1.0.0, )",
           "SalekhPos.Sync.Api": "[1.0.0, )",
@@ -594,6 +605,35 @@
           "Npgsql": "[10.0.3, )",
           "SalekhPos.Authorization.Application": "[1.0.0, )",
           "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.billing.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Billing.Application": "[1.0.0, )",
+          "SalekhPos.Billing.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.billing.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Billing.Contracts": "[1.0.0, )",
+          "SalekhPos.Billing.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.billing.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.billing.domain": {
+        "type": "Project"
+      },
+      "salekhpos.billing.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Billing.Application": "[1.0.0, )",
+          "SalekhPos.Billing.Contracts": "[1.0.0, )",
+          "SalekhPos.Billing.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.catalog.api": {
@@ -710,6 +750,64 @@
           "SalekhPos.Employees.Application": "[1.0.0, )",
           "SalekhPos.Employees.Contracts": "[1.0.0, )",
           "SalekhPos.Employees.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.featuremanagement.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.FeatureManagement.Application": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.featuremanagement.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.FeatureManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.featuremanagement.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.featuremanagement.domain": {
+        "type": "Project"
+      },
+      "salekhpos.featuremanagement.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.FeatureManagement.Application": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Contracts": "[1.0.0, )",
+          "SalekhPos.FeatureManagement.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.fiscalization.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Fiscalization.Application": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.fiscalization.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Fiscalization.Contracts": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.fiscalization.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.fiscalization.domain": {
+        "type": "Project"
+      },
+      "salekhpos.fiscalization.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Fiscalization.Application": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Contracts": "[1.0.0, )",
+          "SalekhPos.Fiscalization.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.identity.api": {
@@ -1106,6 +1204,35 @@
           "SalekhPos.Stores.Application": "[1.0.0, )",
           "SalekhPos.Stores.Contracts": "[1.0.0, )",
           "SalekhPos.Stores.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.subscriptions.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Subscriptions.Application": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.subscriptions.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Subscriptions.Contracts": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.subscriptions.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.subscriptions.domain": {
+        "type": "Project"
+      },
+      "salekhpos.subscriptions.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Subscriptions.Application": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Contracts": "[1.0.0, )",
+          "SalekhPos.Subscriptions.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.suppliers.api": {

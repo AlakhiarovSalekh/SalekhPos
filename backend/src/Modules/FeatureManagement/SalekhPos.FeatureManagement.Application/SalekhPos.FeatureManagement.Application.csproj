@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SalekhPos.FeatureManagement.Domain/SalekhPos.FeatureManagement.Domain.csproj" />
+    <ProjectReference Include="../SalekhPos.FeatureManagement.Contracts/SalekhPos.FeatureManagement.Contracts.csproj" />
+  </ItemGroup>
+</Project>

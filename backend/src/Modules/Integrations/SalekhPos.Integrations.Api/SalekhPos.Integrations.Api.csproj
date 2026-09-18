@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /><ProjectReference Include="../SalekhPos.Integrations.Application/SalekhPos.Integrations.Application.csproj" /><ProjectReference Include="../SalekhPos.Integrations.Contracts/SalekhPos.Integrations.Contracts.csproj" /></ItemGroup></Project>

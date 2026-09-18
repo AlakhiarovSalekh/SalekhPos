@@ -93,6 +93,12 @@ using SalekhPos.Analytics.Infrastructure.Analytics;
 using SalekhPos.Accounting.Api.Journals;
 using SalekhPos.Accounting.Application.Journals;
 using SalekhPos.Accounting.Infrastructure.Journals;
+using SalekhPos.FeatureManagement.Api.Features;
+using SalekhPos.FeatureManagement.Application.Features;
+using SalekhPos.FeatureManagement.Infrastructure.Features;
+using SalekhPos.Fiscalization.Api.FiscalDocuments;
+using SalekhPos.Fiscalization.Application.FiscalDocuments;
+using SalekhPos.Fiscalization.Infrastructure.FiscalDocuments;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -163,6 +169,11 @@ builder.Services.AddSingleton<ITaxConfiguration>(provider => new PostgresTaxConf
 builder.Services.AddSingleton<ILocalizationSettings>(provider => new PostgresLocalizationSettings(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IAnalyticsReader>(provider => new PostgresAnalyticsReader(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IAccountingReader>(provider => new PostgresAccountingReader(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IFeaturePolicyService>(provider => new PostgresFeaturePolicyService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IFiscalProviderRegistry, FiscalProviderRegistry>();
+builder.Services.AddSingleton<IFiscalDocumentService>(provider => new PostgresFiscalDocumentService(
+    provider.GetRequiredService<AccessDatabase>().DataSource,
+    provider.GetRequiredService<IFiscalProviderRegistry>()));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -254,6 +265,8 @@ app.MapTaxEndpoints();
 app.MapLocalizationEndpoints();
 app.MapAnalyticsEndpoints();
 app.MapAccountingEndpoints();
+app.MapFeatureEndpoints();
+app.MapFiscalizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapWebBusinessEndpoints();
