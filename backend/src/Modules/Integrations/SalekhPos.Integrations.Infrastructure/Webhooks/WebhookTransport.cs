@@ -95,12 +95,19 @@ public sealed class WebhookTransport(
     private static bool DigestMatches(ReadOnlySpan<byte> payload, string digest)
     {
         if (digest.Length != 64) return false;
-        Span<byte> expected = stackalloc byte[32];
-        if (!Convert.TryFromHexString(digest.AsSpan(), expected, out var written) || written != expected.Length)
+        byte[] expected;
+        try
+        {
+            expected = Convert.FromHexString(digest);
+        }
+        catch (FormatException)
+        {
             return false;
+        }
+
         Span<byte> actual = stackalloc byte[32];
         SHA256.HashData(payload, actual);
-        return CryptographicOperations.FixedTimeEquals(expected, actual);
+        return expected.Length == 32 && CryptographicOperations.FixedTimeEquals(expected, actual);
     }
 
     private static TimeSpan? RetryAfter(HttpResponseMessage response, DateTimeOffset now)
