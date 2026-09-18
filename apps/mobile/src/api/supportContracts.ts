@@ -1,0 +1,23 @@
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const SHA256=/^[0-9a-f]{64}$/u;
+export class SupportContractError extends Error{constructor(readonly field:string){super("Invalid support field '"+field+"'.");this.name="SupportContractError";}}
+export type SupportPriority="low"|"normal"|"high"|"urgent";
+export type SupportStatus="open"|"in_progress"|"waiting_for_customer"|"resolved"|"closed";
+export type SupportTicket=Readonly<{id:string;branchId:string|null;subject:string;description:string;priority:SupportPriority;status:SupportStatus;version:number;openedBySubject:string;createdAt:string;updatedAt:string}>;
+export type SupportTicketPage=Readonly<{items:readonly SupportTicket[];nextCursor:string|null}>;
+export type DiagnosticReference=Readonly<{id:string;ticketId:string;kind:string;reference:string;sha256:string;addedBySubject:string;createdAt:string}>;
+export type SupportTicketDetail=Readonly<{ticket:SupportTicket;diagnostics:readonly DiagnosticReference[]}>;
+function obj(v:unknown,f:string):Record<string,unknown>{if(!v||typeof v!=="object"||Array.isArray(v))throw new SupportContractError(f);return v as Record<string,unknown>}
+function keys(v:Record<string,unknown>,a:string[],f:string){if(a.some(x=>!(x in v))||Object.keys(v).some(x=>!a.includes(x)))throw new SupportContractError(f)}
+function text(v:unknown,f:string,max:number,min=1){if(typeof v!=="string"||v.length<min||v.length>max||v.trim()!==v||[...v].some(c=>c<" "&&c!=="\r"&&c!=="\n"&&c!=="\t"))throw new SupportContractError(f);return v}
+function id(v:unknown,f:string){const x=text(v,f,36,36);if(!UUID.test(x)||x==="00000000-0000-0000-0000-000000000000")throw new SupportContractError(f);return x.toLowerCase()}
+function maybeId(v:unknown,f:string){return v===null?null:id(v,f)}
+function integer(v:unknown,f:string){if(typeof v!=="number"||!Number.isSafeInteger(v)||v<0||v>2147483647)throw new SupportContractError(f);return v}
+function instant(v:unknown,f:string){const x=text(v,f,64,10);if(!Number.isFinite(Date.parse(x)))throw new SupportContractError(f);return new Date(x).toISOString()}
+const priorities=new Set<SupportPriority>(["low","normal","high","urgent"]),statuses=new Set<SupportStatus>(["open","in_progress","waiting_for_customer","resolved","closed"]);
+function priority(v:unknown){const x=text(v,"priority",16) as SupportPriority;if(!priorities.has(x))throw new SupportContractError("priority");return x}
+function status(v:unknown){const x=text(v,"status",32) as SupportStatus;if(!statuses.has(x))throw new SupportContractError("status");return x}
+export function parseSupportTicket(v:unknown):SupportTicket{const x=obj(v,"ticket");keys(x,["id","branchId","subject","description","priority","status","version","openedBySubject","createdAt","updatedAt"],"ticket");return{id:id(x.id,"id"),branchId:maybeId(x.branchId,"branchId"),subject:text(x.subject,"subject",200),description:text(x.description,"description",8000),priority:priority(x.priority),status:status(x.status),version:integer(x.version,"version"),openedBySubject:text(x.openedBySubject,"openedBySubject",256),createdAt:instant(x.createdAt,"createdAt"),updatedAt:instant(x.updatedAt,"updatedAt")}}
+export function parseSupportTicketPage(v:unknown):SupportTicketPage{const x=obj(v,"page");keys(x,["items","nextCursor"],"page");if(!Array.isArray(x.items)||x.items.length>100)throw new SupportContractError("items");return{items:x.items.map(parseSupportTicket),nextCursor:x.nextCursor===null?null:id(x.nextCursor,"nextCursor")}}
+export function parseDiagnosticReference(v:unknown):DiagnosticReference{const x=obj(v,"diagnostic");keys(x,["id","ticketId","kind","reference","sha256","addedBySubject","createdAt"],"diagnostic");const digest=text(x.sha256,"sha256",64,64).toLowerCase();if(!SHA256.test(digest))throw new SupportContractError("sha256");return{id:id(x.id,"id"),ticketId:id(x.ticketId,"ticketId"),kind:text(x.kind,"kind",64),reference:text(x.reference,"reference",512),sha256:digest,addedBySubject:text(x.addedBySubject,"addedBySubject",256),createdAt:instant(x.createdAt,"createdAt")}}
+export function parseSupportTicketDetail(v:unknown):SupportTicketDetail{const x=obj(v,"detail");keys(x,["ticket","diagnostics"],"detail");const ticket=parseSupportTicket(x.ticket);if(!Array.isArray(x.diagnostics)||x.diagnostics.length>100)throw new SupportContractError("diagnostics");const diagnostics=x.diagnostics.map(parseDiagnosticReference);if(diagnostics.some(d=>d.ticketId!==ticket.id))throw new SupportContractError("diagnostics");return{ticket,diagnostics}}
