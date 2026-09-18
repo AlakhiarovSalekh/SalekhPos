@@ -200,8 +200,8 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
         await Demand(connection, transaction, organizationId, identity, "integrations.dispatch", cancellationToken);
         await using var update = new NpgsqlCommand("""
             UPDATE integrations.webhook_deliveries SET
-              attempt_count=attempt_count+1,status=CASE WHEN $4 THEN 'delivered' WHEN attempt_count+1>=10 THEN 'dead_lettered' ELSE 'failed' END,
-              lease_id=NULL,lease_expires_at=NULL,next_attempt_at=CASE WHEN $4 OR attempt_count+1>=10 THEN NULL ELSE $7 END,
+              attempt_count=attempt_count+1,status=CASE WHEN $4 THEN 'delivered' WHEN $7 IS NULL OR attempt_count+1>=10 THEN 'dead_lettered' ELSE 'failed' END,
+              lease_id=NULL,lease_expires_at=NULL,next_attempt_at=CASE WHEN $4 OR $7 IS NULL OR attempt_count+1>=10 THEN NULL ELSE $7 END,
               last_status_code=$5,last_error_code=$6,updated_at=statement_timestamp()
             WHERE organization_id=$1 AND delivery_id=$2 AND status='delivering' AND lease_id=$3
             RETURNING delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,last_status_code,last_error_code,created_at,updated_at
