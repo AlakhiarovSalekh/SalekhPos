@@ -126,7 +126,8 @@ public sealed class IntegrationWebhookHostedService(
         while (after.HasValue);
 
         health.RecordCycle(visited, delivered, retried, deadLettered, deferred, timeProvider.GetUtcNow());
-        if (delivered + retried + deadLettered + deferred > 0)
+        if (delivered + retried + deadLettered + deferred > 0
+            && logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation(
                 "Webhook dispatch cycle processed {Organizations} organizations with {Delivered} delivered, {Retried} retryable, {DeadLettered} dead-lettered and {Deferred} deferred deliveries",
