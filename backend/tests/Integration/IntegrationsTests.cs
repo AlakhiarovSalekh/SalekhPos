@@ -21,15 +21,26 @@ public sealed class IntegrationsTests(AccessFixture fixture)
         var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
-            new { Provider = "generic.http", DisplayName = "Test webhook", Endpoint = "https://example.test/webhook",
-                SecretReference = "vault://tenant/test-webhook" }, Guid.NewGuid());
+            new
+            {
+                Provider = "generic.http",
+                DisplayName = "Test webhook",
+                Endpoint = "https://example.test/webhook",
+                SecretReference = "vault://tenant/test-webhook"
+            }, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
         using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
         var connectionId = connectionJson.RootElement.GetProperty("id").GetGuid();
 
         using var enqueue = await Post(client, root + "/webhooks",
-            new { ConnectionId = connectionId, EventId = Guid.NewGuid(), EventType = "sale.completed",
-                PayloadSha256 = new string('a', 64), PayloadReference = "object://events/test" }, Guid.NewGuid());
+            new
+            {
+                ConnectionId = connectionId,
+                EventId = Guid.NewGuid(),
+                EventType = "sale.completed",
+                PayloadSha256 = new string('a', 64),
+                PayloadReference = "object://events/test"
+            }, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, enqueue.StatusCode);
 
         using var lease = await client.PostAsJsonAsync(root + "/webhooks/lease", new { LeaseSeconds = 30 });
@@ -39,8 +50,14 @@ public sealed class IntegrationsTests(AccessFixture fixture)
         var leaseId = leaseJson.RootElement.GetProperty("leaseId").GetGuid();
 
         using var attempt = await client.PostAsJsonAsync(root + $"/webhooks/{deliveryId:D}/attempts",
-            new { LeaseId = leaseId, Succeeded = false, StatusCode = 422, ErrorCode = "http_422",
-                RetryAt = (DateTimeOffset?)null });
+            new
+            {
+                LeaseId = leaseId,
+                Succeeded = false,
+                StatusCode = 422,
+                ErrorCode = "http_422",
+                RetryAt = (DateTimeOffset?)null
+            });
         Assert.Equal(HttpStatusCode.OK, attempt.StatusCode);
         using var attemptJson = JsonDocument.Parse(await attempt.Content.ReadAsStringAsync());
         Assert.Equal("dead_lettered", attemptJson.RootElement.GetProperty("status").GetString());
@@ -60,8 +77,13 @@ public sealed class IntegrationsTests(AccessFixture fixture)
         var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
-            new { Provider = "generic.http", DisplayName = "Stored payload webhook",
-                Endpoint = "https://example.test/webhook", SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET" },
+            new
+            {
+                Provider = "generic.http",
+                DisplayName = "Stored payload webhook",
+                Endpoint = "https://example.test/webhook",
+                SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET"
+            },
             Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
         using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
@@ -69,8 +91,13 @@ public sealed class IntegrationsTests(AccessFixture fixture)
 
         var eventId = Guid.NewGuid();
         using var response = await Post(client, root + "/webhooks/stored",
-            new { ConnectionId = connectionId, EventId = eventId, EventType = "sale.completed",
-                Payload = new { saleId = Guid.NewGuid(), total = 42.50m, currency = "GEL" } }, Guid.NewGuid());
+            new
+            {
+                ConnectionId = connectionId,
+                EventId = eventId,
+                EventType = "sale.completed",
+                Payload = new { saleId = Guid.NewGuid(), total = 42.50m, currency = "GEL" }
+            }, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         using var responseJson = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var deliveryId = responseJson.RootElement.GetProperty("id").GetGuid();
@@ -106,15 +133,25 @@ public sealed class IntegrationsTests(AccessFixture fixture)
         var root = $"/api/v1/organizations/{fixture.OrganizationA:D}/integrations";
 
         using var connectionResponse = await Post(client, root + "/connections",
-            new { Provider = "generic.http", DisplayName = "Duplicate event webhook",
-                Endpoint = "https://example.test/webhook", SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET" },
+            new
+            {
+                Provider = "generic.http",
+                DisplayName = "Duplicate event webhook",
+                Endpoint = "https://example.test/webhook",
+                SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET"
+            },
             Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
         using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
         var connectionId = connectionJson.RootElement.GetProperty("id").GetGuid();
         var eventId = Guid.NewGuid();
-        var payload = new { ConnectionId = connectionId, EventId = eventId, EventType = "sale.completed",
-            Payload = new { saleId = Guid.NewGuid() } };
+        var payload = new
+        {
+            ConnectionId = connectionId,
+            EventId = eventId,
+            EventType = "sale.completed",
+            Payload = new { saleId = Guid.NewGuid() }
+        };
 
         using var first = await Post(client, root + "/webhooks/stored", payload, Guid.NewGuid());
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);

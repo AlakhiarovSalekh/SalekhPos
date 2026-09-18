@@ -286,6 +286,54 @@
         "type": "Transitive",
         "resolved": "10.0.11",
         "contentHash": "QTXEoQBzz00SFWbo7nAg1Ogd4f99lwqcO9uAJ7MYSLEUR28f6As32QktrqG2Fr9cfAfd1GjLyGYspE7Ipj7P6w=="
+      },
+      "salekhpos.authorization.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.authorization.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.authorization.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Authorization.Application": "[1.0.0, )",
+          "SalekhPos.Authorization.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )",
+          "SalekhPos.Integrations.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.integrations.domain": {
+        "type": "Project"
+      },
+      "salekhpos.integrations.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Integrations.Application": "[1.0.0, )",
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )",
+          "SalekhPos.Integrations.Domain": "[1.0.0, )"
+        }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
+        }
       }
     }
   }
