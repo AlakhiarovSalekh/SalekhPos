@@ -3,13 +3,13 @@
         x:Class="SalekhPos.Desktop.ReadinessWindow"
         Title="SalekhPos readiness" Width="500" Height="380"
         MinWidth="440" MinHeight="340" CanResize="False">
-  <Grid Background="#F3F5F7">
-    <Border Width="400" Padding="30" Background="White" CornerRadius="10"
+  <Grid Background="{DynamicResource AppBackgroundBrush}">
+    <Border Width="400" Padding="30" Background="{DynamicResource AppSurfaceBrush}" CornerRadius="10"
             HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="16">
         <TextBlock Text="Preparing this terminal" FontSize="26" FontWeight="SemiBold" />
         <TextBlock Text="Sales data must be verified before cashier mode can open."
-                   TextWrapping="Wrap" Foreground="#4B5563" />
+                   TextWrapping="Wrap" Foreground="{DynamicResource AppSecondaryTextBrush}" />
         <TextBlock Name="StatusText" Text="Checking pending sales, shift, and catalog…"
                    TextWrapping="Wrap" MinHeight="52" />
         <ProgressBar Name="Progress" IsIndeterminate="True" IsVisible="False" />
