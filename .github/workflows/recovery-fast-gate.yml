@@ -1,0 +1,57 @@
+name: Recovery Fast Gate
+
+on:
+  push:
+    branches:
+      - recovery-fast-gate-20260918
+    paths:
+      - .github/workflows/recovery-fast-gate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fast-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      NUGET_PACKAGES: /tmp/salekhpos-nuget-packages
+      ContinuousIntegrationBuild: 'true'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout recovery commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: c9d283ca807b2f0ebc892e54e39c9792c2386653
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+      - name: Requirements
+        run: ./scripts/ci/check-requirements.ps1
+      - name: Structure
+        run: ./scripts/ci/check-structure.ps1 -RequireTracked
+      - name: Architecture
+        run: ./scripts/ci/check-architecture.ps1
+      - name: Secrets
+        run: ./scripts/ci/check-secrets.ps1 -ReportDirectory (Join-Path $env:RUNNER_TEMP 'fast-gate-reports')
+      - name: Node apps
+        run: ./scripts/ci/check-node.ps1
+      - name: Restore
+        run: ./scripts/dotnet.ps1 restore SalekhPos.sln --locked-mode -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low
+      - name: Build
+        run: ./scripts/dotnet.ps1 build SalekhPos.sln --configuration Release --no-restore -warnaserror
+      - name: Format
+        run: ./scripts/dotnet.ps1 format SalekhPos.sln --verify-no-changes --no-restore --severity info
+      - name: Dependencies
+        run: ./scripts/ci/check-dependencies.ps1 -ReportDirectory (Join-Path $env:RUNNER_TEMP 'fast-gate-reports')
