@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Selection;
 using SalekhPos.Desktop.Application.Management;
 
 namespace SalekhPos.Desktop;
