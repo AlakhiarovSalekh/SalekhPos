@@ -1,0 +1,101 @@
+name: Platform Workers Recovery Validation
+
+on:
+  push:
+    branches:
+      - feature/platform-workers-finalization
+    paths:
+      - .github/workflows/platform-workers-recovery.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout finalization branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: feature/platform-workers-finalization
+          fetch-depth: 0
+
+      - name: Setup exact repository SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+
+      - name: Refresh locked dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore SalekhPos.sln --force-evaluate
+
+      - name: Apply repository dotnet formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet format SalekhPos.sln --no-restore
+          git diff --check
+
+      - name: Build .NET solution with warnings as errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build SalekhPos.sln --configuration Release --no-restore -warnaserror
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test backend/tests/Unit/SalekhPos.Tests.csproj --configuration Release --no-build
+
+      - name: Run desktop tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test apps/desktop/tests/SalekhPos.Desktop.Tests/SalekhPos.Desktop.Tests.csproj --configuration Release --no-build
+
+      - name: Setup exact repository Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+          check-latest: false
+
+      - name: Install exact pnpm
+        shell: bash
+        run: npm install --global pnpm@11.19.0 --ignore-scripts
+
+      - name: Install workspace dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build shared API client
+        shell: bash
+        run: pnpm --filter @salekhpos/packages-api-client build
+
+      - name: Validate web
+        shell: bash
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          set -euo pipefail
+          pnpm --filter @salekhpos/web typecheck
+          pnpm --filter @salekhpos/web lint
+          pnpm --filter @salekhpos/web build
+
+      - name: Commit normalized result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A -- ':!.github/workflows/platform-workers-recovery.yml'
+          if git diff --cached --quiet; then
+            echo "No normalization changes required."
+            exit 0
+          fi
+          git config user.name "SalekhPos CI Recovery"
+          git config user.email "293670084+AlakhiarovSalekh@users.noreply.github.com"
+          git commit -m "chore: normalize platform worker dependency graph"
+          git push origin HEAD:feature/platform-workers-finalization
