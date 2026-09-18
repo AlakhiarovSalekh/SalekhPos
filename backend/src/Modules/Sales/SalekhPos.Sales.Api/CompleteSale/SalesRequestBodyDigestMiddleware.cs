@@ -25,7 +25,7 @@ public sealed class SalesRequestBodyDigestMiddleware(RequestDelegate next)
     {
         if (path is null) return false;
         var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length == 9
+        return parts.Length == 8
             && string.Equals(parts[0], "api", StringComparison.OrdinalIgnoreCase)
             && string.Equals(parts[1], "v1", StringComparison.OrdinalIgnoreCase)
             && string.Equals(parts[2], "organizations", StringComparison.OrdinalIgnoreCase)
@@ -33,8 +33,7 @@ public sealed class SalesRequestBodyDigestMiddleware(RequestDelegate next)
             && string.Equals(parts[4], "branches", StringComparison.OrdinalIgnoreCase)
             && Guid.TryParseExact(parts[5], "D", out _)
             && string.Equals(parts[6], "sales", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(parts[7], "cash", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrEmpty(parts[8]);
+            && string.Equals(parts[7], "cash", StringComparison.OrdinalIgnoreCase);
     }
 }
 
