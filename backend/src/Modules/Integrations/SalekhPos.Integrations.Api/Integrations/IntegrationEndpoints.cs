@@ -67,6 +67,10 @@ public static class IntegrationEndpoints
         if (operation is null) return Invalid();
         try
         {
+            if (request.Payload.ValueKind == System.Text.Json.JsonValueKind.Undefined)
+            {
+                return Invalid();
+            }
             var payload = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request.Payload);
             var result = await outbox.EnqueueStoredAsync(Identity(context),
                 new(organizationId, Guid.NewGuid(), operation.Value, request.ConnectionId,

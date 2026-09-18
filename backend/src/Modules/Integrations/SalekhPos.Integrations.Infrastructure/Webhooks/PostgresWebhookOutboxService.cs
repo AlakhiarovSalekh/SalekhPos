@@ -98,8 +98,9 @@ public sealed class PostgresWebhookOutboxService(NpgsqlDataSource? source) : IWe
             }
         }
 
+        var finalResult = result ?? throw new IntegrationUnavailableException();
         await transaction.CommitAsync(cancellationToken);
-        return new(result, created);
+        return new(finalResult, created);
     }
 
     private NpgsqlDataSource Data() => source ?? throw new IntegrationUnavailableException();

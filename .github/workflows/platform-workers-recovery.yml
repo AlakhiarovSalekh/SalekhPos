@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: platform-workers-finalization-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-and-normalize:
     if: github.actor != 'github-actions[bot]'
