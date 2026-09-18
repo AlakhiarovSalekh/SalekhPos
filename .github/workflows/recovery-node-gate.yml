@@ -1,0 +1,30 @@
+name: Recovery Node Gate
+
+on:
+  push:
+    branches:
+      - recovery-expo-offline-20260918
+    paths:
+      - .github/workflows/recovery-node-gate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  node-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: recovery-expo-offline-20260918
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+      - name: Run complete Node gate
+        run: ./scripts/ci/check-node.ps1
