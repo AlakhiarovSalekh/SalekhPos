@@ -54,6 +54,16 @@
           "Microsoft.IdentityModel.Tokens": "8.19.2"
         }
       },
+      "Microsoft.IdentityModel.Protocols.OpenIdConnect": {
+        "type": "CentralTransitive",
+        "requested": "[8.19.2, )",
+        "resolved": "8.19.2",
+        "contentHash": "1XOcyY36cVymzE3qKdzKaUEZ4Pzt7ZpSa14JZoPPK1NLFUkQDs85TCqpV6XDo0YjFXj6nVK00AfOHppjghjhtw==",
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols": "8.19.2",
+          "System.IdentityModel.Tokens.Jwt": "8.19.2"
+        }
+      },
       "Microsoft.IdentityModel.Tokens": {
         "type": "Transitive",
         "resolved": "8.19.2",
@@ -63,14 +73,11 @@
           "Microsoft.IdentityModel.Logging": "8.19.2"
         }
       },
-      "System.IdentityModel.Tokens.Jwt": {
-        "type": "Transitive",
-        "resolved": "8.19.2",
-        "contentHash": "gqhDC/icByKEutygpr+OFgAmjwTVowyzFjWB8K0q1ww8uFj5a1BQNL+QvijUl9uhq4p8OdDwcAIrjVC+eC9FVA==",
-        "dependencies": {
-          "Microsoft.IdentityModel.JsonWebTokens": "8.19.2",
-          "Microsoft.IdentityModel.Tokens": "8.19.2"
-        }
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
       },
       "salekhpos.accounting.api": {
         "type": "Project",
@@ -401,6 +408,35 @@
         "dependencies": {
           "Npgsql": "[10.0.3, )",
           "SalekhPos.Identity.Application": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Integrations.Application": "[1.0.0, )",
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )",
+          "SalekhPos.Integrations.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.integrations.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.integrations.domain": {
+        "type": "Project"
+      },
+      "salekhpos.integrations.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Integrations.Application": "[1.0.0, )",
+          "SalekhPos.Integrations.Contracts": "[1.0.0, )",
+          "SalekhPos.Integrations.Domain": "[1.0.0, )"
         }
       },
       "salekhpos.inventory.api": {
@@ -841,6 +877,35 @@
           "SalekhPos.Suppliers.Domain": "[1.0.0, )"
         }
       },
+      "salekhpos.support.api": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Support.Application": "[1.0.0, )",
+          "SalekhPos.Support.Contracts": "[1.0.0, )"
+        }
+      },
+      "salekhpos.support.application": {
+        "type": "Project",
+        "dependencies": {
+          "SalekhPos.Support.Contracts": "[1.0.0, )",
+          "SalekhPos.Support.Domain": "[1.0.0, )"
+        }
+      },
+      "salekhpos.support.contracts": {
+        "type": "Project"
+      },
+      "salekhpos.support.domain": {
+        "type": "Project"
+      },
+      "salekhpos.support.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Npgsql": "[10.0.3, )",
+          "SalekhPos.Support.Application": "[1.0.0, )",
+          "SalekhPos.Support.Contracts": "[1.0.0, )",
+          "SalekhPos.Support.Domain": "[1.0.0, )"
+        }
+      },
       "salekhpos.sync.api": {
         "type": "Project",
         "dependencies": {
@@ -954,21 +1019,14 @@
           "SalekhPos.Warehousing.Domain": "[1.0.0, )"
         }
       },
-      "Microsoft.IdentityModel.Protocols.OpenIdConnect": {
-        "type": "CentralTransitive",
-        "requested": "[8.19.2, )",
+      "System.IdentityModel.Tokens.Jwt": {
+        "type": "Transitive",
         "resolved": "8.19.2",
-        "contentHash": "1XOcyY36cVymzE3qKdzKaUEZ4Pzt7ZpSa14JZoPPK1NLFUkQDs85TCqpV6XDo0YjFXj6nVK00AfOHppjghjhtw==",
+        "contentHash": "gqhDC/icByKEutygpr+OFgAmjwTVowyzFjWB8K0q1ww8uFj5a1BQNL+QvijUl9uhq4p8OdDwcAIrjVC+eC9FVA==",
         "dependencies": {
-          "Microsoft.IdentityModel.Protocols": "8.19.2",
-          "System.IdentityModel.Tokens.Jwt": "8.19.2"
+          "Microsoft.IdentityModel.JsonWebTokens": "8.19.2",
+          "Microsoft.IdentityModel.Tokens": "8.19.2"
         }
-      },
-      "Npgsql": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
       }
     }
   }
