@@ -37,6 +37,7 @@ public static class WorkerServiceCollectionExtensions
         services.TryAddSingleton<IIntegrationService>(provider =>
             new PostgresIntegrationService(provider.GetRequiredService<AccessDatabase>().DataSource));
         services.TryAddSingleton<IWebhookHttpSender, SafeWebhookHttpSender>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookPayloadSource, PostgresWebhookPayloadSource>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebhookSecretSource, EnvironmentWebhookSecretSource>());
         services.TryAddSingleton<CompositeWebhookPayloadResolver>();
         services.TryAddSingleton<CompositeWebhookSecretResolver>();

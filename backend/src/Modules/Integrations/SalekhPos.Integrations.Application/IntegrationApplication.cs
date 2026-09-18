@@ -59,3 +59,14 @@ public sealed class IntegrationDeniedException : Exception;
 public sealed class IntegrationConflictException : Exception;
 public sealed class IntegrationNotFoundException : Exception;
 public sealed class IntegrationUnavailableException : Exception;
+
+public sealed record EnqueueStoredWebhookCommand(Guid OrganizationId, Guid DeliveryId, Guid OperationId,
+    Guid ConnectionId, Guid EventId, string EventType, ReadOnlyMemory<byte> Payload);
+
+public interface IWebhookOutboxService
+{
+    Task<IntegrationWriteResult<WebhookDeliveryResponse>> EnqueueStoredAsync(
+        IntegrationIdentity identity,
+        EnqueueStoredWebhookCommand command,
+        CancellationToken cancellationToken);
+}

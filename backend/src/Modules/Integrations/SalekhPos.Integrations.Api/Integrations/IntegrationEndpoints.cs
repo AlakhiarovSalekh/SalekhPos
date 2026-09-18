@@ -18,6 +18,7 @@ public static class IntegrationEndpoints
         group.MapPost("/connections/{connectionId:guid}/disable", DisableConnection);
         group.MapGet("/webhooks", ListWebhooks);
         group.MapPost("/webhooks", EnqueueWebhook);
+        group.MapPost("/webhooks/stored", EnqueueStoredWebhook);
         group.MapPost("/webhooks/lease", LeaseWebhook);
         group.MapPost("/webhooks/{deliveryId:guid}/attempts", RecordAttempt);
     }
@@ -56,6 +57,29 @@ public static class IntegrationEndpoints
             return result.Created ? Results.Created($"/api/v1/organizations/{organizationId:D}/integrations/webhooks/{result.Value.Id:D}", result.Value) : Results.Ok(result.Value);
         }
         catch (ArgumentException) { return Invalid(); }
+    }
+
+    private static async Task<IResult> EnqueueStoredWebhook(Guid organizationId, EnqueueStoredWebhookRequest request,
+        HttpContext context, IWebhookOutboxService outbox, IAntiforgery antiforgery,
+        CancellationToken cancellationToken)
+    {
+        var operation = await Operation(context, antiforgery);
+        if (operation is null) return Invalid();
+        try
+        {
+            var payload = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request.Payload);
+            var result = await outbox.EnqueueStoredAsync(Identity(context),
+                new(organizationId, Guid.NewGuid(), operation.Value, request.ConnectionId,
+                    request.EventId, request.EventType, payload), cancellationToken);
+            return result.Created
+                ? Results.Created($"/api/v1/organizations/{organizationId:D}/integrations/webhooks/{result.Value.Id:D}",
+                    result.Value)
+                : Results.Ok(result.Value);
+        }
+        catch (ArgumentException)
+        {
+            return Invalid();
+        }
     }
 
     private static async Task<IResult> RecordAttempt(Guid organizationId, Guid deliveryId, RecordWebhookAttemptRequest request,
