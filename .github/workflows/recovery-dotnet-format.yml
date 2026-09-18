@@ -1,0 +1,55 @@
+name: Recovery Dotnet Format
+
+on:
+  push:
+    branches:
+      - recovery-format-20260918
+    paths:
+      - .github/workflows/recovery-dotnet-format.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: recovery-format-20260918
+          fetch-depth: 0
+
+      - name: Setup exact repository SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+
+      - name: Restore locked dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore SalekhPos.sln --locked-mode
+
+      - name: Apply repository dotnet formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet format SalekhPos.sln --no-restore
+          git diff --check
+          git status --short
+
+      - name: Commit formatting result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A -- ':!.github/workflows/recovery-dotnet-format.yml'
+          if git diff --cached --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "SalekhPos CI Recovery"
+          git config user.email "293670084+AlakhiarovSalekh@users.noreply.github.com"
+          git commit -m "style: format recovered backend modules"
+          git push origin HEAD:recovery-format-20260918
