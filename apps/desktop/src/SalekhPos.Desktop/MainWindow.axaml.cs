@@ -16,19 +16,25 @@ public sealed partial class MainWindow : Window
     private readonly IGlobalConfiguration? globalConfiguration;
     private readonly IAnalyticsViewer? analytics;
     private readonly IAccountingViewer? accounting;
+    private readonly ISupportManager? support;
     private int signOutStarted;
     public MainWindow() => throw new InvalidOperationException("An authenticated workspace is required.");
     public MainWindow(IPosWorkspace workspace) : this(workspace, () => { })
     {
     }
-    public MainWindow(IPosWorkspace workspace, Action signOut) : this(workspace, null, null, null, null, null, signOut) { }
-    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, Action signOut) : this(workspace, commerce, null, null, null, null, signOut) { }
-    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit, Action signOut) : this(workspace, commerce, audit, null, null, null, signOut) { }
-    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit, IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting, Action signOut)
+    public MainWindow(IPosWorkspace workspace, Action signOut) : this(workspace, null, null, null, null, null, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, Action signOut) : this(workspace, commerce, null, null, null, null, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit, Action signOut) : this(workspace, commerce, audit, null, null, null, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit,
+        IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting,
+        Action signOut) : this(workspace, commerce, audit, globalConfiguration, analytics, accounting, null, signOut) { }
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit,
+        IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting,
+        ISupportManager? support, Action signOut)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(signOut);
-        this.signOut = signOut; this.commerce = commerce; this.audit = audit; this.globalConfiguration = globalConfiguration; this.analytics = analytics; this.accounting = accounting;
+        this.signOut = signOut; this.commerce = commerce; this.audit = audit; this.globalConfiguration = globalConfiguration; this.analytics = analytics; this.accounting = accounting; this.support = support;
         InitializeComponent(); DataContext = viewModel = new(workspace);
         Opened += (_, _) => viewModel.InitializeFromPreparedState();
     }
@@ -65,6 +71,11 @@ public sealed partial class MainWindow : Window
     {
         if (accounting is null) return; var scope = viewModel.CurrentScope;
         new ManagerAccountingWindow(accounting, scope.OrganizationId, scope.BranchId).Show(this);
+    }
+    private void SupportClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (support is null) return; var scope = viewModel.CurrentScope;
+        new ManagerSupportWindow(support, scope.OrganizationId, scope.BranchId).Show(this);
     }
     private void AuditClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
