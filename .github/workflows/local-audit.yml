@@ -1,0 +1,48 @@
+name: Local Workspace Audit
+
+on:
+  push:
+    branches:
+      - local-audit-20260918
+    paths:
+      - .github/workflows/local-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+    steps:
+      - name: Audit C:\SalekhPos without changing it
+        shell: cmd
+        run: |
+          @echo off
+          setlocal EnableExtensions
+          set "TARGET=C:\SalekhPos"
+          set "GIT_CONFIG_COUNT=1"
+          set "GIT_CONFIG_KEY_0=safe.directory"
+          set "GIT_CONFIG_VALUE_0=C:/SalekhPos"
+
+          echo === LOCAL AUDIT ===
+          if not exist "%TARGET%\.git" (
+            echo ERROR: local repository missing
+            exit /b 10
+          )
+
+          echo BRANCH:
+          git -C "%TARGET%" rev-parse --abbrev-ref HEAD
+          echo HEAD:
+          git -C "%TARGET%" rev-parse HEAD
+          echo ORIGIN:
+          git -C "%TARGET%" remote get-url origin
+          echo STATUS:
+          git -C "%TARGET%" status --short --branch --untracked-files=all
+          echo CHANGED_PATH_COUNT:
+          for /f %%C in ('git -C "%TARGET%" status --porcelain^| find /c /v ""') do echo %%C
+          echo MAIN_RELATION:
+          git -C "%TARGET%" rev-list --left-right --count HEAD...refs/remotes/origin/main 2>nul
+          echo SNAPSHOT_REF:
+          git -C "%TARGET%" show-ref refs/heads/local-snapshot/run-35281358590 2>nul
+          echo === END AUDIT ===
