@@ -186,6 +186,143 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
         await transaction.CommitAsync(cancellationToken); return result;
     }
 
+    public async Task<WebhookDeliveryResponse> RetryDeadLetterAsync(IntegrationIdentity identity,
+        Guid organizationId, Guid deliveryId, Guid operationId, string reason,
+        CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (organizationId == Guid.Empty || deliveryId == Guid.Empty || operationId == Guid.Empty)
+        {
+            throw new ArgumentException("Webhook manual retry is invalid.");
+        }
+
+        reason = IntegrationInput.Required(reason, 500, nameof(reason));
+        await using var connection = await Data().OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, identity, "integrations.manage", cancellationToken);
+
+        await using (var replay = new NpgsqlCommand("""
+            SELECT delivery_id,reason
+            FROM integrations.webhook_manual_retries
+            WHERE organization_id=$1 AND operation_id=$2
+            """, connection, transaction))
+        {
+            replay.Parameters.AddWithValue(organizationId);
+            replay.Parameters.AddWithValue(operationId);
+            await using var reader = await replay.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                if (reader.GetGuid(0) != deliveryId || reader.GetString(1) != reason)
+                {
+                    throw new IntegrationConflictException();
+                }
+
+                await reader.DisposeAsync();
+                var replayed = await ReadDeliveryById(connection, transaction, organizationId, deliveryId,
+                    cancellationToken) ?? throw new IntegrationNotFoundException();
+                await transaction.CommitAsync(cancellationToken);
+                return replayed;
+            }
+        }
+
+        int previousAttempts;
+        await using (var state = new NpgsqlCommand("""
+            SELECT d.attempt_count
+            FROM integrations.webhook_deliveries d
+            JOIN integrations.connections c
+              ON c.organization_id=d.organization_id AND c.connection_id=d.connection_id
+            WHERE d.organization_id=$1 AND d.delivery_id=$2
+              AND d.status='dead_lettered' AND c.status='active'
+            FOR UPDATE OF d
+            """, connection, transaction))
+        {
+            state.Parameters.AddWithValue(organizationId);
+            state.Parameters.AddWithValue(deliveryId);
+            var value = await state.ExecuteScalarAsync(cancellationToken);
+            if (value is null)
+            {
+                await using (var concurrentReplay = new NpgsqlCommand("""
+                    SELECT delivery_id,reason
+                    FROM integrations.webhook_manual_retries
+                    WHERE organization_id=$1 AND operation_id=$2
+                    """, connection, transaction))
+                {
+                    concurrentReplay.Parameters.AddWithValue(organizationId);
+                    concurrentReplay.Parameters.AddWithValue(operationId);
+                    await using var replayReader = await concurrentReplay.ExecuteReaderAsync(cancellationToken);
+                    if (await replayReader.ReadAsync(cancellationToken))
+                    {
+                        if (replayReader.GetGuid(0) != deliveryId || replayReader.GetString(1) != reason)
+                        {
+                            throw new IntegrationConflictException();
+                        }
+
+                        await replayReader.DisposeAsync();
+                        var replayed = await ReadDeliveryById(
+                            connection, transaction, organizationId, deliveryId, cancellationToken)
+                            ?? throw new IntegrationNotFoundException();
+                        await transaction.CommitAsync(cancellationToken);
+                        return replayed;
+                    }
+                }
+
+                var existing = await ReadDeliveryById(connection, transaction, organizationId, deliveryId,
+                    cancellationToken);
+                if (existing is not null) throw new IntegrationConflictException();
+                throw new IntegrationNotFoundException();
+            }
+            previousAttempts = (int)value;
+        }
+
+        WebhookDeliveryResponse result;
+        await using (var update = new NpgsqlCommand("""
+            UPDATE integrations.webhook_deliveries SET
+              status='pending',
+              attempt_count=0,
+              lease_id=NULL,
+              lease_expires_at=NULL,
+              next_attempt_at=NULL,
+              last_status_code=NULL,
+              last_error_code=NULL,
+              updated_at=statement_timestamp()
+            WHERE organization_id=$1 AND delivery_id=$2 AND status='dead_lettered'
+            RETURNING delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,
+              last_status_code,last_error_code,created_at,updated_at
+            """, connection, transaction))
+        {
+            update.Parameters.AddWithValue(organizationId);
+            update.Parameters.AddWithValue(deliveryId);
+            await using var reader = await update.ExecuteReaderAsync(cancellationToken);
+            if (!await reader.ReadAsync(cancellationToken))
+            {
+                throw new IntegrationConflictException();
+            }
+            result = ReadDelivery(reader);
+        }
+
+        await using (var audit = new NpgsqlCommand("""
+            INSERT INTO integrations.webhook_manual_retries(
+              organization_id,retry_id,delivery_id,operation_id,reason,previous_attempt_count,
+              changed_by_issuer,changed_by_subject)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+            """, connection, transaction))
+        {
+            audit.Parameters.AddWithValue(organizationId);
+            audit.Parameters.AddWithValue(Guid.NewGuid());
+            audit.Parameters.AddWithValue(deliveryId);
+            audit.Parameters.AddWithValue(operationId);
+            audit.Parameters.AddWithValue(reason);
+            audit.Parameters.AddWithValue(previousAttempts);
+            audit.Parameters.AddWithValue(identity.Issuer);
+            audit.Parameters.AddWithValue(identity.Subject);
+            await audit.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
     public async Task<WebhookDeliveryResponse> DeferLeaseAsync(IntegrationIdentity identity, Guid organizationId,
         Guid deliveryId, DeferWebhookLeaseCommand command, CancellationToken cancellationToken)
     {
@@ -286,6 +423,22 @@ public sealed class PostgresIntegrationService(NpgsqlDataSource? source) : IInte
     { await using var q = new NpgsqlCommand("SELECT connection_id,provider,display_name,endpoint,status,created_at,updated_at FROM integrations.connections WHERE organization_id=$1 AND operation_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(op); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadConnection(r) : null; }
     private static async Task<IntegrationConnectionResponse?> ReadConnection(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid id, CancellationToken ct)
     { await using var q = new NpgsqlCommand("SELECT connection_id,provider,display_name,endpoint,status,created_at,updated_at FROM integrations.connections WHERE organization_id=$1 AND connection_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(id); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadConnection(r) : null; }
+    private static async Task<WebhookDeliveryResponse?> ReadDeliveryById(
+        NpgsqlConnection connection, NpgsqlTransaction transaction, Guid organizationId, Guid deliveryId,
+        CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("""
+            SELECT delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,
+              last_status_code,last_error_code,created_at,updated_at
+            FROM integrations.webhook_deliveries
+            WHERE organization_id=$1 AND delivery_id=$2
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(deliveryId);
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadDelivery(reader) : null;
+    }
+
     private static async Task<WebhookDeliveryResponse?> ReadDeliveryByOperation(NpgsqlConnection c, NpgsqlTransaction t, Guid o, Guid op, CancellationToken ct)
     { await using var q = new NpgsqlCommand("SELECT delivery_id,connection_id,event_id,event_type,payload_sha256,status,attempt_count,next_attempt_at,last_status_code,last_error_code,created_at,updated_at FROM integrations.webhook_deliveries WHERE organization_id=$1 AND operation_id=$2", c, t); q.Parameters.AddWithValue(o); q.Parameters.AddWithValue(op); await using var r = await q.ExecuteReaderAsync(ct); return await r.ReadAsync(ct) ? ReadDelivery(r) : null; }
     private static async Task Prepare(NpgsqlConnection c, NpgsqlTransaction t, Guid o, IntegrationIdentity i, CancellationToken ct)

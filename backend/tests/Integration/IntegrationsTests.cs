@@ -66,6 +66,101 @@ public sealed class IntegrationsTests(AccessFixture fixture)
     }
 
     [Fact]
+    public async Task Dead_lettered_webhook_can_be_manually_requeued_with_audit()
+    {
+        var (organizationId, subject) = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");
+
+        using var client = fixture.Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", fixture.Token(subject));
+        var root = $"/api/v1/organizations/{organizationId:D}/integrations";
+
+        using var connectionResponse = await Post(client, root + "/connections",
+            new
+            {
+                Provider = "generic.http",
+                DisplayName = "Manual retry webhook",
+                Endpoint = "https://example.test/webhook",
+                SecretReference = "env://SALEKHPOS_TEST_WEBHOOK_SECRET"
+            },
+            Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Created, connectionResponse.StatusCode);
+        using var connectionJson = JsonDocument.Parse(await connectionResponse.Content.ReadAsStringAsync());
+        var connectionId = connectionJson.RootElement.GetProperty("id").GetGuid();
+
+        using var enqueue = await Post(client, root + "/webhooks",
+            new
+            {
+                ConnectionId = connectionId,
+                EventId = Guid.NewGuid(),
+                EventType = "sale.completed",
+                PayloadSha256 = new string('b', 64),
+                PayloadReference = "object://events/manual-retry"
+            },
+            Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Created, enqueue.StatusCode);
+
+        using var lease = await client.PostAsJsonAsync(root + "/webhooks/lease", new { LeaseSeconds = 30 });
+        Assert.Equal(HttpStatusCode.OK, lease.StatusCode);
+        using var leaseJson = JsonDocument.Parse(await lease.Content.ReadAsStringAsync());
+        var deliveryId = leaseJson.RootElement.GetProperty("delivery").GetProperty("id").GetGuid();
+        var leaseId = leaseJson.RootElement.GetProperty("leaseId").GetGuid();
+
+        using var terminal = await client.PostAsJsonAsync(root + $"/webhooks/{deliveryId:D}/attempts",
+            new
+            {
+                LeaseId = leaseId,
+                Succeeded = false,
+                StatusCode = 422,
+                ErrorCode = "http_422",
+                RetryAt = (DateTimeOffset?)null
+            });
+        Assert.Equal(HttpStatusCode.OK, terminal.StatusCode);
+
+        var operation = Guid.NewGuid();
+        const string reason = "Provider endpoint corrected by operator";
+        var retries = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
+            Post(client, root + $"/webhooks/{deliveryId:D}/retry", new { Reason = reason }, operation)));
+        try
+        {
+            foreach (var response in retries)
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            using var retriedJson = JsonDocument.Parse(await retries[0].Content.ReadAsStringAsync());
+            Assert.Equal("pending", retriedJson.RootElement.GetProperty("status").GetString());
+            Assert.Equal(0, retriedJson.RootElement.GetProperty("attemptCount").GetInt32());
+            Assert.Equal(JsonValueKind.Null, retriedJson.RootElement.GetProperty("lastErrorCode").ValueKind);
+        }
+        finally
+        {
+            foreach (var response in retries)
+            {
+                response.Dispose();
+            }
+        }
+
+        using var conflictingReplay = await Post(client, root + $"/webhooks/{deliveryId:D}/retry",
+            new { Reason = "Different retry reason" }, operation);
+        Assert.Equal(HttpStatusCode.Conflict, conflictingReplay.StatusCode);
+
+        await using var source = Npgsql.NpgsqlDataSource.Create(
+            Environment.GetEnvironmentVariable("SALEKHPOS_TEST_ADMIN_CONNECTION")!);
+        await using var audit = source.CreateCommand("""
+            SELECT previous_attempt_count,reason,count(*) OVER()
+            FROM integrations.webhook_manual_retries
+            WHERE organization_id=$1 AND operation_id=$2
+            """);
+        audit.Parameters.AddWithValue(organizationId);
+        audit.Parameters.AddWithValue(operation);
+        await using var auditReader = await audit.ExecuteReaderAsync();
+        Assert.True(await auditReader.ReadAsync());
+        Assert.Equal(1, auditReader.GetInt32(0));
+        Assert.Equal(reason, auditReader.GetString(1));
+        Assert.Equal(1L, auditReader.GetInt64(2));
+    }
+
+    [Fact]
     public async Task Stored_webhook_persists_immutable_tenant_payload_and_delivery_digest()
     {
         var (organizationId, subject) = await CreateWebhookTenantAsync("integrations.manage", "integrations.dispatch");

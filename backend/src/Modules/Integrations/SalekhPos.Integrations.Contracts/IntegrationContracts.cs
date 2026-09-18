@@ -19,3 +19,4 @@ public sealed record LeasedWebhookResponse(WebhookDeliveryResponse Delivery, Gui
     string Endpoint, string SecretReference);
 public sealed record RecordWebhookAttemptRequest(Guid LeaseId, bool Succeeded, int? StatusCode,
     string? ErrorCode, DateTimeOffset? RetryAt);
+public sealed record RetryWebhookDeliveryRequest(string Reason);
