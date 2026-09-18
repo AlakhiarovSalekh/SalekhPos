@@ -35,7 +35,7 @@ export function parseSupportTicket(value: unknown): SupportTicket {
     description: multilineText(x.description, "description", 8000),
     priority: priority(x.priority),
     status: status(x.status),
-    version: integer(x.version, "ticket version", 0, 2_147_483_647),
+    version: integer(x.version, "ticket version", 1, 2_147_483_647),
     openedBySubject: text(x.openedBySubject, "opened by subject", 256, 1),
     createdAt: isoDate(x.createdAt, "created at"),
     updatedAt: isoDate(x.updatedAt, "updated at"),
