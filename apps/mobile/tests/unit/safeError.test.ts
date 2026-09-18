@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApiHttpError, ApiNetworkError, ApiProblemError, ApiRequestAbortedError, ApiResponseTooLargeError } from "@salekhpos/packages-api-client";
 import { ContractParseError } from "../../src/api/contracts";
+import { SalesContractError } from "../../src/api/salesContracts";
 import { mapSafeError } from "../../src/services/safeError";
 
 describe("safe error mapping", () => {
@@ -14,6 +15,7 @@ describe("safe error mapping", () => {
     [new ApiHttpError(503), "unavailable", true],
     [new ApiResponseTooLargeError(200, 10), "unsafe_response", true],
     [new ContractParseError("token"), "unsafe_response", true],
+    [new SalesContractError("sale.total"), "unsafe_response", true],
   ] as const)("maps %o without exposing raw details", (error, code, retryable) => {
     expect(mapSafeError(error)).toEqual({ code, retryable });
   });
