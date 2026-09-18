@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   canAccessNavigationItem,
   getVisibleNavigationItems,
+  mobileNavigationItems,
   type NavigationItem,
 } from "../../src/navigation/model";
 
@@ -33,6 +34,13 @@ describe("role-aware navigation", () => {
       "open",
       "permitted",
     ]);
+  });
+
+  it("shows sales only when the server grants sales.view", () => {
+    const sales = mobileNavigationItems.find((item) => item.id === "sales");
+    expect(sales).toBeDefined();
+    expect(canAccessNavigationItem(sales!, { roles: [], permissions: [] })).toBe(false);
+    expect(canAccessNavigationItem(sales!, { roles: [], permissions: ["sales.view"] })).toBe(true);
   });
 
   it("requires all declared permissions and at least one declared role", () => {

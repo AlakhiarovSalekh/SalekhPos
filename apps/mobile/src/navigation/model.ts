@@ -2,12 +2,12 @@ import type { SessionAuthorization } from "@/security/session";
 
 export type MobileRoute =
   | "/dashboard" | "/organizations" | "/stores" | "/products" | "/inventory" | "/scanner"
-  | "/pricing" | "/registers" | "/reconciliation" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/notifications" | "/taxation" | "/localization" | "/analytics" | "/accounting" | "/audit" | "/support" | "/feature-management" | "/fiscalization" | "/integrations" | "/billing" | "/subscriptions";
+  | "/pricing" | "/registers" | "/reconciliation" | "/sales" | "/customers" | "/suppliers" | "/employees" | "/purchasing" | "/reports" | "/stock-transfers" | "/promotions" | "/loyalty" | "/notifications" | "/taxation" | "/localization" | "/analytics" | "/accounting" | "/audit" | "/support" | "/feature-management" | "/fiscalization" | "/integrations" | "/billing" | "/subscriptions";
 
 export type NavigationLabelKey =
   | "navigation.dashboard" | "navigation.organizations" | "navigation.stores"
   | "navigation.products" | "navigation.inventory" | "navigation.scanner"
-  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.notifications" | "navigation.taxation" | "navigation.localization" | "navigation.analytics" | "navigation.accounting" | "navigation.audit" | "navigation.support" | "navigation.features" | "navigation.fiscalization" | "navigation.integrations" | "navigation.billing" | "navigation.subscriptions";
+  | "navigation.pricing" | "navigation.registers" | "navigation.reconciliation" | "navigation.sales" | "navigation.customers" | "navigation.suppliers" | "navigation.employees" | "navigation.purchasing" | "navigation.reports" | "navigation.stockTransfers" | "navigation.promotions" | "navigation.loyalty" | "navigation.notifications" | "navigation.taxation" | "navigation.localization" | "navigation.analytics" | "navigation.accounting" | "navigation.audit" | "navigation.support" | "navigation.features" | "navigation.fiscalization" | "navigation.integrations" | "navigation.billing" | "navigation.subscriptions";
 
 export type NavigationItem = Readonly<{
   id: string;
@@ -36,6 +36,8 @@ export const mobileNavigationItems: readonly NavigationItem[] = Object.freeze([
     requiredAnyPermissions: ["stores.view", "stores.manage"] }),
   Object.freeze({ id: "reconciliation", labelKey: "navigation.reconciliation" as const, route: "/reconciliation" as const,
     requiredPermissions: ["shifts.view", "payments.view"] }),
+  Object.freeze({ id: "sales", labelKey: "navigation.sales" as const, route: "/sales" as const,
+    requiredPermissions: ["sales.view"] }),
   Object.freeze({ id: "customers", labelKey: "navigation.customers" as const, route: "/customers" as const, requiredPermissions: ["customers.view"] }),
   Object.freeze({ id: "suppliers", labelKey: "navigation.suppliers" as const, route: "/suppliers" as const, requiredPermissions: ["suppliers.view"] }),
   Object.freeze({ id: "employees", labelKey: "navigation.employees" as const, route: "/employees" as const, requiredPermissions: ["employees.view"] }),

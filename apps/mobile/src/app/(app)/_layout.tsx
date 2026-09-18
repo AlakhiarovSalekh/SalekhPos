@@ -37,6 +37,9 @@ export default function AppLayout() {
           && hasPermission(authorization, permissions.paymentsView)}>
           <Stack.Screen name="reconciliation" />
         </Stack.Protected>
+        <Stack.Protected guard={hasPermission(authorization, permissions.salesView)}>
+          <Stack.Screen name="sales" />
+        </Stack.Protected>
         <Stack.Protected guard={hasPermission(authorization, permissions.customersView)}><Stack.Screen name="customers" /></Stack.Protected>
         <Stack.Protected guard={hasPermission(authorization, permissions.suppliersView)}><Stack.Screen name="suppliers" /></Stack.Protected>
         <Stack.Protected guard={hasPermission(authorization, permissions.employeesView)}><Stack.Screen name="employees" /></Stack.Protected>

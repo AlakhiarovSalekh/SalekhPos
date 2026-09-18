@@ -11,6 +11,7 @@ export const permissions = Object.freeze({
   storesManage: "stores.manage",
   shiftsView: "shifts.view",
   paymentsView: "payments.view",
+  salesView: "sales.view",
   customersView: "customers.view",
   customersCreate: "customers.create",
   suppliersView: "suppliers.view",
