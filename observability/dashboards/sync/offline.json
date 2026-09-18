@@ -1,0 +1,49 @@
+{
+  "uid": "sp-sync",
+  "title": "Offline Synchronization",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "salekhpos"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Oldest pending",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(salekhpos_sync_oldest_pending_seconds)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Ingest failures",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(salekhpos_sync_messages_total{outcome=\"failed\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

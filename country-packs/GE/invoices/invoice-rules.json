@@ -1,0 +1,14 @@
+{
+  "numberPattern": "GE-YYYY-NNNNNN",
+  "requiredFields": [
+    "seller",
+    "buyer",
+    "issued_at",
+    "currency",
+    "lines",
+    "net",
+    "tax",
+    "gross"
+  ],
+  "currency": "GEL"
+}

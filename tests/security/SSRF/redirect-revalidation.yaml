@@ -1,0 +1,9 @@
+id: ssrf-redirect-revalidation
+category: security
+scenario: "Public endpoint redirects to private address"
+expected: "blocked"
+assertion: "Redirect targets must be revalidated or redirects disabled."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

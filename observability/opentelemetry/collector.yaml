@@ -1,0 +1,41 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+  attributes/redact:
+    actions:
+      - { key: http.request.header.authorization, action: delete }
+      - { key: enduser.id, action: hash }
+      - { key: db.connection_string, action: delete }
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:9464
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls: { insecure: true }
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+service:
+  telemetry:
+    logs: { level: info }
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/redact, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/redact, batch]
+      exporters: [loki]

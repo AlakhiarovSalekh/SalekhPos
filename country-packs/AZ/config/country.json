@@ -1,0 +1,10 @@
+{
+  "code": "AZ",
+  "name": "Azerbaijan",
+  "currency": "AZN",
+  "timeZones": [
+    "Asia/Baku"
+  ],
+  "defaultLocale": "az-AZ",
+  "firstDayOfWeek": 1
+}

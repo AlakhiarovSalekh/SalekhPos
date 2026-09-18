@@ -1,0 +1,9 @@
+id: authorization-permission-matrix
+category: security
+scenario: "User lacks module permission"
+expected: "403"
+assertion: "Every module performs server-side permission checks."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

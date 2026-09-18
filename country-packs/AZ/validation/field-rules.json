@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "field": "currency",
+      "pattern": "^AZN$"
+    },
+    {
+      "field": "countryCode",
+      "pattern": "^AZ$"
+    },
+    {
+      "field": "locale",
+      "maxLength": 35
+    },
+    {
+      "field": "taxIdentifier",
+      "maxLength": 64
+    }
+  ]
+}

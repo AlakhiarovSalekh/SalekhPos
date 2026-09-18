@@ -1,0 +1,9 @@
+id: pagination-bounds
+category: security
+scenario: "Client requests oversized page"
+expected: "400"
+assertion: "Page sizes are bounded to protect memory and database load."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

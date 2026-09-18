@@ -1,0 +1,13 @@
+{
+  "requiredFields": [
+    "merchant_name",
+    "tax_identifier",
+    "receipt_number",
+    "issued_at",
+    "lines",
+    "totals"
+  ],
+  "maxLineLength": 80,
+  "showTaxBreakdown": true,
+  "currency": "GEL"
+}

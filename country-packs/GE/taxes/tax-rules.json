@@ -1,0 +1,11 @@
+{
+  "profile": "standard",
+  "pricesIncludeTax": true,
+  "rates": [
+    {
+      "code": "STANDARD",
+      "ratePercent": 18
+    }
+  ],
+  "effectiveDate": "2026-01-01"
+}

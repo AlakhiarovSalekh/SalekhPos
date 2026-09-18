@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: SyncBacklog
+        expr: max(salekhpos_sync_oldest_pending_seconds) > 300
+        for: 10m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "Offline synchronization backlog exceeds five minutes"
+          runbook: "docs/runbooks/syncbacklog.md"

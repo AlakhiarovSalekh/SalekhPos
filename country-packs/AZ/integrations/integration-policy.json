@@ -1,0 +1,9 @@
+{
+  "allowedSchemes": [
+    "https"
+  ],
+  "blockPrivateNetworks": true,
+  "requireSecretReference": true,
+  "webhookSigning": "hmac-sha256",
+  "maxPayloadBytes": 262144
+}

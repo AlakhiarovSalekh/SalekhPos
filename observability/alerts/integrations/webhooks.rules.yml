@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: WebhookFailures
+        expr: sum(rate(salekhpos_webhook_deliveries_total{outcome="failed"}[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "Outbound webhook failures are sustained"
+          runbook: "docs/runbooks/webhookfailures.md"

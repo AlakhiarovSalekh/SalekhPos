@@ -1,0 +1,12 @@
+groups:
+  - name: salekhpos
+    rules:
+      - alert: DatabaseLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(salekhpos_db_operation_duration_seconds_bucket[5m]))) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: salekhpos
+        annotations:
+          summary: "PostgreSQL p95 operation latency exceeds 500ms"
+          runbook: "docs/runbooks/databaselatency.md"

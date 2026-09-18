@@ -1,0 +1,7 @@
+{
+  "auditRequired": true,
+  "recordRetentionDays": 2555,
+  "immutableFiscalEvidence": true,
+  "personalDataMinimization": true,
+  "exportOnRequest": true
+}

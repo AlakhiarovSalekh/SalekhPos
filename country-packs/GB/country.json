@@ -1,0 +1,11 @@
+{
+  "code": "GB",
+  "name": "United Kingdom",
+  "currency": "GBP",
+  "timeZones": [
+    "Europe/London"
+  ],
+  "defaultLocale": "en-GB",
+  "status": "skeleton",
+  "note": "Provider-specific tax and fiscal rules must be certified before activation."
+}

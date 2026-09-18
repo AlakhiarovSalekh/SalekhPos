@@ -1,0 +1,14 @@
+{
+  "allowedSchemes": [
+    "https"
+  ],
+  "denyPrivateNetworks": true,
+  "denyLinkLocal": true,
+  "denyLoopback": true,
+  "resolveDnsBeforeConnect": true,
+  "revalidateRedirects": true,
+  "maxRedirects": 0,
+  "maxResponseBytes": 65536,
+  "connectTimeoutSeconds": 5,
+  "totalTimeoutSeconds": 15
+}

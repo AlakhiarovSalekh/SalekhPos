@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "ComplianceDefinition",
+  "required": [
+    "recordRetentionDays",
+    "auditRequired"
+  ],
+  "properties": {
+    "recordRetentionDays": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "auditRequired": {
+      "type": "boolean"
+    }
+  }
+}

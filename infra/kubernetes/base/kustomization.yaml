@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - config/runtime-config.yaml
+  - api/serviceaccount.yaml
+  - api/deployment.yaml
+  - api/service.yaml
+  - api/pdb.yaml
+  - web/serviceaccount.yaml
+  - web/deployment.yaml
+  - web/service.yaml
+  - web/pdb.yaml
+  - workers/serviceaccount.yaml
+  - workers/deployment.yaml
+  - workers/pdb.yaml
+  - autoscaling/api-hpa.yaml
+  - autoscaling/web-hpa.yaml
+  - autoscaling/worker-hpa.yaml
+  - ingress/ingress.yaml
+  - network-policies/default-deny.yaml
+  - network-policies/dns-egress.yaml
+  - network-policies/api-ingress.yaml
+  - network-policies/web-ingress.yaml
+  - network-policies/api-egress.yaml
+  - network-policies/worker-egress.yaml

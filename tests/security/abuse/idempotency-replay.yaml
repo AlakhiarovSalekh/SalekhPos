@@ -1,0 +1,9 @@
+id: idempotency-replay
+category: security
+scenario: "Same operation key with changed payload"
+expected: "409"
+assertion: "Idempotency replay must bind to the original mutation intent."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

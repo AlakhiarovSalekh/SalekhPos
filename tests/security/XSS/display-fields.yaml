@@ -1,0 +1,9 @@
+id: xss-display-fields
+category: security
+scenario: "Stored display name contains script markup"
+expected: "safe-render"
+assertion: "Clients render untrusted values as text, not HTML."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

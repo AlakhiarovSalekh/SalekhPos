@@ -1,0 +1,9 @@
+id: idor-tenant-boundary
+category: security
+scenario: "Tenant A token reads Tenant B resource"
+expected: "403"
+assertion: "Resource identifiers never override organization authorization."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

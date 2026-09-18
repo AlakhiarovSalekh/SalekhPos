@@ -1,0 +1,49 @@
+{
+  "uid": "sp-subs",
+  "title": "Subscription Operations",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "salekhpos"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Subscription mutations",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(salekhpos_subscription_operations_total[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Conflicts",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(salekhpos_subscription_operations_total{outcome=\"conflict\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

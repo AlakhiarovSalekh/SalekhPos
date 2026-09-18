@@ -1,0 +1,16 @@
+version: 1
+drop_fields:
+  - authorization
+  - cookie
+  - set-cookie
+  - refresh_token
+  - access_token
+  - password
+  - secret_reference
+  - payment_payload
+hash_fields:
+  - subject
+  - customer_reference
+max_string_length: 4096
+allow_sql_text: false
+allow_request_body: false

@@ -1,0 +1,9 @@
+id: auth-cookie-session
+category: security
+scenario: "Tampered or expired web session cookie"
+expected: "401"
+assertion: "Web BFF requires a validated server-side session."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

@@ -1,0 +1,9 @@
+id: auth-token-claims
+category: security
+scenario: "Forged role/permission claims are supplied in JWT"
+expected: "ignored"
+assertion: "Authorization comes from server-side membership grants, not user-forged role claims."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

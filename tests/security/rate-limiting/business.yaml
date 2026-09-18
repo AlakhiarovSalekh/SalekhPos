@@ -1,0 +1,9 @@
+id: rate-limit-business
+category: security
+scenario: "Concurrency exceeds business limiter"
+expected: "429"
+assertion: "Excess work is rejected rather than unbounded queued."
+automation:
+  required: true
+  environment: disposable
+  preserves_secrets: false

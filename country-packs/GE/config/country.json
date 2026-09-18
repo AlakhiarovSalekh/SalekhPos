@@ -1,0 +1,10 @@
+{
+  "code": "GE",
+  "name": "Georgia",
+  "currency": "GEL",
+  "timeZones": [
+    "Asia/Tbilisi"
+  ],
+  "defaultLocale": "ka-GE",
+  "firstDayOfWeek": 1
+}

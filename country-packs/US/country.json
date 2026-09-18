@@ -1,0 +1,11 @@
+{
+  "code": "US",
+  "name": "United States",
+  "currency": "USD",
+  "timeZones": [
+    "America/New_York"
+  ],
+  "defaultLocale": "en-US",
+  "status": "skeleton",
+  "note": "Provider-specific tax and fiscal rules must be certified before activation."
+}
