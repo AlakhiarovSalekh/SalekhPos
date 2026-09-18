@@ -277,6 +277,7 @@ app.MapWebAuditEndpoints();
 app.MapWebGlobalConfigurationEndpoints();
 app.MapWebAnalyticsEndpoints();
 app.MapWebAccountingEndpoints();
+app.MapWebSupportEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();
