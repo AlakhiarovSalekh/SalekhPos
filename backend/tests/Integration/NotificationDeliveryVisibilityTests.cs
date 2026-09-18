@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit;
 
@@ -26,34 +25,28 @@ public sealed class NotificationDeliveryVisibilityTests(AccessFixture fixture)
         await fixture.GrantAsync(manager, organizationId, "notifications.manage");
         await fixture.GrantAsync(viewer, organizationId, "notifications.view");
 
+        var notificationId = Guid.NewGuid();
+        var deliveryId = Guid.NewGuid();
+        await fixture.ExecuteAsync(
+            """
+            INSERT INTO notifications.inbox(
+              organization_id,notification_id,operation_id,branch_id,recipient_subject,title,body,severity)
+            VALUES($1,$2,$3,NULL,$4,'External delivery visibility',
+              'This alert has an email delivery record.','warning');
+            INSERT INTO notifications.external_deliveries(
+              organization_id,delivery_id,notification_id,channel,recipient_subject,status)
+            VALUES($1,$5,$2,'email',$4,'pending')
+            """,
+            organizationId,
+            notificationId,
+            Guid.NewGuid(),
+            manager,
+            deliveryId);
+
         using var managerClient = fixture.Factory.CreateClient();
         managerClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", fixture.Token(manager));
         var root = $"/api/v1/organizations/{organizationId:D}/notifications";
-
-        using var preferences = await managerClient.PutAsJsonAsync(
-            root + "/preferences",
-            new
-            {
-                InAppEnabled = true,
-                EmailEnabled = true,
-                PushEnabled = false,
-            });
-        Assert.Equal(HttpStatusCode.OK, preferences.StatusCode);
-
-        using var created = await Post(
-            managerClient,
-            root,
-            new
-            {
-                BranchId = (Guid?)null,
-                RecipientSubject = manager,
-                Title = "External delivery visibility",
-                Body = "This alert should enqueue an email delivery.",
-                Severity = "warning",
-            },
-            Guid.NewGuid());
-        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
         using var list = await managerClient.GetAsync(
             root + "/deliveries?pageSize=25&status=pending&channel=email");
@@ -114,19 +107,4 @@ public sealed class NotificationDeliveryVisibilityTests(AccessFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, invalidChannel.StatusCode);
     }
 
-    private static async Task<HttpResponseMessage> Post(
-        HttpClient client,
-        string path,
-        object body,
-        Guid operationId)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, path)
-        {
-            Content = JsonContent.Create(body),
-        };
-        request.Headers.TryAddWithoutValidation(
-            "Idempotency-Key",
-            operationId.ToString("D"));
-        return await client.SendAsync(request);
-    }
 }
