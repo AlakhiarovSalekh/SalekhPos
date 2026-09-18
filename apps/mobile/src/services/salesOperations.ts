@@ -7,6 +7,7 @@ import {
 import {
   parseCompletedSale,
   parseSalePage,
+  SalesContractError,
   type CompletedSale,
   type SalePage,
 } from "@/api/salesContracts";
@@ -17,7 +18,7 @@ function validatePageSize(value: number): number {
 }
 
 function requireResponse<T>(value: T | undefined): T {
-  if (value === undefined) throw new Error("The sales response body is empty.");
+  if (value === undefined) throw new SalesContractError("response");
   return value;
 }
 
@@ -39,7 +40,7 @@ export function createMobileSalesOperations(client: ApiClient) {
         ...(signal === undefined ? {} : { signal }),
       });
       const page = parseSalePage(requireResponse(response));
-      if (page.items.some((sale) => sale.branchId !== branch)) throw new Error("The sales response crossed branch scope.");
+      if (page.items.some((sale) => sale.branchId !== branch)) throw new SalesContractError("sales.branchId");
       return page;
     },
 
@@ -55,7 +56,7 @@ export function createMobileSalesOperations(client: ApiClient) {
       const response = await client.get<unknown>(branchPath(organization, branch, "sales", sale),
         signal === undefined ? {} : { signal });
       const parsed = parseCompletedSale(requireResponse(response));
-      if (parsed.id !== sale || parsed.branchId !== branch) throw new Error("The sale response scope is invalid.");
+      if (parsed.id !== sale || parsed.branchId !== branch) throw new SalesContractError("sale.scope");
       return parsed;
     },
   });
