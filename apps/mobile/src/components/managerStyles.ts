@@ -11,7 +11,7 @@ export const managerStyles = StyleSheet.create({
   mono: { color: colors.text, fontFamily: "monospace", fontSize: 12 },
   strong: { color: colors.text, fontSize: 17, fontWeight: "700" },
   muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  warning: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "#DFC46A", backgroundColor: "#FFF7D6", gap: 6 },
-  success: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "#9FCDB5", backgroundColor: "#E8F5ED", gap: 6 },
+  warning: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.warningBorder, backgroundColor: colors.warningBackground, gap: 6 },
+  success: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.successBorder, backgroundColor: colors.successBackground, gap: 6 },
   danger: { color: colors.danger, fontSize: 14, lineHeight: 20 },
 });
