@@ -2,4 +2,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/Authorization/SalekhPos.Authorization.Application/SalekhPos.Authorization.Application.csproj" />
+    <ProjectReference Include="../../Modules/Authorization/SalekhPos.Authorization.Infrastructure/SalekhPos.Authorization.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Integrations/SalekhPos.Integrations.Application/SalekhPos.Integrations.Application.csproj" />
+    <ProjectReference Include="../../Modules/Integrations/SalekhPos.Integrations.Infrastructure/SalekhPos.Integrations.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>
