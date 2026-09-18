@@ -2,6 +2,34 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="SalekhPos.Desktop.App"
              RequestedThemeVariant="Default">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F3F5F7" />
+          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="AppHeaderBrush" Color="#17202A" />
+          <SolidColorBrush x:Key="AppHeaderTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="AppHeaderMutedBrush" Color="#C9D4DE" />
+          <SolidColorBrush x:Key="AppMutedTextBrush" Color="#607080" />
+          <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#4B5563" />
+          <SolidColorBrush x:Key="AppDangerTextBrush" Color="#9C2B2B" />
+          <SolidColorBrush x:Key="AppDividerBrush" Color="#D9DEE3" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#07110F" />
+          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#0F1D19" />
+          <SolidColorBrush x:Key="AppHeaderBrush" Color="#102B23" />
+          <SolidColorBrush x:Key="AppHeaderTextBrush" Color="#EDF7F2" />
+          <SolidColorBrush x:Key="AppHeaderMutedBrush" Color="#9BC8B7" />
+          <SolidColorBrush x:Key="AppMutedTextBrush" Color="#9DAFAA" />
+          <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#B9C9C3" />
+          <SolidColorBrush x:Key="AppDangerTextBrush" Color="#FFB7A8" />
+          <SolidColorBrush x:Key="AppDividerBrush" Color="#263C35" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme />
   </Application.Styles>

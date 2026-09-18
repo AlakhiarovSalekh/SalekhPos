@@ -4,14 +4,14 @@
         x:Class="SalekhPos.Desktop.MainWindow"
         x:DataType="vm:CashierViewModel"
         Title="SalekhPos" Width="1180" Height="760" MinWidth="900" MinHeight="600">
-  <Grid RowDefinitions="Auto,*" Background="#F3F5F7">
-    <Border Background="#17202A" Padding="20,14">
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppBackgroundBrush}">
+    <Border Background="{DynamicResource AppHeaderBrush}" Padding="20,14">
       <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="18">
         <StackPanel>
-          <TextBlock Text="SalekhPos" FontSize="24" FontWeight="SemiBold" Foreground="White" />
-          <TextBlock Text="{Binding SessionStatus}" Foreground="#C9D4DE" />
+          <TextBlock Text="SalekhPos" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource AppHeaderTextBrush}" />
+          <TextBlock Text="{Binding SessionStatus}" Foreground="{DynamicResource AppHeaderMutedBrush}" />
         </StackPanel>
-        <TextBlock Grid.Column="1" Text="{Binding SyncStatus}" VerticalAlignment="Center" Foreground="White" />
+        <TextBlock Grid.Column="1" Text="{Binding SyncStatus}" VerticalAlignment="Center" Foreground="{DynamicResource AppHeaderTextBrush}" />
         <Button Grid.Column="2" Content="Synchronize" Click="SynchronizeClick" IsEnabled="{Binding IsReady}" />
         <Button Grid.Column="3" Content="Management" Click="ManagementClick" />
         <Button Grid.Column="4" Content="Global config" Click="GlobalConfigurationClick" />
@@ -24,7 +24,7 @@
       </Grid>
     </Border>
     <Grid Grid.Row="1" ColumnDefinitions="2*,*" Margin="20" ColumnSpacing="20">
-      <Border Background="White" CornerRadius="8" Padding="20">
+      <Border Background="{DynamicResource AppSurfaceBrush}" CornerRadius="8" Padding="20">
         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <TextBox Name="BarcodeBox" PlaceholderText="Scan barcode" KeyDown="BarcodeKeyDown" />
@@ -36,7 +36,7 @@
                 <Grid ColumnDefinitions="*,Auto,Auto" Margin="4,8" ColumnSpacing="18">
                   <StackPanel>
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Sku}" Foreground="#607080" />
+                    <TextBlock Text="{Binding Sku}" Foreground="{DynamicResource AppMutedTextBrush}" />
                   </StackPanel>
                   <TextBlock Grid.Column="1" Text="{Binding QuantityText}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" Text="{Binding TotalText}" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -44,10 +44,10 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <TextBlock Grid.Row="2" Text="{Binding CartStatus}" Foreground="#607080" />
+          <TextBlock Grid.Row="2" Text="{Binding CartStatus}" Foreground="{DynamicResource AppMutedTextBrush}" />
         </Grid>
       </Border>
-      <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="20">
+      <Border Grid.Column="1" Background="{DynamicResource AppSurfaceBrush}" CornerRadius="8" Padding="20">
         <StackPanel Spacing="14">
           <TextBlock Text="Cash checkout" FontSize="20" FontWeight="SemiBold" />
           <TextBlock Text="{Binding GrandTotalText}" FontSize="36" FontWeight="Bold" />
@@ -71,7 +71,7 @@
           <Button Content="Record movement" Click="RecordMovementClick" IsEnabled="{Binding IsOnlineSession}" />
           <TextBox Name="CountedCashBox" PlaceholderText="Counted cash" />
           <Button Content="Close shift" Click="CloseShiftClick" IsEnabled="{Binding IsOnlineSession}" />
-          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="#9C2B2B" />
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="{DynamicResource AppDangerTextBrush}" />
         </StackPanel>
       </Border>
     </Grid>
