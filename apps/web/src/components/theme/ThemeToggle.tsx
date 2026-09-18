@@ -35,7 +35,7 @@ function subscribe(onStoreChange: () => void) {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, snapshot, () => "light");
+  const theme = useSyncExternalStore<Theme>(subscribe, snapshot, () => "light");
 
   function toggle() {
     const next = oppositeTheme(theme);
