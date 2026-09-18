@@ -303,6 +303,7 @@ app.MapWebFiscalizationEndpoints();
 app.MapWebIntegrationEndpoints();
 app.MapWebBillingEndpoints();
 app.MapWebSubscriptionEndpoints();
+app.MapWebPlatformAdministrationEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();
