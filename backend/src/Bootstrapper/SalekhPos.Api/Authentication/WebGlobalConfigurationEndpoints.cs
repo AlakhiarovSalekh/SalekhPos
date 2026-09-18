@@ -29,6 +29,7 @@ public static class WebGlobalConfigurationEndpoints
         group.MapGet("/organizations/{organizationId:guid}/notifications", ListNotifications);
         group.MapPost("/organizations/{organizationId:guid}/notifications", CreateNotification);
         group.MapPost("/organizations/{organizationId:guid}/notifications/{notificationId:guid}/read", MarkRead);
+        group.MapGet("/organizations/{organizationId:guid}/notification-deliveries", ListNotificationDeliveries);
         group.MapGet("/organizations/{organizationId:guid}/notification-preferences", GetPreferences);
         group.MapPut("/organizations/{organizationId:guid}/notification-preferences", UpdatePreferences);
     }
@@ -85,6 +86,39 @@ public static class WebGlobalConfigurationEndpoints
             return Invalid("invalid_notification_request");
         return Results.Ok(await notifications.MarkReadAsync(
             identity, organizationId, notificationId, cancellationToken));
+    }
+
+
+    private static async Task<IResult> ListNotificationDeliveries(
+        Guid organizationId,
+        HttpContext context,
+        WebAuthenticationState state,
+        INotificationDeliveryStore deliveries,
+        CancellationToken cancellationToken)
+    {
+        var identity = await Identity(context, state);
+        if (identity is null) return Unauthenticated(state);
+        if (organizationId == Guid.Empty
+            || !TryDeliveryQuery(context, out var pageSize, out var after, out var status, out var channel))
+        {
+            return Invalid("invalid_notification_delivery_query");
+        }
+
+        try
+        {
+            return Results.Ok(await deliveries.ListAsync(
+                identity,
+                organizationId,
+                pageSize,
+                after,
+                status,
+                channel,
+                cancellationToken));
+        }
+        catch (ArgumentException)
+        {
+            return Invalid("invalid_notification_delivery_query");
+        }
     }
 
     private static async Task<IResult> GetPreferences(
@@ -261,6 +295,56 @@ public static class WebGlobalConfigurationEndpoints
     private static bool TryOperationId(HttpContext context, out Guid operationId) =>
         Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out operationId)
         && operationId != Guid.Empty;
+
+
+    private static bool TryDeliveryQuery(
+        HttpContext context,
+        out int pageSize,
+        out Guid? after,
+        out string? status,
+        out string? channel)
+    {
+        pageSize = 25;
+        after = null;
+        status = null;
+        channel = null;
+        if (context.Request.Query.Keys.Any(key =>
+                key is not "pageSize" and not "after" and not "status" and not "channel"))
+        {
+            return false;
+        }
+
+        if (context.Request.Query.TryGetValue("pageSize", out var sizes)
+            && (sizes.Count != 1 || !int.TryParse(sizes[0], out pageSize)
+                || pageSize is < 1 or > 100))
+        {
+            return false;
+        }
+
+        if (context.Request.Query.TryGetValue("after", out var cursors))
+        {
+            if (cursors.Count != 1 || !Guid.TryParseExact(cursors[0], "D", out var cursor)
+                || cursor == Guid.Empty)
+            {
+                return false;
+            }
+            after = cursor;
+        }
+
+        if (context.Request.Query.TryGetValue("status", out var statuses))
+        {
+            if (statuses.Count != 1) return false;
+            status = statuses[0];
+        }
+
+        if (context.Request.Query.TryGetValue("channel", out var channels))
+        {
+            if (channels.Count != 1) return false;
+            channel = channels[0];
+        }
+
+        return true;
+    }
 
     private static bool TryNotificationQuery(
         HttpContext context, out bool unreadOnly, out int pageSize, out Guid? after)
