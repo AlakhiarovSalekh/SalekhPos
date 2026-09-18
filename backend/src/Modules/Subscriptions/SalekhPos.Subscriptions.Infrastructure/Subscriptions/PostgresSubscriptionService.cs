@@ -350,7 +350,7 @@ public sealed class PostgresSubscriptionService(NpgsqlDataSource? source) : ISub
     }
     private static SubscriptionResponse Response(Subscription m) => new(m.Id, m.PlanId, Snake(m.Status), m.PeriodStart, m.PeriodEnd, m.CancelAtPeriodEnd, m.CanceledAt);
     private static string Snake(SubscriptionStatus s) => s switch { SubscriptionStatus.PastDue => "past_due", _ => s.ToString().ToLowerInvariant() };
-    private static IReadOnlyDictionary<string, long> ParseLimits(string json) => JsonSerializer.Deserialize<Dictionary<string, long>>(json)
+    private static Dictionary<string, long> ParseLimits(string json) => JsonSerializer.Deserialize<Dictionary<string, long>>(json)
         ?? throw new SubscriptionUnavailableException();
     private static string Hash<T>(T value) { var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value))); return Convert.ToHexString(bytes).ToLowerInvariant(); }
     private static void ValidateIdentity(SubscriptionIdentity i, Guid org) { ArgumentNullException.ThrowIfNull(i); i.Validate(); Require(org, nameof(org)); }
