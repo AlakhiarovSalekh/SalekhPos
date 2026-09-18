@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Appearance,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,9 +12,9 @@ import type { PropsWithChildren } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useLocalization } from "@/localization/LocalizationProvider";
-import { colors } from "./themeColors";
+import { resolveMobileColors } from "@/theme/theme";
 
-export { colors } from "./themeColors";
+export const colors = resolveMobileColors(Appearance.getColorScheme());
 
 export function Screen({ children }: PropsWithChildren) {
   return (
