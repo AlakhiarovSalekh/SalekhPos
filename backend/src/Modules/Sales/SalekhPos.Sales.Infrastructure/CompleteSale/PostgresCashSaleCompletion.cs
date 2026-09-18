@@ -89,7 +89,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
             await ConsumeCart(connection, transaction, identity, command, cartId, cancellationToken);
 
         var (registerId, shiftCurrency) = await ActiveShiftRegister(connection, transaction, command.OrganizationId,
-            command.BranchId, command.ShiftId, cancellationToken) ?? throw new SalesConflictException();
+            command.BranchId, command.DeviceId, command.ShiftId, cancellationToken)
+            ?? throw new SalesConflictException();
 
         foreach (var productId in command.Lines.Select(line => line.ProductId).Order())
             await Lock(connection, transaction, $"stock:{command.OrganizationId:D}:{command.BranchId:D}:{productId:D}", cancellationToken);
@@ -161,7 +162,8 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
 
     private static void Validate(CompleteCashSaleCommand command)
     {
-        if (command.OrganizationId == Guid.Empty || command.BranchId == Guid.Empty || command.ShiftId == Guid.Empty || command.SaleId == Guid.Empty
+        if (command.OrganizationId == Guid.Empty || command.BranchId == Guid.Empty || command.DeviceId == Guid.Empty
+            || command.ShiftId == Guid.Empty || command.SaleId == Guid.Empty
             || command.OperationId == Guid.Empty || command.Lines is null || command.Lines.Count is < 1 or > 500
             || command.Lines.Any(line => line.ProductId == Guid.Empty || line.Quantity <= 0
                 || decimal.Round(line.Quantity, 6) != line.Quantity)
@@ -278,10 +280,21 @@ public sealed class PostgresCashSaleCompletion(NpgsqlDataSource? source) : ICash
     }
 
     private static async Task<(Guid RegisterId, string Currency)?> ActiveShiftRegister(NpgsqlConnection connection,
-        NpgsqlTransaction transaction, Guid organizationId, Guid branchId, Guid shiftId, CancellationToken cancellationToken)
+        NpgsqlTransaction transaction, Guid organizationId, Guid branchId, Guid deviceId, Guid shiftId,
+        CancellationToken cancellationToken)
     {
-        await using var query = new NpgsqlCommand("SELECT register_id,currency FROM shifts.shifts WHERE organization_id=$1 AND branch_id=$2 AND shift_id=$3 AND status='open'", connection, transaction);
-        query.Parameters.AddWithValue(organizationId); query.Parameters.AddWithValue(branchId); query.Parameters.AddWithValue(shiftId);
+        await using var query = new NpgsqlCommand("""
+            SELECT s.register_id,s.currency
+            FROM shifts.shifts s
+            JOIN devices.registered_devices d
+              ON d.organization_id=s.organization_id AND d.branch_id=s.branch_id AND d.register_id=s.register_id
+            WHERE s.organization_id=$1 AND s.branch_id=$2 AND s.shift_id=$3 AND s.status='open'
+              AND d.device_id=$4 AND d.status='active'
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(branchId);
+        query.Parameters.AddWithValue(shiftId);
+        query.Parameters.AddWithValue(deviceId);
         await using var reader = await query.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken) ? (reader.GetGuid(0), reader.GetString(1)) : null;
     }
