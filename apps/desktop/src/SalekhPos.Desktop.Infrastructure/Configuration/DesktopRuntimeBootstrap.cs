@@ -45,6 +45,11 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         AnalyticsViewer = new HttpAnalyticsViewer(authenticatedClient);
         AccountingViewer = new HttpAccountingViewer(authenticatedClient);
         SupportManager = new HttpSupportManager(authenticatedClient);
+        FeatureManager = new HttpFeatureManager(authenticatedClient);
+        FiscalizationManager = new HttpFiscalizationManager(authenticatedClient);
+        IntegrationManager = new HttpIntegrationManager(authenticatedClient);
+        BillingManager = new HttpBillingManager(authenticatedClient);
+        SubscriptionManager = new HttpSubscriptionManager(authenticatedClient);
         Subject = subject;
         this.tokens = tokens;
         this.authenticatedClient = authenticatedClient;
@@ -60,6 +65,11 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     public IAnalyticsViewer AnalyticsViewer { get; }
     public IAccountingViewer AccountingViewer { get; }
     public ISupportManager SupportManager { get; }
+    public IFeatureManager FeatureManager { get; }
+    public IFiscalizationManager FiscalizationManager { get; }
+    public IIntegrationManager IntegrationManager { get; }
+    public IBillingManager BillingManager { get; }
+    public ISubscriptionManager SubscriptionManager { get; }
     public string Subject { get; }
 
     public void Dispose()
