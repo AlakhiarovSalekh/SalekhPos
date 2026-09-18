@@ -37,13 +37,49 @@ public sealed class WebhookTenantDispatcherTests
         Assert.Equal(1, result.Delivered);
         Assert.Equal(0, result.Retried);
         Assert.Equal(0, result.DeadLettered);
+        Assert.Equal(0, result.Deferred);
         Assert.Equal(1, service.RecordedAttempts);
+        Assert.Equal(0, service.DeferredLeases);
+    }
+
+    [Fact]
+    public async Task Dispatcher_defers_resolver_outage_without_consuming_attempt()
+    {
+        var organizationId = Guid.NewGuid();
+        var payload = Encoding.UTF8.GetBytes("{}");
+        var lease = new LeasedWebhookResponse(
+            new WebhookDeliveryResponse(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "sale.completed",
+                Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant(), "delivering", 4,
+                null, null, null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
+            Guid.NewGuid(), "object://missing/1", "https://webhook.example.test/events", "vault://missing/key");
+
+        var service = new FakeIntegrationService(lease);
+        var transport = new WebhookTransport(
+            new UnavailablePayload(),
+            new Secret(Enumerable.Repeat((byte)5, 32).ToArray()),
+            new Sender(_ => new HttpResponseMessage(HttpStatusCode.OK)),
+            TimeProvider.System);
+        var dispatcher = new WebhookTenantDispatcher(service, transport,
+            new FixedTimeProvider(DateTimeOffset.Parse("2026-09-18T11:00:00Z")));
+
+        var result = await dispatcher.DispatchDueAsync(
+            new IntegrationIdentity("https://worker.example.test", "integration-worker"),
+            organizationId, 10, default);
+
+        Assert.Equal(1, result.Leased);
+        Assert.Equal(1, result.Deferred);
+        Assert.Equal(0, result.Retried);
+        Assert.Equal(0, service.RecordedAttempts);
+        Assert.Equal(1, service.DeferredLeases);
+        Assert.Equal(4, service.LastDeferredAttemptCount);
     }
 
     private sealed class FakeIntegrationService(LeasedWebhookResponse lease) : IIntegrationService
     {
         private bool leased;
         public int RecordedAttempts { get; private set; }
+        public int DeferredLeases { get; private set; }
+        public int LastDeferredAttemptCount { get; private set; } = -1;
 
         public Task<LeasedWebhookResponse?> LeaseNextWebhookAsync(IntegrationIdentity identity, Guid organizationId,
             LeaseWebhookRequest request, CancellationToken cancellationToken)
@@ -67,6 +103,19 @@ public sealed class WebhookTenantDispatcherTests
             });
         }
 
+        public Task<WebhookDeliveryResponse> DeferLeaseAsync(IntegrationIdentity identity, Guid organizationId,
+            Guid deliveryId, DeferWebhookLeaseCommand command, CancellationToken cancellationToken)
+        {
+            DeferredLeases++;
+            LastDeferredAttemptCount = lease.Delivery.AttemptCount;
+            return Task.FromResult(lease.Delivery with
+            {
+                Status = "failed",
+                NextAttemptAt = command.RetryAt,
+                LastErrorCode = command.ErrorCode
+            });
+        }
+
         public Task<IntegrationWriteResult<IntegrationConnectionResponse>> CreateConnectionAsync(IntegrationIdentity identity,
             CreateIntegrationConnectionCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IntegrationConnectionPage> ListConnectionsAsync(IntegrationIdentity identity, Guid organizationId,
@@ -77,6 +126,18 @@ public sealed class WebhookTenantDispatcherTests
             EnqueueWebhookCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<WebhookDeliveryPage> ListDeliveriesAsync(IntegrationIdentity identity, Guid organizationId,
             int pageSize, Guid? after, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class UnavailablePayload : IWebhookPayloadResolver
+    {
+        public ValueTask<ReadOnlyMemory<byte>> ResolveAsync(string reference, CancellationToken cancellationToken) =>
+            ValueTask.FromException<ReadOnlyMemory<byte>>(
+                new WebhookResolverUnavailableException("Payload store is temporarily unavailable."));
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 
     private sealed class Payload(byte[] value) : IWebhookPayloadResolver

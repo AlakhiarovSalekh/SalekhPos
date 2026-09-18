@@ -3,7 +3,7 @@ using SalekhPos.Integrations.Contracts;
 
 namespace SalekhPos.Integrations.Infrastructure.Webhooks;
 
-public sealed record WebhookDispatchBatchResult(int Leased, int Delivered, int Retried, int DeadLettered);
+public sealed record WebhookDispatchBatchResult(int Leased, int Delivered, int Retried, int DeadLettered, int Deferred);
 
 public sealed class WebhookTenantDispatcher(
     IIntegrationService integrations,
@@ -25,6 +25,7 @@ public sealed class WebhookTenantDispatcher(
         var delivered = 0;
         var retried = 0;
         var deadLettered = 0;
+        var deferred = 0;
 
         while (leased < maximumDeliveries)
         {
@@ -48,7 +49,19 @@ public sealed class WebhookTenantDispatcher(
             }
             catch (WebhookResolverUnavailableException)
             {
-                result = new(false, null, "resolver_unavailable", timeProvider.GetUtcNow().AddMinutes(5));
+                var deferredDelivery = await integrations.DeferLeaseAsync(
+                    identity,
+                    organizationId,
+                    item.Delivery.Id,
+                    new(item.LeaseId, "resolver_unavailable", timeProvider.GetUtcNow().AddMinutes(5)),
+                    cancellationToken);
+                if (deferredDelivery.Status != "failed"
+                    || deferredDelivery.AttemptCount != item.Delivery.AttemptCount)
+                {
+                    throw new IntegrationUnavailableException();
+                }
+                deferred++;
+                continue;
             }
             catch (IntegrationNotFoundException)
             {
@@ -82,6 +95,6 @@ public sealed class WebhookTenantDispatcher(
             }
         }
 
-        return new(leased, delivered, retried, deadLettered);
+        return new(leased, delivered, retried, deadLettered, deferred);
     }
 }

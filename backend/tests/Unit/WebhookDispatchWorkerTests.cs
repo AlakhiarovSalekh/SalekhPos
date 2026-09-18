@@ -62,7 +62,7 @@ public sealed class WebhookDispatchWorkerTests
     {
         var health = new WebhookDispatchHealthState();
         var at = DateTimeOffset.Parse("2026-09-18T10:00:00Z");
-        health.RecordCycle(4, 2, 1, 1, at);
+        health.RecordCycle(4, 2, 1, 1, 3, at);
         health.RecordFailure();
         var snapshot = health.Snapshot();
 
@@ -71,6 +71,7 @@ public sealed class WebhookDispatchWorkerTests
         Assert.Equal(2, snapshot.Delivered);
         Assert.Equal(1, snapshot.Retried);
         Assert.Equal(1, snapshot.DeadLettered);
+        Assert.Equal(3, snapshot.Deferred);
         Assert.Equal(1, snapshot.Failures);
         Assert.Equal(at, snapshot.LastCompletedAt);
     }

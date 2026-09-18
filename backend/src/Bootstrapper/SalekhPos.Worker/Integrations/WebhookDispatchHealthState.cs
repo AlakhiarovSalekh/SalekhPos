@@ -7,17 +7,20 @@ public sealed class WebhookDispatchHealthState
     private long delivered;
     private long retried;
     private long deadLettered;
+    private long deferred;
     private long failures;
     private long configurationBlocks;
     private long lastCompletedUnixSeconds;
 
-    public void RecordCycle(int organizations, int succeeded, int retryCount, int deadLetterCount, DateTimeOffset completedAt)
+    public void RecordCycle(int organizations, int succeeded, int retryCount, int deadLetterCount, int deferredCount,
+        DateTimeOffset completedAt)
     {
         Interlocked.Increment(ref cycles);
         Interlocked.Add(ref organizationsVisited, organizations);
         Interlocked.Add(ref delivered, succeeded);
         Interlocked.Add(ref retried, retryCount);
         Interlocked.Add(ref deadLettered, deadLetterCount);
+        Interlocked.Add(ref deferred, deferredCount);
         Interlocked.Exchange(ref lastCompletedUnixSeconds, completedAt.ToUnixTimeSeconds());
     }
 
@@ -34,6 +37,7 @@ public sealed class WebhookDispatchHealthState
             Interlocked.Read(ref delivered),
             Interlocked.Read(ref retried),
             Interlocked.Read(ref deadLettered),
+            Interlocked.Read(ref deferred),
             Interlocked.Read(ref failures),
             Interlocked.Read(ref configurationBlocks),
             timestamp == 0 ? null : DateTimeOffset.FromUnixTimeSeconds(timestamp));
@@ -46,6 +50,7 @@ public sealed record WebhookDispatchHealthSnapshot(
     long Delivered,
     long Retried,
     long DeadLettered,
+    long Deferred,
     long Failures,
     long ConfigurationBlocks,
     DateTimeOffset? LastCompletedAt);

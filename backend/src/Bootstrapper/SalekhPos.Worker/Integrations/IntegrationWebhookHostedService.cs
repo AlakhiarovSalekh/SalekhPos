@@ -76,6 +76,7 @@ public sealed class IntegrationWebhookHostedService(
         var delivered = 0;
         var retried = 0;
         var deadLettered = 0;
+        var deferred = 0;
 
         do
         {
@@ -99,6 +100,7 @@ public sealed class IntegrationWebhookHostedService(
                     delivered += result.Delivered;
                     retried += result.Retried;
                     deadLettered += result.DeadLettered;
+                    deferred += result.Deferred;
                 }
                 catch (IntegrationDeniedException)
                 {
@@ -117,12 +119,12 @@ public sealed class IntegrationWebhookHostedService(
         }
         while (after.HasValue);
 
-        health.RecordCycle(visited, delivered, retried, deadLettered, timeProvider.GetUtcNow());
-        if (delivered + retried + deadLettered > 0)
+        health.RecordCycle(visited, delivered, retried, deadLettered, deferred, timeProvider.GetUtcNow());
+        if (delivered + retried + deadLettered + deferred > 0)
         {
             logger.LogInformation(
-                "Webhook dispatch cycle processed {Organizations} organizations with {Delivered} delivered, {Retried} retryable and {DeadLettered} dead-lettered deliveries",
-                visited, delivered, retried, deadLettered);
+                "Webhook dispatch cycle processed {Organizations} organizations with {Delivered} delivered, {Retried} retryable, {DeadLettered} dead-lettered and {Deferred} deferred deliveries",
+                visited, delivered, retried, deadLettered, deferred);
         }
     }
 }
