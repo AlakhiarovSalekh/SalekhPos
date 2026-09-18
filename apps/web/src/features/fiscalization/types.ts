@@ -1,0 +1,3 @@
+export type FiscalAttempt=Readonly<{attemptNumber:number;outcome:string;providerReference:string|null;providerCode:string|null;failureReason:string|null;attemptedAt:string;retryAfter:string|null}>;
+export type FiscalDocument=Readonly<{documentId:string;branchId:string;saleId:string;providerKey:string;documentType:string;currency:string;grossAmount:number;payloadSha256:string;status:string;providerReference:string|null;attemptCount:number;createdAt:string;updatedAt:string;attempts:readonly FiscalAttempt[]}>;
+export type FiscalSubmission=Readonly<{document:FiscalDocument;created:boolean;providerCalled:boolean}>;
