@@ -115,7 +115,7 @@ public sealed class HttpSupportManager(HttpClient client) : ISupportManager
     {
         if (value.Id == Guid.Empty || value.BranchId == Guid.Empty || !ValidText(value.Subject, 200)
             || !ValidText(value.Description, 8000, true) || !Priorities.Contains(value.Priority)
-            || !Statuses.Contains(value.Status) || value.Version < 0 || !ValidText(value.OpenedBySubject, 256)
+            || !Statuses.Contains(value.Status) || value.Version < 1 || !ValidText(value.OpenedBySubject, 256)
             || value.CreatedAt.Offset != TimeSpan.Zero || value.UpdatedAt.Offset != TimeSpan.Zero
             || value.UpdatedAt < value.CreatedAt)
             throw new InvalidOperationException("Support ticket response is invalid.");
