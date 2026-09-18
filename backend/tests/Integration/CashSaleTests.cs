@@ -183,6 +183,61 @@ public sealed class CashSaleTests(AccessFixture fixture) : IDisposable
     }
 
     [Fact]
+    public async Task CashSaleRequiresTrustedDeviceProofAndMatchingRegister()
+    {
+        var productId = await PrepareProduct(7m, 2m);
+        var shiftId = await EnsureSaleShift();
+        var registerId = saleRegisterId ?? throw new InvalidOperationException("The sale register is unavailable.");
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity = 1m } },
+            cashReceived = 7m,
+            suspendedCartId = (Guid?)null
+        });
+        using var owner = Client("owner");
+
+        using var unsignedRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/sales/cash")
+        { Content = new ByteArrayContent(body) };
+        unsignedRequest.Content.Headers.ContentType = new("application/json");
+        unsignedRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var unsigned = await owner.SendAsync(unsignedRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, unsigned.StatusCode);
+
+        var tamperedOperation = Guid.NewGuid();
+        var signedBody = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            shiftId,
+            lines = new[] { new { productId, quantity = 1m } },
+            cashReceived = 8m,
+            suspendedCartId = (Guid?)null
+        });
+        using var tampered = await shiftDevices[registerId].CompleteCashSaleAsync(
+            fixture, owner, tamperedOperation, body, new(SignedBody: signedBody));
+        Assert.Equal(HttpStatusCode.Unauthorized, tampered.StatusCode);
+
+        using var registerRequest = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/organizations/{fixture.OrganizationA}/branches/{fixture.BranchA}/registers")
+        {
+            Content = JsonContent.Create(new
+            {
+                code = "SALE-X-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
+                name = "Wrong Sale Register"
+            })
+        };
+        registerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var registerResponse = await owner.SendAsync(registerRequest);
+        registerResponse.EnsureSuccessStatusCode();
+        using var registerBody = JsonDocument.Parse(await registerResponse.Content.ReadAsStringAsync());
+        var otherRegisterId = registerBody.RootElement.GetProperty("id").GetGuid();
+        using var otherDevice = await TrustedDeviceTestClient.EnrollAsync(fixture, owner, otherRegisterId);
+        using var wrongRegister = await otherDevice.CompleteCashSaleAsync(
+            fixture, owner, Guid.NewGuid(), body);
+        Assert.Equal(HttpStatusCode.Conflict, wrongRegister.StatusCode);
+    }
+
+    [Fact]
     public async Task SaleReadRequiresPermissionAndReturnsNotFoundWithinAuthorizedScope()
     {
         using var owner = Client("owner");
