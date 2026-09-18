@@ -20,7 +20,7 @@ public sealed class PostgresFiscalDocumentService(NpgsqlDataSource? source, IFis
         ArgumentNullException.ThrowIfNull(request);
         var draft = new FiscalDocumentDraft(organizationId, branchId, request.DocumentId, request.SaleId,
             request.ProviderKey, request.DocumentType, request.Currency, request.GrossAmount, request.Payload);
-        return ExecuteAsync(identity, draft, false, ct);
+        return ExecuteAsync(identity, draft, ct);
     }
 
     public async Task<FiscalSubmissionResponse> RetryAsync(FiscalIdentity identity, Guid organizationId,
@@ -37,7 +37,7 @@ public sealed class PostgresFiscalDocumentService(NpgsqlDataSource? source, IFis
         if (existing.Status is "accepted" or "rejected") throw new FiscalNotRetryableException();
         var draft = new FiscalDocumentDraft(organizationId, existing.BranchId, existing.Id, existing.SaleId,
             existing.ProviderKey, existing.DocumentType, existing.Currency, existing.Gross, existing.Payload);
-        return await SubmitLocked(connection, transaction, identity, draft, existing, false, ct);
+        return await SubmitLocked(connection, transaction, draft, existing, ct);
     }
 
     public async Task<FiscalDocumentResponse?> ReadAsync(FiscalIdentity identity, Guid organizationId,
@@ -57,7 +57,7 @@ public sealed class PostgresFiscalDocumentService(NpgsqlDataSource? source, IFis
     }
 
     private async Task<FiscalSubmissionResponse> ExecuteAsync(FiscalIdentity identity, FiscalDocumentDraft draft,
-        bool retry, CancellationToken ct)
+        CancellationToken ct)
     {
         identity.Validate();
         var dataSource = source ?? throw new FiscalUnavailableException();
@@ -73,11 +73,11 @@ public sealed class PostgresFiscalDocumentService(NpgsqlDataSource? source, IFis
             await transaction.CommitAsync(ct);
             return new(replay, false, false);
         }
-        return await SubmitLocked(connection, transaction, identity, draft, existing, retry, ct);
+        return await SubmitLocked(connection, transaction, draft, existing, ct);
     }
 
     private async Task<FiscalSubmissionResponse> SubmitLocked(NpgsqlConnection connection, NpgsqlTransaction transaction,
-        FiscalIdentity identity, FiscalDocumentDraft draft, DocumentRow? existing, bool retry, CancellationToken ct)
+        FiscalDocumentDraft draft, DocumentRow? existing, CancellationToken ct)
     {
         await using (var mutex = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", connection, transaction))
         { mutex.Parameters.AddWithValue($"{draft.OrganizationId:D}:{draft.DocumentId:D}"); await mutex.ExecuteNonQueryAsync(ct); }
