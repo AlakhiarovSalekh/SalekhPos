@@ -99,6 +99,18 @@ using SalekhPos.FeatureManagement.Infrastructure.Features;
 using SalekhPos.Fiscalization.Api.FiscalDocuments;
 using SalekhPos.Fiscalization.Application.FiscalDocuments;
 using SalekhPos.Fiscalization.Infrastructure.FiscalDocuments;
+using SalekhPos.Billing.Api.Billing;
+using SalekhPos.Billing.Application.Billing;
+using SalekhPos.Billing.Infrastructure.Billing;
+using SalekhPos.Subscriptions.Api.Subscriptions;
+using SalekhPos.Subscriptions.Application.Subscriptions;
+using SalekhPos.Subscriptions.Infrastructure.Subscriptions;
+using SalekhPos.Integrations.Api.Integrations;
+using SalekhPos.Integrations.Application;
+using SalekhPos.Integrations.Infrastructure.Integrations;
+using SalekhPos.Support.Api.Support;
+using SalekhPos.Support.Application;
+using SalekhPos.Support.Infrastructure.Support;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -174,6 +186,10 @@ builder.Services.AddSingleton<IFiscalProviderRegistry, FiscalProviderRegistry>()
 builder.Services.AddSingleton<IFiscalDocumentService>(provider => new PostgresFiscalDocumentService(
     provider.GetRequiredService<AccessDatabase>().DataSource,
     provider.GetRequiredService<IFiscalProviderRegistry>()));
+builder.Services.AddSingleton<IBillingService>(provider => new PostgresBillingService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISubscriptionService>(provider => new PostgresSubscriptionService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<IIntegrationService>(provider => new PostgresIntegrationService(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<ISupportService>(provider => new PostgresSupportService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton(provider => new TokenRevocations(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<SalekhPos.Identity.Application.Sessions.ITokenRevocations>(provider => provider.GetRequiredService<TokenRevocations>());
 builder.Services.AddSingleton(TimeProvider.System);
@@ -267,6 +283,10 @@ app.MapAnalyticsEndpoints();
 app.MapAccountingEndpoints();
 app.MapFeatureEndpoints();
 app.MapFiscalizationEndpoints();
+app.MapBillingEndpoints();
+app.MapSubscriptionEndpoints();
+app.MapIntegrationEndpoints();
+app.MapSupportEndpoints();
 app.MapIdentityEndpoints();
 app.MapWebAuthentication();
 app.MapWebBusinessEndpoints();
@@ -278,6 +298,11 @@ app.MapWebGlobalConfigurationEndpoints();
 app.MapWebAnalyticsEndpoints();
 app.MapWebAccountingEndpoints();
 app.MapWebSupportEndpoints();
+app.MapWebFeatureManagementEndpoints();
+app.MapWebFiscalizationEndpoints();
+app.MapWebIntegrationEndpoints();
+app.MapWebBillingEndpoints();
+app.MapWebSubscriptionEndpoints();
 app.MapPlatformEndpoints();
 
 app.Run();
