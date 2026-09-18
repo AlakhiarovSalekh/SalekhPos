@@ -21,7 +21,7 @@ jobs:
       - name: Checkout recovery commit
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: fa901077fb907323bcc4e793844578fdd50920fd
+          ref: recovery/local-backend-20260918
           fetch-depth: 0
           persist-credentials: false
 
