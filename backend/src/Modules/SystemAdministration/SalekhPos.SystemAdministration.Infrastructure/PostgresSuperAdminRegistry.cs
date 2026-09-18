@@ -31,6 +31,20 @@ public sealed class PostgresSuperAdminRegistry(NpgsqlDataSource? source) : ISupe
     public Task<PlatformAuthority> GetAuthorityAsync(PlatformIdentity identity, CancellationToken cancellationToken) =>
         ExecuteAsync<PlatformAuthority>("SELECT system_administration.authority($1,$2)", [identity.Issuer, identity.Subject], cancellationToken);
 
+    public Task<SuperAdminPage> ListAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken) =>
+        ExecutePageAsync<SuperAdminResponse, SuperAdminPage>(
+            "SELECT value FROM system_administration.list_super_admins($1,$2,$3,$4)",
+            [identity.Issuer, identity.Subject, after ?? (object)DBNull.Value, pageSize + 1],
+            pageSize, item => item.Id, (items, next) => new(items, next), cancellationToken);
+
+    public Task<PlatformAuthorityAuditPage> ListAuditAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken) =>
+        ExecutePageAsync<PlatformAuthorityAuditResponse, PlatformAuthorityAuditPage>(
+            "SELECT value FROM system_administration.list_authority_audit($1,$2,$3,$4)",
+            [identity.Issuer, identity.Subject, after ?? (object)DBNull.Value, pageSize + 1],
+            pageSize, item => item.OperationId, (items, next) => new(items, next), cancellationToken);
+
     public Task<SuperAdminResponse> RegisterAsync(PrivilegedActor actor, Guid operationId, PlatformIdentity target,
         string reason, string traceId, CancellationToken cancellationToken) =>
         ExecuteAsync<SuperAdminResponse>("SELECT system_administration.register_super_admin($1,$2,$3,$4,$5,$6,$7,$8)",
@@ -40,6 +54,46 @@ public sealed class PostgresSuperAdminRegistry(NpgsqlDataSource? source) : ISupe
         string reason, string traceId, CancellationToken cancellationToken) =>
         ExecuteAsync<SuperAdminResponse>("SELECT system_administration.revoke_super_admin($1,$2,$3,$4,$5,$6,$7,$8)",
             [operationId, actor.Identity.Issuer, actor.Identity.Subject, actor.HasMfa, actor.AuthenticatedAt.UtcDateTime, targetId, reason, traceId], cancellationToken);
+
+    private async Task<TPage> ExecutePageAsync<TItem, TPage>(string sql, object[] parameters, int pageSize,
+        Func<TItem, Guid> cursor, Func<IReadOnlyList<TItem>, Guid?, TPage> page,
+        CancellationToken cancellationToken)
+    {
+        if (source is null) { throw new PlatformUnavailableException(); }
+        if (pageSize is < 1 or > 100) { throw new ArgumentException("Platform page size is invalid."); }
+        await using var connection = await source.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using (var safety = new NpgsqlCommand(SafetySql, connection, transaction))
+        {
+            if (await safety.ExecuteScalarAsync(cancellationToken) is not true) { throw new PlatformUnavailableException(); }
+        }
+
+        try
+        {
+            await using var command = new NpgsqlCommand(sql, connection, transaction);
+            foreach (var value in parameters) { command.Parameters.Add(new NpgsqlParameter { Value = value }); }
+            var items = new List<TItem>(pageSize + 1);
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    var json = reader.GetString(0);
+                    items.Add(JsonSerializer.Deserialize<TItem>(json, JsonOptions) ?? throw new PlatformUnavailableException());
+                }
+            }
+
+            Guid? next = null;
+            if (items.Count > pageSize)
+            {
+                items.RemoveAt(pageSize);
+                next = cursor(items[^1]);
+            }
+            await transaction.CommitAsync(cancellationToken);
+            return page(items.AsReadOnly(), next);
+        }
+        catch (PostgresException exception) when (exception.SqlState == "42501") { throw new PlatformAccessDeniedException(); }
+        catch (PostgresException exception) when (exception.SqlState == "22023") { throw new ArgumentException("Invalid platform query."); }
+    }
 
     private async Task<T> ExecuteAsync<T>(string sql, object[] parameters, CancellationToken cancellationToken)
     {

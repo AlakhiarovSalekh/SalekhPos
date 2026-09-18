@@ -12,12 +12,24 @@ public interface ISuperAdminRegistry
         string reason, string traceId, CancellationToken cancellationToken);
     Task<SuperAdminResponse> RevokeAsync(PrivilegedActor actor, Guid operationId, Guid targetId,
         string reason, string traceId, CancellationToken cancellationToken);
+    Task<SuperAdminPage> ListAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken);
+    Task<PlatformAuthorityAuditPage> ListAuditAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken);
 }
 
 public sealed class SuperAdminAdministration(ISuperAdminRegistry registry, TimeProvider timeProvider)
 {
     public Task<PlatformAuthority> GetAuthorityAsync(PlatformIdentity identity, CancellationToken cancellationToken) =>
         registry.GetAuthorityAsync(identity, cancellationToken);
+
+    public Task<SuperAdminPage> ListAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken) =>
+        registry.ListAsync(identity, pageSize, after, cancellationToken);
+
+    public Task<PlatformAuthorityAuditPage> ListAuditAsync(PlatformIdentity identity, int pageSize, Guid? after,
+        CancellationToken cancellationToken) =>
+        registry.ListAuditAsync(identity, pageSize, after, cancellationToken);
 
     public Task<SuperAdminResponse> RegisterAsync(PrivilegedActor actor, RegisterSuperAdminRequest request,
         string traceId, CancellationToken cancellationToken)

@@ -13,6 +13,8 @@ public static class WebPlatformAdministrationEndpoints
     {
         var group = app.MapGroup("/bff/api/v1/platform").AllowAnonymous().RequireRateLimiting("business");
         group.MapGet("/authority", Authority);
+        group.MapGet("/super-admins", ListAdmins);
+        group.MapGet("/authority-audit", ListAudit);
         group.MapPost("/super-admins", Register);
         group.MapPost("/super-admins/{adminId:guid}/revoke", Revoke);
     }
@@ -23,6 +25,28 @@ public static class WebPlatformAdministrationEndpoints
         var principal = await Principal(context, state);
         if (principal is null) return Unauthorized(state);
         return Results.Ok(await administration.GetAuthorityAsync(PlatformMfaPolicy.Identity(principal), cancellationToken));
+    }
+
+    private static async Task<IResult> ListAdmins(HttpContext context, WebAuthenticationState state,
+        SuperAdminAdministration administration, CancellationToken cancellationToken)
+    {
+        var principal = await Principal(context, state);
+        if (principal is null) return Unauthorized(state);
+        var page = Page(context);
+        if (page is null) return Invalid();
+        return Results.Ok(await administration.ListAsync(PlatformMfaPolicy.Identity(principal),
+            page.Value.Size, page.Value.After, cancellationToken));
+    }
+
+    private static async Task<IResult> ListAudit(HttpContext context, WebAuthenticationState state,
+        SuperAdminAdministration administration, CancellationToken cancellationToken)
+    {
+        var principal = await Principal(context, state);
+        if (principal is null) return Unauthorized(state);
+        var page = Page(context);
+        if (page is null) return Invalid();
+        return Results.Ok(await administration.ListAuditAsync(PlatformMfaPolicy.Identity(principal),
+            page.Value.Size, page.Value.After, cancellationToken));
     }
 
     private static async Task<IResult> Register(RegisterSuperAdminRequest request, HttpContext context,
@@ -52,6 +76,20 @@ public static class WebPlatformAdministrationEndpoints
         if (state.Settings is null) return null;
         var result = await context.AuthenticateAsync(WebAuthentication.CookieScheme);
         return result.Succeeded ? result.Principal : null;
+    }
+
+    private static (int Size, Guid? After)? Page(HttpContext context)
+    {
+        var size = 50;
+        Guid? after = null;
+        if (context.Request.Query.TryGetValue("pageSize", out var rawSize)
+            && (!int.TryParse(rawSize, out size) || size is < 1 or > 100)) return null;
+        if (context.Request.Query.TryGetValue("after", out var rawAfter))
+        {
+            if (!Guid.TryParse(rawAfter, out var parsed) || parsed == Guid.Empty) return null;
+            after = parsed;
+        }
+        return (size, after);
     }
 
     private static IResult Unauthorized(WebAuthenticationState state) => state.Settings is null
