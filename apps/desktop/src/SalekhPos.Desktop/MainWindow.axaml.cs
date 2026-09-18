@@ -36,7 +36,8 @@ public sealed partial class MainWindow : Window
     public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit,
         IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting,
         ISupportManager? support, Action signOut) : this(workspace, commerce, audit, globalConfiguration, analytics, accounting,
-        support, null, null, null, null, null, signOut) { }
+        support, null, null, null, null, null, signOut)
+    { }
     public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit,
         IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting,
         ISupportManager? support, IFeatureManager? features, IFiscalizationManager? fiscalization,
