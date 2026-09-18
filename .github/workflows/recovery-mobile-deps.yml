@@ -1,0 +1,47 @@
+name: Recovery Mobile Dependencies
+
+on:
+  push:
+    branches:
+      - recovery-mobile-deps-20260918
+    paths:
+      - .github/workflows/recovery-mobile-deps.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: recovery-mobile-deps-20260918
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+      - run: npm install --global pnpm@11.19.0 --ignore-scripts
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only
+      - name: Verify Expo compatibility
+        run: pnpm --filter @salekhpos/apps-mobile exec expo install --check
+      - name: Mobile typecheck
+        run: pnpm --filter @salekhpos/apps-mobile typecheck
+      - name: Mobile tests
+        run: pnpm --filter @salekhpos/apps-mobile test
+      - name: Commit package and lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add apps/mobile/package.json pnpm-lock.yaml
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No dependency changes required."
+            exit 0
+          fi
+          git config user.name "SalekhPos CI Recovery"
+          git config user.email "293670084+AlakhiarovSalekh@users.noreply.github.com"
+          git commit -m "fix: align mobile Expo dependency versions"
+          git push origin HEAD:recovery-mobile-deps-20260918
