@@ -1,0 +1,1 @@
+import{FiscalizationScreen}from"@/screens/management/FiscalizationScreen";export default function Route(){return <FiscalizationScreen/>}

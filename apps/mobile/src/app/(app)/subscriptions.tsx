@@ -1,0 +1,1 @@
+import{SubscriptionsScreen}from"@/screens/management/SubscriptionsScreen";export default function Route(){return <SubscriptionsScreen/>}
