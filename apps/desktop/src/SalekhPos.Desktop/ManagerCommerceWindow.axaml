@@ -2,11 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="SalekhPos.Desktop.ManagerCommerceWindow"
         Title="SalekhPos Management" Width="1050" Height="760" MinWidth="850" MinHeight="620">
-  <Grid RowDefinitions="Auto,*" Background="#F3F5F7">
-    <Border Background="#17202A" Padding="20,14">
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppBackgroundBrush}">
+    <Border Background="{DynamicResource AppHeaderBrush}" Padding="20,14">
       <Grid ColumnDefinitions="*,Auto">
-        <StackPanel><TextBlock Text="Management extensions" FontSize="24" FontWeight="SemiBold" Foreground="White"/>
-          <TextBlock Name="ScopeText" Foreground="#C9D4DE"/></StackPanel>
+        <StackPanel><TextBlock Text="Management extensions" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource AppHeaderTextBrush}"/>
+          <TextBlock Name="ScopeText" Foreground="{DynamicResource AppHeaderMutedBrush}"/></StackPanel>
         <Button Grid.Column="1" Content="Refresh all" Click="RefreshAllClick"/>
       </Grid>
     </Border>
@@ -19,7 +19,7 @@
             <TextBox Name="TransferQuantityBox" Text="1" PlaceholderText="Quantity"/>
             <TextBox Name="TransferReferenceBox" PlaceholderText="Reference"/>
             <Button Content="Create draft" Click="CreateTransferClick"/>
-            <TextBlock Name="TransferMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+            <TextBlock Name="TransferMessage" TextWrapping="Wrap" Foreground="{DynamicResource AppDangerTextBrush}"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Spacing="10"><TextBlock Text="Transfer lifecycle" FontSize="20" FontWeight="SemiBold"/>
             <ListBox Name="TransferList" Height="420"/>
@@ -42,7 +42,7 @@
             <TextBox Name="PromotionMinimumBox" Text="0" PlaceholderText="Minimum subtotal"/>
             <TextBox Name="PromotionCurrencyBox" Text="GEL" PlaceholderText="Currency"/>
             <Button Content="Create campaign" Click="CreatePromotionClick"/>
-            <TextBlock Name="PromotionMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+            <TextBlock Name="PromotionMessage" TextWrapping="Wrap" Foreground="{DynamicResource AppDangerTextBrush}"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Spacing="10"><TextBlock Text="Campaigns" FontSize="20" FontWeight="SemiBold"/>
             <ListBox Name="PromotionList" Height="330"/>
@@ -71,7 +71,7 @@
               <Button Content="Earn" Click="EarnPointsClick"/>
               <Button Grid.Column="1" Content="Redeem" Click="RedeemPointsClick"/>
             </Grid>
-            <TextBlock Name="LoyaltyMessage" TextWrapping="Wrap" Foreground="#9C2B2B"/>
+            <TextBlock Name="LoyaltyMessage" TextWrapping="Wrap" Foreground="{DynamicResource AppDangerTextBrush}"/>
           </StackPanel>
         </Grid>
       </TabItem>
