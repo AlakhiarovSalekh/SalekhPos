@@ -116,6 +116,10 @@ public sealed class WebhookTenantDispatcherTests
             });
         }
 
+        public Task<WebhookDeliveryResponse> RetryDeadLetterAsync(IntegrationIdentity identity, Guid organizationId,
+            Guid deliveryId, Guid operationId, string reason, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<IntegrationWriteResult<IntegrationConnectionResponse>> CreateConnectionAsync(IntegrationIdentity identity,
             CreateIntegrationConnectionCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IntegrationConnectionPage> ListConnectionsAsync(IntegrationIdentity identity, Guid organizationId,
