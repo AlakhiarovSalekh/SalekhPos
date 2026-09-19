@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.ManagerNotificationsWindow"
+        Title="SalekhPos Notification Delivery"
+        Width="980"
+        Height="720">
+  <Grid Margin="20" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel>
+        <TextBlock Text="Notification delivery operations" FontSize="24" FontWeight="SemiBold"/>
+        <TextBlock Name="ScopeText" Foreground="{DynamicResource AppMutedTextBrush}"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Refresh" Click="RefreshClick"/>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+      <StackPanel>
+        <TextBlock Text="Status" FontWeight="SemiBold"/>
+        <ComboBox Name="StatusBox" SelectedIndex="0">
+          <ComboBoxItem Content="all"/>
+          <ComboBoxItem Content="pending"/>
+          <ComboBoxItem Content="delivering"/>
+          <ComboBoxItem Content="failed"/>
+          <ComboBoxItem Content="delivered"/>
+          <ComboBoxItem Content="dead_lettered"/>
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Text="Channel" FontWeight="SemiBold"/>
+        <ComboBox Name="ChannelBox" SelectedIndex="0">
+          <ComboBoxItem Content="all"/>
+          <ComboBoxItem Content="email"/>
+          <ComboBoxItem Content="push"/>
+        </ComboBox>
+      </StackPanel>
+    </Grid>
+    <ListBox Grid.Row="2" Name="DeliveryList"/>
+    <StackPanel Grid.Row="3" Spacing="8">
+      <TextBlock Text="Manual retry" FontSize="18" FontWeight="SemiBold"/>
+      <TextBlock Text="Select a dead-lettered delivery and provide an audit reason."
+                 Foreground="{DynamicResource AppMutedTextBrush}"/>
+      <TextBox Name="ReasonBox" MaxLength="500" PlaceholderText="Retry reason"/>
+      <Button Content="Retry selected dead-lettered delivery" Click="RetryClick"/>
+      <TextBlock Name="MessageText" Foreground="{DynamicResource AppDangerTextBrush}" TextWrapping="Wrap"/>
+    </StackPanel>
+  </Grid>
+</Window>

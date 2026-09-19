@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { OperationsScopeSelector } from "@/features/operations/OperationsScopeSelector";
 import { useOperationsScope } from "@/features/operations/useOperationsScope";
-import { createNotification, getNotificationDeliveries, getNotifications, getNotificationPreferences, markNotificationRead, updateNotificationPreferences } from "./api";
+import { createNotification, getNotificationDeliveries, getNotifications, getNotificationPreferences, markNotificationRead, retryNotificationDelivery, updateNotificationPreferences } from "./api";
 import type { NotificationDeliveryActivity, NotificationDeliveryStatus, NotificationItem, NotificationPreferences } from "./types";
 
 export function NotificationsWorkspace() {
@@ -13,6 +13,8 @@ export function NotificationsWorkspace() {
   const [deliveryStatus, setDeliveryStatus] = useState<NotificationDeliveryStatus | "">("");
   const [deliveryChannel, setDeliveryChannel] = useState<"" | "email" | "push">("");
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [retryReasons, setRetryReasons] = useState<Record<string, string>>({});
+  const [retryingDeliveryId, setRetryingDeliveryId] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,30 @@ export function NotificationsWorkspace() {
     });
     return () => controller.abort();
   }, [loadDeliveries, scope.organizationId]);
+
+  async function retryDelivery(item: NotificationDeliveryActivity) {
+    if (!scope.organizationId || item.status !== "dead_lettered") return;
+    const reason = retryReasons[item.id]?.trim() ?? "";
+    if (!reason) {
+      setDeliveryError("A retry reason is required for audit.");
+      return;
+    }
+    setRetryingDeliveryId(item.id);
+    setDeliveryError(null);
+    try {
+      await retryNotificationDelivery(scope.organizationId, item.id, reason);
+      setRetryReasons(current => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      await loadDeliveries();
+    } catch {
+      setDeliveryError("The dead-lettered delivery could not be retried.");
+    } finally {
+      setRetryingDeliveryId(null);
+    }
+  }
 
   async function create() {
     if (!scope.organizationId || !title.trim() || !body.trim()) return;
@@ -153,6 +179,22 @@ export function NotificationsWorkspace() {
           <p>Updated {new Date(item.updatedAt).toLocaleString()}</p>
           {item.nextAttemptAt && <p>Retry {new Date(item.nextAttemptAt).toLocaleString()}</p>}
           {item.lastErrorCode && <p>Error code: {item.lastErrorCode}</p>}
+          {item.status === "dead_lettered" && <div className="stack">
+            <label>Retry reason
+              <textarea
+                maxLength={500}
+                value={retryReasons[item.id] ?? ""}
+                onChange={event => setRetryReasons(current => ({ ...current, [item.id]: event.target.value }))}
+                placeholder="Explain why this delivery is safe to retry"
+              />
+            </label>
+            <button
+              disabled={retryingDeliveryId !== null || !(retryReasons[item.id]?.trim())}
+              onClick={() => void retryDelivery(item)}
+            >
+              {retryingDeliveryId === item.id ? "Retrying…" : "Retry dead-lettered delivery"}
+            </button>
+          </div>}
         </article>)}
         {!deliveryError && deliveries.length === 0 && <p>No external delivery activity matched the current filters.</p>}
       </div>

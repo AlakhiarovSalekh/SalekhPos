@@ -7,6 +7,7 @@ namespace SalekhPos.Notifications.Infrastructure.Notifications;
 
 public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) : INotificationDeliveryStore
 {
+    private sealed record ManualRetryRow(Guid DeliveryId, string Reason);
 
     public async Task<NotificationDeliveryPage> ListAsync(
         NotificationIdentity identity,
@@ -90,6 +91,121 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
 
         await transaction.CommitAsync(cancellationToken);
         return new(rows.AsReadOnly(), nextCursor);
+    }
+
+    public async Task<NotificationDeliveryActivityResponse> RetryDeadLetterAsync(
+        NotificationIdentity identity,
+        Guid organizationId,
+        Guid deliveryId,
+        Guid operationId,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        if (organizationId == Guid.Empty || deliveryId == Guid.Empty || operationId == Guid.Empty)
+        {
+            throw new ArgumentException("Notification delivery manual retry is invalid.");
+        }
+
+        reason = RequiredReason(reason);
+        var data = Data();
+        await using var connection = await data.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(
+            connection,
+            transaction,
+            organizationId,
+            identity,
+            "notifications.manage",
+            cancellationToken);
+
+        await using (var idempotencyLock = new NpgsqlCommand(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1::text,0))",
+            connection,
+            transaction))
+        {
+            idempotencyLock.Parameters.AddWithValue(
+                $"{organizationId:D}:{operationId:D}");
+            await idempotencyLock.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        var replay = await ReadManualRetry(
+            connection, transaction, organizationId, operationId, cancellationToken);
+        if (replay is not null)
+        {
+            EnsureSameRetry(replay, deliveryId, reason);
+            var replayed = await ReadActivityById(
+                connection, transaction, organizationId, deliveryId, cancellationToken)
+                ?? throw new NotificationNotFoundException();
+            await transaction.CommitAsync(cancellationToken);
+            return replayed;
+        }
+
+        int previousAttempts;
+        await using (var state = new NpgsqlCommand("""
+            SELECT attempt_count
+            FROM notifications.external_deliveries
+            WHERE organization_id=$1 AND delivery_id=$2 AND status='dead_lettered'
+            FOR UPDATE
+            """, connection, transaction))
+        {
+            state.Parameters.AddWithValue(organizationId);
+            state.Parameters.AddWithValue(deliveryId);
+            var value = await state.ExecuteScalarAsync(cancellationToken);
+            if (value is null)
+            {
+                var existing = await ReadActivityById(
+                    connection, transaction, organizationId, deliveryId, cancellationToken);
+                if (existing is not null) throw new NotificationConflictException();
+                throw new NotificationNotFoundException();
+            }
+            previousAttempts = (int)value;
+        }
+
+        await using (var update = new NpgsqlCommand("""
+            UPDATE notifications.external_deliveries SET
+              status='pending',
+              attempt_count=0,
+              next_attempt_at=NULL,
+              lease_id=NULL,
+              lease_expires_at=NULL,
+              last_error_code=NULL,
+              updated_at=statement_timestamp()
+            WHERE organization_id=$1 AND delivery_id=$2 AND status='dead_lettered'
+            """, connection, transaction))
+        {
+            update.Parameters.AddWithValue(organizationId);
+            update.Parameters.AddWithValue(deliveryId);
+            if (await update.ExecuteNonQueryAsync(cancellationToken) != 1)
+            {
+                throw new NotificationConflictException();
+            }
+        }
+
+        await using (var audit = new NpgsqlCommand("""
+            INSERT INTO notifications.delivery_manual_retries(
+              organization_id,retry_id,delivery_id,operation_id,reason,previous_attempt_count,
+              changed_by_issuer,changed_by_subject)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+            """, connection, transaction))
+        {
+            audit.Parameters.AddWithValue(organizationId);
+            audit.Parameters.AddWithValue(Guid.NewGuid());
+            audit.Parameters.AddWithValue(deliveryId);
+            audit.Parameters.AddWithValue(operationId);
+            audit.Parameters.AddWithValue(reason);
+            audit.Parameters.AddWithValue(previousAttempts);
+            audit.Parameters.AddWithValue(identity.Issuer);
+            audit.Parameters.AddWithValue(identity.Subject);
+            await audit.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        var result = await ReadActivityById(
+            connection, transaction, organizationId, deliveryId, cancellationToken)
+            ?? throw new NotificationNotFoundException();
+        await transaction.CommitAsync(cancellationToken);
+        return result;
     }
 
     public async Task<LeasedNotificationDeliveryResponse?> LeaseNextAsync(
@@ -239,6 +355,69 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
 
     private NpgsqlDataSource Data() => source ?? throw new NotificationUnavailableException();
 
+    private static async Task<ManualRetryRow?> ReadManualRetry(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid organizationId,
+        Guid operationId,
+        CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("""
+            SELECT delivery_id,reason
+            FROM notifications.delivery_manual_retries
+            WHERE organization_id=$1 AND operation_id=$2
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(operationId);
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken)
+            ? new ManualRetryRow(reader.GetGuid(0), reader.GetString(1))
+            : null;
+    }
+
+    private static async Task<NotificationDeliveryActivityResponse?> ReadActivityById(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid organizationId,
+        Guid deliveryId,
+        CancellationToken cancellationToken)
+    {
+        await using var query = new NpgsqlCommand("""
+            SELECT d.delivery_id,d.notification_id,d.channel,d.recipient_subject,d.status,
+              d.attempt_count,d.next_attempt_at,d.last_error_code,d.created_at,d.updated_at,
+              n.title,n.severity
+            FROM notifications.external_deliveries d
+            JOIN notifications.inbox n
+              ON n.organization_id=d.organization_id AND n.notification_id=d.notification_id
+            WHERE d.organization_id=$1 AND d.delivery_id=$2
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(deliveryId);
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadActivity(reader) : null;
+    }
+
+    private static void EnsureSameRetry(ManualRetryRow replay, Guid deliveryId, string reason)
+    {
+        if (replay.DeliveryId != deliveryId || !string.Equals(replay.Reason, reason, StringComparison.Ordinal))
+        {
+            throw new NotificationConflictException();
+        }
+    }
+
+    private static string RequiredReason(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Notification delivery retry reason is invalid.");
+        }
+        value = value.Trim();
+        if (value.Length > 500 || value.Any(char.IsControl))
+        {
+            throw new ArgumentException("Notification delivery retry reason is invalid.");
+        }
+        return value;
+    }
 
     private static NotificationDeliveryActivityResponse ReadActivity(NpgsqlDataReader reader) => new(
         reader.GetGuid(0),

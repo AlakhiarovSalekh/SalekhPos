@@ -32,6 +32,19 @@ describe("notification delivery parsers", () => {
     expect(parsed.lastErrorCode).toBe("http_503");
   });
 
+  it("accepts the reset state returned by a successful manual retry", () => {
+    const retried = parseNotificationDelivery({
+      ...delivery,
+      status: "pending",
+      attemptCount: 0,
+      nextAttemptAt: null,
+      lastErrorCode: null,
+    });
+    expect(retried.status).toBe("pending");
+    expect(retried.attemptCount).toBe(0);
+    expect(retried.lastErrorCode).toBeNull();
+  });
+
   it("accepts bounded delivery pages", () => {
     const page = parseNotificationDeliveryPage({
       items: [delivery],

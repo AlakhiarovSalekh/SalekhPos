@@ -66,6 +66,43 @@ describe("mobile notification delivery configuration", () => {
     ).toThrow(GlobalConfigurationContractError);
   });
 
+  it("retries a dead-lettered delivery with an idempotency key and audit reason", async () => {
+    const retried = {
+      ...delivery,
+      status: "pending",
+      attemptCount: 0,
+      nextAttemptAt: null,
+      lastErrorCode: null,
+    } as const;
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json(retried));
+    const service = createGlobalConfiguration(
+      client(fetchMock as unknown as typeof fetch),
+    );
+
+    const result = await service.retryNotificationDelivery(
+      organizationId,
+      deliveryId,
+      "  Provider configuration corrected.  ",
+    );
+
+    expect(result.status).toBe("pending");
+    expect(result.attemptCount).toBe(0);
+    const [rawUrl, init] = fetchMock.mock.calls[0] ?? [];
+    const url = new URL(String(rawUrl));
+    expect(url.pathname).toBe(
+      `/api/v1/organizations/${organizationId}/notifications/deliveries/${deliveryId}/retry`,
+    );
+    expect(init?.method).toBe("POST");
+    const headers = new Headers(init?.headers);
+    expect(headers.get("authorization")).toBe("Bearer signed-access-token");
+    expect(headers.get("idempotency-key")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+    );
+    expect(JSON.parse(String(init?.body))).toEqual({
+      reason: "Provider configuration corrected.",
+    });
+  });
+
   it("uses the authenticated tenant-scoped delivery activity endpoint and filters", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       json({ items: [delivery], nextCursor: null }),
