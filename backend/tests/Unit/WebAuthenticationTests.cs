@@ -68,6 +68,8 @@ public sealed class WebAuthenticationTests
     [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/shifts/open?registerId=40000000-0000-0000-0000-000000000004")]
     [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/shifts/closed?pageSize=25")]
     [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/payment-events?pageSize=25")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/purchase-orders/30000000-0000-0000-0000-000000000003/receipts?pageSize=25")]
+    [InlineData("/bff/api/v1/organizations/10000000-0000-0000-0000-000000000001/branches/20000000-0000-0000-0000-000000000002/purchase-orders/30000000-0000-0000-0000-000000000003/receipts/40000000-0000-0000-0000-000000000004")]
     public async Task OperationsBffFailsClosedWithoutAWebSession(string route)
     {
         await using var unavailable = new WebApplicationFactory<Program>();

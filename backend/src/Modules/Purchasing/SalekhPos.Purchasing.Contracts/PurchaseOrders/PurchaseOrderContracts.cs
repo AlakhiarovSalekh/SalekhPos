@@ -25,4 +25,5 @@ public sealed record PurchaseReceiptLineResponse(Guid ProductId, decimal Quantit
 public sealed record PurchaseReceiptResponse(Guid Id, Guid OrderId, Guid BranchId, string? Reference,
     DateTimeOffset ReceivedAt, DateTimeOffset CreatedAt, string ReceivedBySubject,
     IReadOnlyList<PurchaseReceiptLineResponse> Lines);
+public sealed record PurchaseReceiptPage(IReadOnlyList<PurchaseReceiptResponse> Items, Guid? NextCursor);
 public sealed record ReceivePurchaseOrderResponse(PurchaseReceiptResponse Receipt, PurchaseOrderResponse Order);

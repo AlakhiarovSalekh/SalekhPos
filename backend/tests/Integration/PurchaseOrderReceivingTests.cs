@@ -63,6 +63,8 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         var firstResult = await Root(first);
         var firstReceiptId = firstResult.GetProperty("receipt").GetProperty("id").GetGuid();
+        var firstReceiptCreatedAt = firstResult.GetProperty("receipt").GetProperty("createdAt")
+            .GetDateTimeOffset();
         Assert.Equal("partially_received",
             firstResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(4L, firstResult.GetProperty("order").GetProperty("version").GetInt64());
@@ -76,9 +78,30 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(productId, receiptLine.GetProperty("productId").GetGuid());
         Assert.Equal(4m, receiptLine.GetProperty("quantity").GetDecimal());
 
+        using (var forbiddenClient = Client("none"))
+        {
+            using var forbiddenHistory = await forbiddenClient.GetAsync(
+                $"{OrdersPath}/{orderId:D}/receipts?pageSize=25");
+            Assert.Equal(HttpStatusCode.Forbidden, forbiddenHistory.StatusCode);
+
+            using var forbiddenReceipt = await forbiddenClient.GetAsync(
+                $"{OrdersPath}/{orderId:D}/receipts/{firstReceiptId:D}");
+            Assert.Equal(HttpStatusCode.Forbidden, forbiddenReceipt.StatusCode);
+        }
+
         using var wrongOrderReceipt = await client.GetAsync(
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts/{firstReceiptId:D}");
         Assert.Equal(HttpStatusCode.NotFound, wrongOrderReceipt.StatusCode);
+
+        var wrongBranchOrdersPath =
+            $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA2:D}/purchase-orders";
+        using var wrongBranchHistory = await client.GetAsync(
+            $"{wrongBranchOrdersPath}/{orderId:D}/receipts?pageSize=25");
+        Assert.Equal(HttpStatusCode.NotFound, wrongBranchHistory.StatusCode);
+
+        using var wrongBranchReceipt = await client.GetAsync(
+            $"{wrongBranchOrdersPath}/{orderId:D}/receipts/{firstReceiptId:D}");
+        Assert.Equal(HttpStatusCode.NotFound, wrongBranchReceipt.StatusCode);
 
         using var replay = await SendIdempotent(
             client,
@@ -142,9 +165,81 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             });
         Assert.Equal(HttpStatusCode.Created, final.StatusCode);
         var finalResult = await Root(final);
+        var finalReceiptId = finalResult.GetProperty("receipt").GetProperty("id").GetGuid();
+        var finalReceiptCreatedAt = finalResult.GetProperty("receipt").GetProperty("createdAt")
+            .GetDateTimeOffset();
         Assert.Equal("received",
             finalResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(5L, finalResult.GetProperty("order").GetProperty("version").GetInt64());
+
+        using var firstReceiptPage = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, firstReceiptPage.StatusCode);
+        var firstReceiptPageRoot = await Root(firstReceiptPage);
+        var firstPageItem = Assert.Single(
+            firstReceiptPageRoot.GetProperty("items").EnumerateArray());
+        var nextCursor = firstReceiptPageRoot.GetProperty("nextCursor").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(nextCursor));
+        Assert.Equal(firstPageItem.GetProperty("id").GetGuid(), Guid.Parse(nextCursor!));
+
+        using var secondReceiptPage = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={nextCursor}");
+        Assert.Equal(HttpStatusCode.OK, secondReceiptPage.StatusCode);
+        var secondReceiptPageRoot = await Root(secondReceiptPage);
+        var secondPageItem = Assert.Single(
+            secondReceiptPageRoot.GetProperty("items").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null,
+            secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
+
+        var finalIsFirst = finalReceiptCreatedAt > firstReceiptCreatedAt
+            || (finalReceiptCreatedAt == firstReceiptCreatedAt
+                && finalReceiptId.CompareTo(firstReceiptId) > 0);
+        var expectedFirstId = finalIsFirst ? finalReceiptId : firstReceiptId;
+        var expectedSecondId = finalIsFirst ? firstReceiptId : finalReceiptId;
+
+        var firstPageId = firstPageItem.GetProperty("id").GetGuid();
+        Assert.Equal(expectedFirstId, firstPageId);
+        Assert.Equal(orderId, firstPageItem.GetProperty("orderId").GetGuid());
+        Assert.Equal(fixture.BranchA, firstPageItem.GetProperty("branchId").GetGuid());
+        var firstHistoryLine = Assert.Single(
+            firstPageItem.GetProperty("lines").EnumerateArray());
+        Assert.Equal(productId, firstHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(firstPageId == finalReceiptId ? 6m : 4m,
+            firstHistoryLine.GetProperty("quantity").GetDecimal());
+
+        var secondPageId = secondPageItem.GetProperty("id").GetGuid();
+        Assert.Equal(expectedSecondId, secondPageId);
+        Assert.Equal(orderId, secondPageItem.GetProperty("orderId").GetGuid());
+        Assert.Equal(fixture.BranchA, secondPageItem.GetProperty("branchId").GetGuid());
+        var secondHistoryLine = Assert.Single(
+            secondPageItem.GetProperty("lines").EnumerateArray());
+        Assert.Equal(productId, secondHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(secondPageId == finalReceiptId ? 6m : 4m,
+            secondHistoryLine.GetProperty("quantity").GetDecimal());
+
+        using var invalidCursorHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.NewGuid():D}");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidCursorHistory.StatusCode);
+
+        using var zeroPageHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=0");
+        Assert.Equal(HttpStatusCode.BadRequest, zeroPageHistory.StatusCode);
+
+        using var cappedPageHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=26");
+        Assert.Equal(HttpStatusCode.BadRequest, cappedPageHistory.StatusCode);
+
+        using var oversizedPageHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, oversizedPageHistory.StatusCode);
+
+        using var emptyCursorHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.Empty:D}");
+        Assert.Equal(HttpStatusCode.BadRequest, emptyCursorHistory.StatusCode);
+
+        using var missingOrderHistory = await client.GetAsync(
+            $"{OrdersPath}/{Guid.NewGuid():D}/receipts?pageSize=1");
+        Assert.Equal(HttpStatusCode.NotFound, missingOrderHistory.StatusCode);
 
         using var stock = await client.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/inventory/stock");
@@ -170,11 +265,11 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             orderId));
     }
 
-    private HttpClient Client()
+    private HttpClient Client(string subject = "owner")
     {
         var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
+            new AuthenticationHeaderValue("Bearer", fixture.Token(subject));
         return client;
     }
 

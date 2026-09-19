@@ -65,6 +65,20 @@ public static class PurchaseOrderEndpoints
             catch (ArgumentException) { return Invalid(); }
         });
 
+        group.MapGet("/{orderId:guid}/receipts", async (
+            Guid organizationId, Guid branchId, Guid orderId, HttpContext context,
+            IPurchaseOrderService orders, CancellationToken cancellationToken) =>
+        {
+            if (organizationId == Guid.Empty || branchId == Guid.Empty || orderId == Guid.Empty
+                || !TryPage(context, out var pageSize, out var after)) return Invalid();
+            try
+            {
+                return Results.Ok(await orders.ListReceiptsAsync(Identity(context), organizationId,
+                    branchId, orderId, pageSize, after, cancellationToken));
+            }
+            catch (ArgumentException) { return Invalid(); }
+        });
+
         group.MapGet("/{orderId:guid}/receipts/{receiptId:guid}", async (
             Guid organizationId, Guid branchId, Guid orderId, Guid receiptId,
             HttpContext context, IPurchaseOrderService orders, CancellationToken cancellationToken) =>

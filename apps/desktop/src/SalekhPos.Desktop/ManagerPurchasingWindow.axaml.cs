@@ -11,6 +11,10 @@ public sealed partial class ManagerPurchasingWindow : Window
     private readonly Guid branchId;
     private PurchaseOrderSummary? receivingOrder;
     private PurchaseReceivingStateSummary? receivingState;
+    private readonly List<ReceiptDisplay> receiptHistory = [];
+    private Guid? receiptHistoryOrderId;
+    private Guid? receiptHistoryCursor;
+    private bool receiptHistoryBusy;
 
     public ManagerPurchasingWindow() =>
         throw new InvalidOperationException("Purchasing runtime is required.");
@@ -61,6 +65,112 @@ public sealed partial class ManagerPurchasingWindow : Window
         });
     }
 
+    private async void LoadReceiptHistoryClick(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (receiptHistoryBusy)
+        {
+            MessageText.Text = "Receipt history is already loading.";
+            return;
+        }
+        if (OrderList.SelectedItem is not OrderDisplay selected)
+        {
+            MessageText.Text = "Select a purchase order first.";
+            return;
+        }
+
+        receiptHistoryOrderId = selected.Value.Id;
+        receiptHistoryCursor = null;
+        receiptHistory.Clear();
+        ReceiptList.ItemsSource = Array.Empty<ReceiptDisplay>();
+        ReceiptDetailText.Text = "";
+        ReceiptStateText.Text = "Loading receipt history…";
+        await LoadReceiptPage(reset: true);
+    }
+
+    private async void LoadMoreReceiptsClick(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (receiptHistoryOrderId is null)
+        {
+            MessageText.Text = "Load receipt history for a purchase order first.";
+            return;
+        }
+        if (receiptHistoryCursor is null)
+        {
+            MessageText.Text = "No more receipts are available.";
+            return;
+        }
+
+        await LoadReceiptPage(reset: false);
+    }
+
+    private async Task LoadReceiptPage(bool reset)
+    {
+        if (receiptHistoryBusy) return;
+        receiptHistoryBusy = true;
+        var completed = false;
+        try
+        {
+            await Execute(async () =>
+            {
+                if (receiptHistoryOrderId is null) return;
+                var orderId = receiptHistoryOrderId.Value;
+                var previousCursor = reset ? null : receiptHistoryCursor;
+                var page = await manager.ListPurchaseReceiptsAsync(
+                    organizationId, branchId, orderId, 25,
+                    previousCursor, default);
+                if (receiptHistoryOrderId != orderId) return;
+                if (!reset && page.NextCursor == previousCursor)
+                    throw new InvalidOperationException(
+                        "Purchase receipt pagination repeated its cursor.");
+                if (reset) receiptHistory.Clear();
+                foreach (var receipt in page.Items)
+                    if (receiptHistory.All(item => item.Value.Id != receipt.Id))
+                        receiptHistory.Add(new(receipt));
+                receiptHistoryCursor = page.NextCursor;
+                UpdateReceiptList();
+                completed = true;
+            });
+            if (reset && !completed)
+                ReceiptStateText.Text = "Receipt history could not be loaded.";
+        }
+        finally
+        {
+            receiptHistoryBusy = false;
+        }
+    }
+
+    private void UpdateReceiptList()
+    {
+        ReceiptList.ItemsSource = receiptHistory
+            .OrderByDescending(item => item.Value.CreatedAt)
+            .ToArray();
+        ReceiptStateText.Text = receiptHistory.Count == 0
+            ? "No receipts have been recorded for this purchase order."
+            : $"{receiptHistory.Count} receipt(s) loaded" +
+              (receiptHistoryCursor.HasValue ? " · more available" : "");
+    }
+
+    private void ReceiptSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        if (ReceiptList.SelectedItem is not ReceiptDisplay selected)
+        {
+            ReceiptDetailText.Text = "";
+            return;
+        }
+
+        var lines = string.Join(Environment.NewLine, selected.Value.Lines.Select(line =>
+            $"{line.ProductId:D} · {line.Quantity.ToString("0.######", CultureInfo.InvariantCulture)}"));
+        ReceiptDetailText.Text =
+            $"Received {selected.Value.ReceivedAt.LocalDateTime:g} by {selected.Value.ReceivedBySubject}" +
+            (string.IsNullOrEmpty(lines) ? "" : Environment.NewLine + lines);
+    }
+
     private void ReceivingSelectionChanged(
         object? sender,
         SelectionChangedEventArgs e)
@@ -98,15 +208,31 @@ public sealed partial class ManagerPurchasingWindow : Window
                 [new(selected.Value.ProductId, quantity)]);
             var result = await manager.ReceivePurchaseOrderAsync(
                 organizationId, branchId, receivingOrder, input, Guid.NewGuid(), default);
+            if (receiptHistoryOrderId == result.Order.Id
+                && receiptHistory.All(item => item.Value.Id != result.Receipt.Id))
+            {
+                receiptHistory.Add(new(result.Receipt));
+                UpdateReceiptList();
+            }
             MessageText.Text = $"Receipt {result.Receipt.Id:D} recorded. Order is {result.Order.Status}.";
             ReferenceBox.Clear();
             QuantityBox.Clear();
+            ReplaceOrderInList(result.Order);
             receivingOrder = null;
             receivingState = null;
             ReceivingList.ItemsSource = Array.Empty<ReceivingDisplay>();
             StateText.Text = "";
-            await Refresh();
         }, clearMessage: false);
+    }
+
+    private void ReplaceOrderInList(PurchaseOrderSummary changed)
+    {
+        var current = OrderList.ItemsSource?.OfType<OrderDisplay>().ToList()
+            ?? [];
+        var index = current.FindIndex(item => item.Value.Id == changed.Id);
+        if (index >= 0) current[index] = new(changed);
+        else current.Insert(0, new(changed));
+        OrderList.ItemsSource = current.ToArray();
     }
 
     private async Task Refresh() => await Execute(async () =>
@@ -144,5 +270,16 @@ public sealed partial class ManagerPurchasingWindow : Window
         public override string ToString() =>
             $"{Value.ProductId:D} · ordered {Value.OrderedQuantity} · " +
             $"received {Value.ReceivedQuantity} · remaining {Value.RemainingQuantity}";
+    }
+
+    private sealed record ReceiptDisplay(PurchaseReceiptSummary Value)
+    {
+        public override string ToString()
+        {
+            var quantity = Value.Lines.Sum(line => line.Quantity)
+                .ToString("0.######", CultureInfo.InvariantCulture);
+            return $"{Value.Reference ?? Value.Id.ToString("D")[..8]} · " +
+                $"{Value.ReceivedAt.LocalDateTime:g} · {Value.Lines.Count} line(s) · {quantity} units";
+        }
     }
 }

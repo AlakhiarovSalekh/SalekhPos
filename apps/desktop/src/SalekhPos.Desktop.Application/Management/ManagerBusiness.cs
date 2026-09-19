@@ -47,6 +47,8 @@ public interface IManagerBusiness
     Task<PurchaseOrderSummary> CreatePurchaseOrderAsync(Guid organizationId, Guid branchId, CreatePurchaseOrderInput input, Guid operationId, CancellationToken cancellationToken);
     Task<PurchaseOrderSummary> ChangePurchaseOrderStatusAsync(Guid organizationId, Guid branchId, PurchaseOrderSummary order, string action, CancellationToken cancellationToken);
     Task<PurchaseReceivingStateSummary> ReadPurchaseReceivingStateAsync(Guid organizationId, Guid branchId, Guid orderId, CancellationToken cancellationToken);
+    Task<UuidPage<PurchaseReceiptSummary>> ListPurchaseReceiptsAsync(Guid organizationId, Guid branchId,
+        Guid orderId, int pageSize, Guid? after, CancellationToken cancellationToken);
     Task<ReceivePurchaseOrderResultSummary> ReceivePurchaseOrderAsync(Guid organizationId, Guid branchId, PurchaseOrderSummary order, ReceivePurchaseOrderInput input, Guid operationId, CancellationToken cancellationToken);
     Task<OperationalReportSummary> ReadOperationalReportAsync(Guid organizationId, Guid branchId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }

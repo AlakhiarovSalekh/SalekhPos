@@ -161,6 +161,28 @@ public static class WebManagementEndpoints
             }
         });
 
+        group.MapGet("/organizations/{organizationId:guid}/branches/{branchId:guid}/purchase-orders/{orderId:guid}/receipts", async (
+            Guid organizationId, Guid branchId, Guid orderId, HttpContext context,
+            WebAuthenticationState state, IPurchaseOrderService orders,
+            CancellationToken cancellationToken) =>
+        {
+            var raw = await RawIdentity(context, state);
+            if (raw is null) return Unauthenticated(state);
+            if (!ValidIds(organizationId, branchId, orderId)
+                || !WebBusinessEndpoints.TryListQuery(context, out var size, out var after))
+                return Invalid("invalid_purchase_receipt_query");
+            try
+            {
+                return Results.Ok(await orders.ListReceiptsAsync(
+                    new(raw.Value.Issuer, raw.Value.Subject), organizationId, branchId,
+                    orderId, size, after, cancellationToken));
+            }
+            catch (ArgumentException)
+            {
+                return Invalid("invalid_purchase_receipt_query");
+            }
+        });
+
         group.MapGet("/organizations/{organizationId:guid}/branches/{branchId:guid}/purchase-orders/{orderId:guid}/receipts/{receiptId:guid}", async (
             Guid organizationId, Guid branchId, Guid orderId, Guid receiptId,
             HttpContext context, WebAuthenticationState state, IPurchaseOrderService orders,
