@@ -136,7 +136,7 @@ export function PurchasingWorkspace() {
         <label>Quantity<input inputMode="decimal" value={quantity} onChange={event => setQuantity(event.target.value)} /></label>
         <label>Unit cost<input inputMode="decimal" value={unitCost} onChange={event => setUnitCost(event.target.value)} /></label>
         <label>Currency<input maxLength={3} value={currency} onChange={event => setCurrency(event.target.value.toUpperCase())} /></label>
-        <label>Reference<input maxLength={120} value={reference} onChange={event => setReference(event.target.value)} /></label>
+        <label>Reference<input maxLength={100} value={reference} onChange={event => setReference(event.target.value)} /></label>
         <button disabled={busy || !scope.branchId || !supplierId || !productId}>{busy ? "Working…" : "Create draft"}</button>
       </form>
       <div className="panel"><h2>Orders</h2><div className="data-list">{orders.map(order =>
