@@ -13,7 +13,7 @@ public sealed class NotificationDeliveryManagerHttpTests
         var organizationId = Guid.NewGuid();
         var deliveryId = Guid.NewGuid();
         var notificationId = Guid.NewGuid();
-        using var client = Client(async request =>
+        using var client = Client(request =>
         {
             Assert.Equal(HttpMethod.Get, request.Method);
             Assert.Contains(
@@ -22,13 +22,13 @@ public sealed class NotificationDeliveryManagerHttpTests
                 StringComparison.Ordinal);
             Assert.Contains("status=dead_lettered", request.RequestUri.Query, StringComparison.Ordinal);
             Assert.Contains("channel=email", request.RequestUri.Query, StringComparison.Ordinal);
-            return Json($$"""
+            return Task.FromResult(Json($"""
                 {"items":[{"id":"{{deliveryId:D}}","notificationId":"{{notificationId:D}}",
                 "channel":"email","recipientSubject":"operator-1","status":"dead_lettered",
                 "attemptCount":10,"nextAttemptAt":null,"lastErrorCode":"http_422",
                 "createdAt":"2026-09-19T08:00:00Z","updatedAt":"2026-09-19T09:00:00Z",
                 "title":"Provider alert","severity":"critical"}],"nextCursor":null}
-                """);
+                """));
         });
 
         var page = await new HttpNotificationDeliveryManager(client).DeliveriesAsync(
