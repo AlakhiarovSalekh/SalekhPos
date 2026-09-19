@@ -139,7 +139,7 @@ export function PurchasingWorkspace() {
     setReceiptHistory([]);
     setHistoryNextCursor(null);
     try {
-      const page = await getPurchaseReceipts(scope.organizationId, scope.branchId, order.id, 100);
+      const page = await getPurchaseReceipts(scope.organizationId, scope.branchId, order.id, 25);
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch {
@@ -153,7 +153,7 @@ export function PurchasingWorkspace() {
     try {
       const previousCursor = historyNextCursor;
       const page = await getPurchaseReceipts(
-        scope.organizationId, scope.branchId, historyOrder.id, 100, previousCursor);
+        scope.organizationId, scope.branchId, historyOrder.id, 25, previousCursor);
       if (page.nextCursor === previousCursor) throw new Error("Repeated receipt cursor");
       setReceiptHistory(current => {
         const seen = new Set(current.map(item => item.id));
