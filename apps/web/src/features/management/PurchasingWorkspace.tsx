@@ -80,28 +80,19 @@ export function PurchasingWorkspace() {
     }).catch(() => { if (!controller.signal.aborted) setError("Purchasing data could not be loaded."); });
     return () => { scopeGeneration.current += 1; controller.abort(); };
   }, [scope.branchId, scope.organizationId]);
-  async function refresh() {
-    if (!scope.organizationId || !scope.branchId) return;
-    const generation = scopeGeneration.current;
-    const data = await loadPurchasingData(scope.organizationId, scope.branchId, new AbortController().signal);
-    if (generation !== scopeGeneration.current) return;
-    setOrders(data.orders); setSuppliers(data.suppliers); setProducts(data.products);
-    setLoadedScopeKey(currentScopeKey);
-  }
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!scopeReady || !supplierId || !productId || !scope.organizationId || !scope.branchId) return;
     const generation = scopeGeneration.current;
     setBusy(true); setError(null);
     try {
-      await createPurchaseOrder(scope.organizationId, scope.branchId, {
+      const created = await createPurchaseOrder(scope.organizationId, scope.branchId, {
         supplierId, currency: currency.trim().toUpperCase(), reference: reference.trim() || undefined,
         lines: [{ productId, quantity: Number(quantity), unitCost: Number(unitCost) }],
       });
       if (generation !== scopeGeneration.current) return;
+      setOrders(current => [created, ...current.filter(order => order.id !== created.id)]);
       setReference("");
-      await refresh();
     } catch {
       if (generation === scopeGeneration.current) setError("Purchase order could not be created.");
     } finally {
@@ -156,7 +147,6 @@ export function PurchasingWorkspace() {
         ]);
       }
       setReceivingOrder(null); setReceivingState(null); setReceiptQuantities({}); setReceiptReference("");
-      await refresh();
     } catch {
       if (generation === scopeGeneration.current)
         setError("Purchase receipt could not be recorded. Check remaining quantities and order state.");
@@ -217,9 +207,10 @@ export function PurchasingWorkspace() {
     const generation = scopeGeneration.current;
     setBusy(true); setError(null);
     try {
-      await changePurchaseStatus(scope.organizationId, scope.branchId, order, action);
+      const changed = await changePurchaseStatus(
+        scope.organizationId, scope.branchId, order, action);
       if (generation !== scopeGeneration.current) return;
-      await refresh();
+      setOrders(current => current.map(item => item.id === changed.id ? changed : item));
     } catch {
       if (generation === scopeGeneration.current)
         setError(`Purchase order could not be ${action}ed.`);
