@@ -135,6 +135,18 @@ public sealed class NotificationDeliveryManualRetryTests(AccessFixture fixture)
             Guid.NewGuid(),
             reason);
         Assert.Equal(HttpStatusCode.Conflict, secondOperation.StatusCode);
+
+        using var invalidReason = await Retry(
+            client,
+            path,
+            Guid.NewGuid(),
+            "   ");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidReason.StatusCode);
+
+        using var missingOperation = await client.PostAsJsonAsync(
+            path,
+            new { Reason = "Missing idempotency key." });
+        Assert.Equal(HttpStatusCode.BadRequest, missingOperation.StatusCode);
     }
 
     [Fact]
