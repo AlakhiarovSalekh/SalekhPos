@@ -165,12 +165,12 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(JsonValueKind.Null,
             secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
 
-        var historyIds = new HashSet<Guid>
-        {
-            firstPageItem.GetProperty("id").GetGuid(),
-            secondPageItem.GetProperty("id").GetGuid()
-        };
-        Assert.True(historyIds.SetEquals([firstReceiptId, finalReceiptId]));
+        Assert.Equal(finalReceiptId, firstPageItem.GetProperty("id").GetGuid());
+        Assert.Equal(firstReceiptId, secondPageItem.GetProperty("id").GetGuid());
+
+        using var invalidCursorHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.NewGuid():D}");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidCursorHistory.StatusCode);
 
         using var missingOrderHistory = await client.GetAsync(
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts?pageSize=1");
