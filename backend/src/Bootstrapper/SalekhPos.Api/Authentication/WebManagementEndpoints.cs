@@ -140,6 +140,57 @@ public static class WebManagementEndpoints
             var location = $"/bff/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{result.Order.Id:D}";
             return result.Created ? Results.Created(location, result.Order) : Results.Ok(result.Order);
         });
+        group.MapGet("/organizations/{organizationId:guid}/branches/{branchId:guid}/purchase-orders/{orderId:guid}/receiving", async (
+            Guid organizationId, Guid branchId, Guid orderId, HttpContext context,
+            WebAuthenticationState state, IPurchaseOrderService orders,
+            CancellationToken cancellationToken) =>
+        {
+            var raw = await RawIdentity(context, state);
+            if (raw is null) return Unauthenticated(state);
+            if (!ValidIds(organizationId, branchId, orderId))
+                return Invalid("invalid_purchase_receiving_query");
+            try
+            {
+                return Results.Ok(await orders.ReadReceivingStateAsync(
+                    new(raw.Value.Issuer, raw.Value.Subject),
+                    organizationId, branchId, orderId, cancellationToken));
+            }
+            catch (ArgumentException)
+            {
+                return Invalid("invalid_purchase_receiving_query");
+            }
+        });
+
+        group.MapPost("/organizations/{organizationId:guid}/branches/{branchId:guid}/purchase-orders/{orderId:guid}/receipts", async (
+            Guid organizationId, Guid branchId, Guid orderId, ReceivePurchaseOrderRequest request,
+            HttpContext context, WebAuthenticationState state, IAntiforgery antiforgery,
+            IPurchaseOrderService orders, CancellationToken cancellationToken) =>
+        {
+            var raw = await RawIdentity(context, state);
+            if (raw is null) return Unauthenticated(state);
+            if (!ValidIds(organizationId, branchId, orderId)
+                || !await ValidMutation(context, state, antiforgery)
+                || !TryOperationId(context, out var operationId))
+                return Invalid("invalid_purchase_receipt_request");
+            try
+            {
+                var lines = request.Lines.Select(line =>
+                    new ReceivePurchaseOrderLine(line.ProductId, line.Quantity)).ToArray();
+                var result = await orders.ReceiveAsync(
+                    new(raw.Value.Issuer, raw.Value.Subject),
+                    new(organizationId, branchId, orderId, Guid.NewGuid(), operationId,
+                        request.ExpectedVersion, request.Reference, request.ReceivedAt, lines),
+                    cancellationToken);
+                var response = new ReceivePurchaseOrderResponse(result.Receipt, result.Order);
+                var location = $"/bff/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{orderId:D}/receipts/{result.Receipt.Id:D}";
+                return result.Created ? Results.Created(location, response) : Results.Ok(response);
+            }
+            catch (ArgumentException)
+            {
+                return Invalid("invalid_purchase_receipt_request");
+            }
+        });
+
         MapPurchaseStatus(group, "submit", "submitted");
         MapPurchaseStatus(group, "approve", "approved");
         MapPurchaseStatus(group, "cancel", "cancelled");
