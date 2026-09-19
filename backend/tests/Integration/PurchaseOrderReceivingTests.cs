@@ -67,6 +67,15 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             firstResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(4L, firstResult.GetProperty("order").GetProperty("version").GetInt64());
 
+        var receiptLocation = Assert.IsType<Uri>(first.Headers.Location);
+        using var receiptRead = await client.GetAsync(receiptLocation);
+        Assert.Equal(HttpStatusCode.OK, receiptRead.StatusCode);
+        var receiptResource = await Root(receiptRead);
+        Assert.Equal(firstReceiptId, receiptResource.GetProperty("id").GetGuid());
+        var receiptLine = Assert.Single(receiptResource.GetProperty("lines").EnumerateArray());
+        Assert.Equal(productId, receiptLine.GetProperty("productId").GetGuid());
+        Assert.Equal(4m, receiptLine.GetProperty("quantity").GetDecimal());
+
         using var replay = await SendIdempotent(
             client,
             HttpMethod.Post,
