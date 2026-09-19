@@ -208,8 +208,12 @@ export function PurchasingScreen() {
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch (error) {
-      if (generation === scopeGeneration.current)
+      if (generation === scopeGeneration.current) {
+        setHistoryOrder(null);
+        setReceiptHistory([]);
+        setHistoryNextCursor(null);
         setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
+      }
     } finally {
       if (generation === scopeGeneration.current) setHistoryLoading(false);
     }
