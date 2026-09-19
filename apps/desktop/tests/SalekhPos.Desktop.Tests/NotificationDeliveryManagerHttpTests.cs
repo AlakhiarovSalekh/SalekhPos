@@ -22,7 +22,7 @@ public sealed class NotificationDeliveryManagerHttpTests
                 StringComparison.Ordinal);
             Assert.Contains("status=dead_lettered", request.RequestUri.Query, StringComparison.Ordinal);
             Assert.Contains("channel=email", request.RequestUri.Query, StringComparison.Ordinal);
-            return Task.FromResult(Json($"""
+            return Task.FromResult(Json($$"""
                 {"items":[{"id":"{{deliveryId:D}}","notificationId":"{{notificationId:D}}",
                 "channel":"email","recipientSubject":"operator-1","status":"dead_lettered",
                 "attemptCount":10,"nextAttemptAt":null,"lastErrorCode":"http_422",
