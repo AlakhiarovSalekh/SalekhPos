@@ -48,6 +48,13 @@ export function PurchasingWorkspace() {
   const [historyBusy, setHistoryBusy] = useState(false);
 
   useEffect(() => {
+    setReceivingOrder(null);
+    setReceivingState(null);
+    setReceiptQuantities({});
+    setReceiptReference("");
+    setHistoryOrder(null);
+    setReceiptHistory([]);
+    setHistoryNextCursor(null);
     if (!scope.organizationId || !scope.branchId) return;
     const controller = new AbortController();
     loadPurchasingData(scope.organizationId, scope.branchId, controller.signal).then(data => {
