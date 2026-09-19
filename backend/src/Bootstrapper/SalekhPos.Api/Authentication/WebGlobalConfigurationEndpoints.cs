@@ -30,6 +30,7 @@ public static class WebGlobalConfigurationEndpoints
         group.MapPost("/organizations/{organizationId:guid}/notifications", CreateNotification);
         group.MapPost("/organizations/{organizationId:guid}/notifications/{notificationId:guid}/read", MarkRead);
         group.MapGet("/organizations/{organizationId:guid}/notification-deliveries", ListNotificationDeliveries);
+        group.MapPost("/organizations/{organizationId:guid}/notification-deliveries/{deliveryId:guid}/retry", RetryNotificationDelivery);
         group.MapGet("/organizations/{organizationId:guid}/notification-preferences", GetPreferences);
         group.MapPut("/organizations/{organizationId:guid}/notification-preferences", UpdatePreferences);
     }
@@ -118,6 +119,42 @@ public static class WebGlobalConfigurationEndpoints
         catch (ArgumentException)
         {
             return Invalid("invalid_notification_delivery_query");
+        }
+    }
+
+    private static async Task<IResult> RetryNotificationDelivery(
+        Guid organizationId,
+        Guid deliveryId,
+        RetryNotificationDeliveryRequest request,
+        HttpContext context,
+        WebAuthenticationState state,
+        IAntiforgery antiforgery,
+        INotificationDeliveryStore deliveries,
+        CancellationToken cancellationToken)
+    {
+        var identity = await Identity(context, state);
+        if (identity is null) return Unauthenticated(state);
+        if (organizationId == Guid.Empty
+            || deliveryId == Guid.Empty
+            || !await ValidMutation(context, state, antiforgery)
+            || !TryOperationId(context, out var operationId))
+        {
+            return Invalid("invalid_notification_delivery_retry");
+        }
+
+        try
+        {
+            return Results.Ok(await deliveries.RetryDeadLetterAsync(
+                identity,
+                organizationId,
+                deliveryId,
+                operationId,
+                request.Reason,
+                cancellationToken));
+        }
+        catch (ArgumentException)
+        {
+            return Invalid("invalid_notification_delivery_retry");
         }
     }
 
