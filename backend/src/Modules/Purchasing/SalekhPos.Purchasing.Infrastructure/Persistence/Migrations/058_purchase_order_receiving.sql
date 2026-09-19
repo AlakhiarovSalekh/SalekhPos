@@ -22,6 +22,7 @@ CREATE TABLE purchasing.purchase_receipts(
   created_at timestamptz NOT NULL DEFAULT statement_timestamp(),
   PRIMARY KEY(organization_id,receipt_id),
   UNIQUE(organization_id,operation_id),
+  UNIQUE(organization_id,receipt_id,order_id),
   FOREIGN KEY(organization_id,order_id)
     REFERENCES purchasing.purchase_orders(organization_id,order_id) ON DELETE RESTRICT,
   FOREIGN KEY(organization_id,branch_id)
@@ -43,8 +44,8 @@ CREATE TABLE purchasing.purchase_receipt_lines(
   PRIMARY KEY(organization_id,receipt_id,line_number),
   UNIQUE(organization_id,receipt_id,product_id),
   UNIQUE(organization_id,movement_id),
-  FOREIGN KEY(organization_id,receipt_id)
-    REFERENCES purchasing.purchase_receipts(organization_id,receipt_id) ON DELETE RESTRICT,
+  FOREIGN KEY(organization_id,receipt_id,order_id)
+    REFERENCES purchasing.purchase_receipts(organization_id,receipt_id,order_id) ON DELETE RESTRICT,
   FOREIGN KEY(organization_id,order_id,product_id)
     REFERENCES purchasing.purchase_order_lines(organization_id,order_id,product_id),
   FOREIGN KEY(organization_id,movement_id)
