@@ -42,3 +42,5 @@ public sealed record NotificationDeliveryActivityResponse(
 public sealed record NotificationDeliveryPage(
     IReadOnlyList<NotificationDeliveryActivityResponse> Items,
     Guid? NextCursor);
+
+public sealed record RetryNotificationDeliveryRequest(string Reason);
