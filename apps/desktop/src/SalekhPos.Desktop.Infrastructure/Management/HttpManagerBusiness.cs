@@ -128,6 +128,20 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
         return result;
     }
 
+    public async Task<UuidPage<PurchaseReceiptSummary>> ListPurchaseReceiptsAsync(
+        Guid organizationId, Guid branchId, Guid orderId, int pageSize, Guid? after,
+        CancellationToken cancellationToken)
+    {
+        ValidateScope(organizationId, branchId); ValidatePage(pageSize);
+        if (orderId == Guid.Empty || after == Guid.Empty)
+            throw new ArgumentException("Purchase receipt history query is invalid.");
+        var path = $"api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{orderId:D}/receipts?pageSize={pageSize}";
+        if (after.HasValue) path += $"&after={after.Value:D}";
+        var result = await GetAsync<UuidPage<PurchaseReceiptSummary>>(path, cancellationToken);
+        ValidateReceiptPage(result, orderId, branchId, pageSize);
+        return result;
+    }
+
     public async Task<ReceivePurchaseOrderResultSummary> ReceivePurchaseOrderAsync(
         Guid organizationId, Guid branchId, PurchaseOrderSummary order, ReceivePurchaseOrderInput input,
         Guid operationId, CancellationToken cancellationToken)
@@ -282,6 +296,15 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
                 || line.ReceivedQuantity + line.RemainingQuantity != line.OrderedQuantity)
                 throw new InvalidOperationException("Purchase receiving line is invalid.");
         }
+    }
+
+    private static void ValidateReceiptPage(UuidPage<PurchaseReceiptSummary> page, Guid orderId,
+        Guid branchId, int pageSize)
+    {
+        if (page.Items.Count > pageSize)
+            throw new InvalidOperationException("Purchase receipt page is too large.");
+        foreach (var item in page.Items) ValidateReceipt(item, orderId, branchId);
+        ValidateCursor([.. page.Items.Select(x => x.Id)], page.NextCursor);
     }
 
     private static void ValidateReceipt(PurchaseReceiptSummary item, Guid orderId, Guid branchId)
