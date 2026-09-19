@@ -120,7 +120,7 @@ public sealed partial class ManagerPurchasingWindow : Window
     private void UpdateReceiptList()
     {
         ReceiptList.ItemsSource = receiptHistory
-            .OrderByDescending(item => item.Value.ReceivedAt)
+            .OrderByDescending(item => item.Value.CreatedAt)
             .ToArray();
         ReceiptStateText.Text = receiptHistory.Count == 0
             ? "No receipts have been recorded for this purchase order."
