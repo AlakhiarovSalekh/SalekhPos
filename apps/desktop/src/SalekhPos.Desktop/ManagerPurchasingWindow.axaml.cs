@@ -77,6 +77,8 @@ public sealed partial class ManagerPurchasingWindow : Window
         receiptHistoryOrderId = selected.Value.Id;
         receiptHistoryCursor = null;
         receiptHistory.Clear();
+        ReceiptList.ItemsSource = Array.Empty<ReceiptDisplay>();
+        ReceiptStateText.Text = "Loading receipt history…";
         await LoadReceiptPage(reset: true);
     }
 
