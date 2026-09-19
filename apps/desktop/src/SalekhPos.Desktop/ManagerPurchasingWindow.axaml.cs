@@ -91,8 +91,9 @@ public sealed partial class ManagerPurchasingWindow : Window
 
         await Execute(async () =>
         {
+            var receiptReference = ReferenceBox.Text?.Trim();
             var input = new ReceivePurchaseOrderInput(
-                string.IsNullOrWhiteSpace(ReferenceBox.Text) ? null : ReferenceBox.Text.Trim(),
+                string.IsNullOrWhiteSpace(receiptReference) ? null : receiptReference,
                 DateTimeOffset.UtcNow,
                 [new(selected.Value.ProductId, quantity)]);
             var result = await manager.ReceivePurchaseOrderAsync(
