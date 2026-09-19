@@ -158,9 +158,14 @@ export function PurchasingScreen() {
     if (!workspace.branch || !historyOrder || !historyNextCursor) return;
     setHistoryLoading(true); setMessage("");
     try {
+      const previousCursor = historyNextCursor;
       const page = await manager.listPurchaseReceipts(
-        workspace.organizationId, workspace.branch.id, historyOrder.id, 100, historyNextCursor);
-      setReceiptHistory(current => [...current, ...page.items]);
+        workspace.organizationId, workspace.branch.id, historyOrder.id, 100, previousCursor);
+      if (page.nextCursor === previousCursor) throw new Error("Repeated receipt cursor");
+      setReceiptHistory(current => {
+        const seen = new Set(current.map(item => item.id));
+        return [...current, ...page.items.filter(item => !seen.has(item.id))];
+      });
       setHistoryNextCursor(page.nextCursor);
     } catch (error) {
       setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
