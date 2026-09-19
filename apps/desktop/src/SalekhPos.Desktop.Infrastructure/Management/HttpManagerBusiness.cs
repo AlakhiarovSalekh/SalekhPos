@@ -254,7 +254,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         if (item.Id == Guid.Empty || item.BranchId != branchId || item.SupplierId == Guid.Empty
             || item.Status is not ("draft" or "submitted" or "approved" or "partially_received" or "received" or "cancelled")
-            || InvalidCurrency(item.Currency) || InvalidOptionalText(item.Reference, 120) || item.Total < 0
+            || InvalidCurrency(item.Currency) || InvalidOptionalText(item.Reference, 100) || item.Total < 0
             || InvalidAmount(item.Total) || item.Version < 1 || item.CreatedAt.Offset != TimeSpan.Zero
             || item.UpdatedAt.Offset != TimeSpan.Zero || item.UpdatedAt < item.CreatedAt
             || item.Lines.Count is < 1 or > 500) throw new InvalidOperationException("Purchase order response is invalid.");
@@ -313,7 +313,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     {
         ArgumentNullException.ThrowIfNull(input);
         if (input.SupplierId == Guid.Empty || InvalidCurrency(input.Currency)
-            || InvalidOptionalText(input.Reference, 120) || input.Lines is null || input.Lines.Count is < 1 or > 500
+            || InvalidOptionalText(input.Reference, 100) || input.Lines is null || input.Lines.Count is < 1 or > 500
             || input.Lines.Select(line => line.ProductId).Distinct().Count() != input.Lines.Count)
             throw new ArgumentException("Purchase order input is invalid.");
         foreach (var line in input.Lines)
