@@ -142,9 +142,39 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             });
         Assert.Equal(HttpStatusCode.Created, final.StatusCode);
         var finalResult = await Root(final);
+        var finalReceiptId = finalResult.GetProperty("receipt").GetProperty("id").GetGuid();
         Assert.Equal("received",
             finalResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(5L, finalResult.GetProperty("order").GetProperty("version").GetInt64());
+
+        using var firstReceiptPage = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1");
+        Assert.Equal(HttpStatusCode.OK, firstReceiptPage.StatusCode);
+        var firstReceiptPageRoot = await Root(firstReceiptPage);
+        var firstPageItem = Assert.Single(
+            firstReceiptPageRoot.GetProperty("items").EnumerateArray());
+        var nextCursor = firstReceiptPageRoot.GetProperty("nextCursor").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(nextCursor));
+
+        using var secondReceiptPage = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={nextCursor}");
+        Assert.Equal(HttpStatusCode.OK, secondReceiptPage.StatusCode);
+        var secondReceiptPageRoot = await Root(secondReceiptPage);
+        var secondPageItem = Assert.Single(
+            secondReceiptPageRoot.GetProperty("items").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null,
+            secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
+
+        var historyIds = new HashSet<Guid>
+        {
+            firstPageItem.GetProperty("id").GetGuid(),
+            secondPageItem.GetProperty("id").GetGuid()
+        };
+        Assert.Equal(new HashSet<Guid> { firstReceiptId, finalReceiptId }, historyIds);
+
+        using var missingOrderHistory = await client.GetAsync(
+            $"{OrdersPath}/{Guid.NewGuid():D}/receipts?pageSize=1");
+        Assert.Equal(HttpStatusCode.NotFound, missingOrderHistory.StatusCode);
 
         using var stock = await client.GetAsync(
             $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA:D}/inventory/stock");
