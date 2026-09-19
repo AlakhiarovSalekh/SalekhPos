@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import { useApiClient } from "@/api/ApiContext";
-import type { PurchaseOrderSummary, PurchaseReceivingStateSummary, SupplierSummary } from "@/api/managementContracts";
+import type { PurchaseOrderSummary, PurchaseReceiptSummary, PurchaseReceivingStateSummary, SupplierSummary } from "@/api/managementContracts";
 import { managerStyles } from "@/components/managerStyles";
 import { AppButton, LoadingSurface, Screen, textStyles } from "@/components/primitives";
 import { EmptyState, ScreenHeader } from "@/components/operations";
@@ -35,6 +35,10 @@ export function PurchasingScreen() {
   const [receivingState, setReceivingState] = useState<PurchaseReceivingStateSummary | null>(null);
   const [receiptQuantities, setReceiptQuantities] = useState<Record<string, string>>({});
   const [receiptReference, setReceiptReference] = useState("");
+  const [historyOrder, setHistoryOrder] = useState<PurchaseOrderSummary | null>(null);
+  const [receiptHistory, setReceiptHistory] = useState<readonly PurchaseReceiptSummary[]>([]);
+  const [historyNextCursor, setHistoryNextCursor] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!workspace.branch) { setOrders([]); return; }
@@ -136,6 +140,33 @@ export function PurchasingScreen() {
     } finally { setSaving(false); }
   }
 
+  async function openReceiptHistory(order: PurchaseOrderSummary) {
+    if (!workspace.branch) return;
+    setHistoryLoading(true); setMessage("");
+    try {
+      const page = await manager.listPurchaseReceipts(
+        workspace.organizationId, workspace.branch.id, order.id, 100);
+      setHistoryOrder(order);
+      setReceiptHistory(page.items);
+      setHistoryNextCursor(page.nextCursor);
+    } catch (error) {
+      setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
+    } finally { setHistoryLoading(false); }
+  }
+
+  async function loadMoreReceipts() {
+    if (!workspace.branch || !historyOrder || !historyNextCursor) return;
+    setHistoryLoading(true); setMessage("");
+    try {
+      const page = await manager.listPurchaseReceipts(
+        workspace.organizationId, workspace.branch.id, historyOrder.id, 100, historyNextCursor);
+      setReceiptHistory(current => [...current, ...page.items]);
+      setHistoryNextCursor(page.nextCursor);
+    } catch (error) {
+      setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
+    } finally { setHistoryLoading(false); }
+  }
+
   async function changeStatus(order: PurchaseOrderSummary, action: "submit" | "approve" | "cancel") {
     if (!workspace.branch) return;
     setSaving(true); setMessage("");
@@ -178,8 +209,30 @@ export function PurchasingScreen() {
         {order.status === "submitted" && session && hasPermission(session.authorization,"purchase_orders.approve") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"approve")}>Approve</AppButton> : null}
         {order.status !== "approved" && order.status !== "received" && order.status !== "partially_received" && order.status !== "cancelled" && session && hasPermission(session.authorization,"purchase_orders.cancel") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"cancel")}>Cancel</AppButton> : null}
         {canReceive && (order.status === "approved" || order.status === "partially_received") ? <AppButton disabled={saving} onPress={() => void openReceiving(order)}>Receive goods</AppButton> : null}
+        <AppButton disabled={saving || historyLoading} onPress={() => void openReceiptHistory(order)}>Receipts</AppButton>
       </View>
     </View>)}
+    {historyOrder ? <View style={managerStyles.card}>
+      <Text style={textStyles.heading}>Receipt history</Text>
+      <Text style={managerStyles.muted}>
+        {historyOrder.reference ?? `Order ${historyOrder.id.slice(0,8).toUpperCase()}`} · {receiptHistory.length} receipt(s) loaded
+      </Text>
+      {receiptHistory.length === 0
+        ? <Text style={managerStyles.muted}>No receipts have been recorded for this purchase order.</Text>
+        : [...receiptHistory].sort((a,b)=>b.receivedAt.localeCompare(a.receivedAt)).map(receipt =>
+          <View key={receipt.id} style={managerStyles.field}>
+            <Text style={managerStyles.strong}>{receipt.reference ?? `Receipt ${receipt.id.slice(0,8).toUpperCase()}`}</Text>
+            <Text style={managerStyles.muted}>{new Date(receipt.receivedAt).toLocaleString()} · {receipt.lines.length} line(s)</Text>
+            <Text style={managerStyles.muted}>Received by {receipt.receivedBySubject}</Text>
+            {receipt.lines.map(line => <Text key={line.movementId} style={managerStyles.mono}>
+              {line.productId.slice(0,8).toUpperCase()} · {line.quantity}
+            </Text>)}
+          </View>)}
+      <View style={managerStyles.row}>
+        {historyNextCursor ? <AppButton disabled={historyLoading} onPress={() => void loadMoreReceipts()}>{historyLoading ? "Loading…" : "Load more"}</AppButton> : null}
+        <AppButton disabled={historyLoading} onPress={() => { setHistoryOrder(null); setReceiptHistory([]); setHistoryNextCursor(null); }}>Close</AppButton>
+      </View>
+    </View> : null}
     {receivingOrder && receivingState ? <View style={managerStyles.card}>
       <Text style={textStyles.heading}>Receive purchase order</Text>
       <Text style={managerStyles.muted}>Record only goods physically received. Inventory updates in the same server transaction.</Text>
