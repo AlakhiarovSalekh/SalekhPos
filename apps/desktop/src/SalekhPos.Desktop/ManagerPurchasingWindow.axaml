@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalekhPos.Desktop.ManagerPurchasingWindow"
+        Title="SalekhPos Purchasing"
+        Width="1040"
+        Height="720">
+  <Grid Margin="20" RowDefinitions="Auto,*" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel>
+        <TextBlock Text="Purchase receiving" FontSize="24" FontWeight="SemiBold"/>
+        <TextBlock Name="ScopeText" Foreground="{DynamicResource AppMutedTextBrush}"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Refresh orders" Click="RefreshClick"/>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
+      <StackPanel Spacing="10">
+        <TextBlock Text="Purchase orders" FontSize="18" FontWeight="SemiBold"/>
+        <ListBox Name="OrderList" Height="520"/>
+        <Button Content="Load receiving state" Click="LoadReceivingClick"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="10">
+        <TextBlock Text="Goods receiving" FontSize="18" FontWeight="SemiBold"/>
+        <TextBlock Name="StateText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
+        <ListBox Name="ReceivingList" Height="300" SelectionChanged="ReceivingSelectionChanged"/>
+        <TextBox Name="QuantityBox" PlaceholderText="Quantity received now"/>
+        <TextBox Name="ReferenceBox" MaxLength="120" PlaceholderText="Receipt reference (optional)"/>
+        <Button Content="Record selected line receipt" Click="ReceiveClick"/>
+        <TextBlock Name="MessageText" Foreground="{DynamicResource AppDangerTextBrush}" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>
