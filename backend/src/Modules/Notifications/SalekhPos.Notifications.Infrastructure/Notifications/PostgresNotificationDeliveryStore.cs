@@ -121,7 +121,7 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
             cancellationToken);
 
         await using (var idempotencyLock = new NpgsqlCommand(
-            "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
+            "SELECT pg_advisory_xact_lock(hashtextextended($1::text,0))",
             connection,
             transaction))
         {
