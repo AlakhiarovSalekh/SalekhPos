@@ -17,6 +17,7 @@ public static class NotificationEndpoints
         group.MapPost("", Create);
         group.MapPost("/{notificationId:guid}/read", MarkRead);
         group.MapGet("/deliveries", ListDeliveries);
+        group.MapPost("/deliveries/{deliveryId:guid}/retry", RetryDelivery);
         group.MapGet("/preferences", ReadPreferences);
         group.MapPut("/preferences", UpdatePreferences);
     }
@@ -72,6 +73,39 @@ public static class NotificationEndpoints
                 after,
                 status,
                 channel,
+                cancellationToken));
+        }
+        catch (ArgumentException)
+        {
+            return Invalid();
+        }
+    }
+
+    private static async Task<IResult> RetryDelivery(
+        Guid organizationId,
+        Guid deliveryId,
+        RetryNotificationDeliveryRequest request,
+        HttpContext context,
+        INotificationDeliveryStore deliveries,
+        IAntiforgery antiforgery,
+        CancellationToken cancellationToken)
+    {
+        if (deliveryId == Guid.Empty
+            || !await Mutation(context, antiforgery)
+            || !Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId)
+            || operationId == Guid.Empty)
+        {
+            return Invalid();
+        }
+
+        try
+        {
+            return Results.Ok(await deliveries.RetryDeadLetterAsync(
+                Identity(context),
+                organizationId,
+                deliveryId,
+                operationId,
+                request.Reason,
                 cancellationToken));
         }
         catch (ArgumentException)
