@@ -155,6 +155,7 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             firstReceiptPageRoot.GetProperty("items").EnumerateArray());
         var nextCursor = firstReceiptPageRoot.GetProperty("nextCursor").GetString();
         Assert.False(string.IsNullOrWhiteSpace(nextCursor));
+        Assert.Equal(firstPageItem.GetProperty("id").GetGuid(), Guid.Parse(nextCursor!));
 
         using var secondReceiptPage = await client.GetAsync(
             $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={nextCursor}");
@@ -166,7 +167,16 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
 
         Assert.Equal(finalReceiptId, firstPageItem.GetProperty("id").GetGuid());
+        var finalHistoryLine = Assert.Single(
+            firstPageItem.GetProperty("lines").EnumerateArray());
+        Assert.Equal(productId, finalHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(6m, finalHistoryLine.GetProperty("quantity").GetDecimal());
+
         Assert.Equal(firstReceiptId, secondPageItem.GetProperty("id").GetGuid());
+        var firstHistoryLine = Assert.Single(
+            secondPageItem.GetProperty("lines").EnumerateArray());
+        Assert.Equal(productId, firstHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(4m, firstHistoryLine.GetProperty("quantity").GetDecimal());
 
         using var invalidCursorHistory = await client.GetAsync(
             $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.NewGuid():D}");
