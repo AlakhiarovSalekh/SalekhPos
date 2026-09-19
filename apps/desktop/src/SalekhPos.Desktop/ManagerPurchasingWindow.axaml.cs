@@ -101,9 +101,12 @@ public sealed partial class ManagerPurchasingWindow : Window
     private async Task LoadReceiptPage(bool reset) => await Execute(async () =>
     {
         if (receiptHistoryOrderId is null) return;
+        var previousCursor = reset ? null : receiptHistoryCursor;
         var page = await manager.ListPurchaseReceiptsAsync(
             organizationId, branchId, receiptHistoryOrderId.Value, 100,
-            reset ? null : receiptHistoryCursor, default);
+            previousCursor, default);
+        if (!reset && page.NextCursor == previousCursor)
+            throw new InvalidOperationException("Purchase receipt pagination repeated its cursor.");
         if (reset) receiptHistory.Clear();
         foreach (var receipt in page.Items)
             if (receiptHistory.All(item => item.Value.Id != receipt.Id))
