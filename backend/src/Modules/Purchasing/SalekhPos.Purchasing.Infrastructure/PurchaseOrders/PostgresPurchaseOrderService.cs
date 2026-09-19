@@ -220,7 +220,7 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         ArgumentNullException.ThrowIfNull(command);
         ValidateReceiveCommand(command);
         var reference = NormalizeReceiptReference(command.Reference);
-        var receivedAt = command.ReceivedAt.ToUniversalTime();
+        var receivedAt = NormalizeDatabaseInstant(command.ReceivedAt);
 
         var dataSource = source ?? throw new PurchasingUnavailableException();
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
@@ -613,6 +613,13 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         if (normalized.Length is < 1 or > 120 || normalized.Any(char.IsControl))
             throw new ArgumentException("Purchase receipt reference is invalid.");
         return normalized;
+    }
+
+    private static DateTimeOffset NormalizeDatabaseInstant(DateTimeOffset value)
+    {
+        var utc = value.ToUniversalTime();
+        var ticks = utc.Ticks - utc.Ticks % TimeSpan.TicksPerMicrosecond;
+        return new DateTimeOffset(ticks, TimeSpan.Zero);
     }
 
     private static async Task Prepare(NpgsqlConnection connection, NpgsqlTransaction transaction,
