@@ -272,6 +272,18 @@ public sealed class NotificationDispatchWorkerTests
             return Task.FromResult(new NotificationDeliveryPage([], null));
         }
 
+        public Task<NotificationDeliveryActivityResponse> RetryDeadLetterAsync(
+            NotificationIdentity identity,
+            Guid organizationId,
+            Guid deliveryId,
+            Guid operationId,
+            string reason,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new NotSupportedException();
+        }
+
         public Task<LeasedNotificationDeliveryResponse?> LeaseNextAsync(
             NotificationIdentity identity,
             Guid organizationId,
