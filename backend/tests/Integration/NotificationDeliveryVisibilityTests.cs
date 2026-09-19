@@ -32,16 +32,22 @@ public sealed class NotificationDeliveryVisibilityTests(AccessFixture fixture)
             INSERT INTO notifications.inbox(
               organization_id,notification_id,operation_id,branch_id,recipient_subject,title,body,severity)
             VALUES($1,$2,$3,NULL,$4,'External delivery visibility',
-              'This alert has an email delivery record.','warning');
-            INSERT INTO notifications.external_deliveries(
-              organization_id,delivery_id,notification_id,channel,recipient_subject,status)
-            VALUES($1,$5,$2,'email',$4,'pending')
+              'This alert has an email delivery record.','warning')
             """,
             organizationId,
             notificationId,
             Guid.NewGuid(),
-            manager,
-            deliveryId);
+            manager);
+        await fixture.ExecuteAsync(
+            """
+            INSERT INTO notifications.external_deliveries(
+              organization_id,delivery_id,notification_id,channel,recipient_subject,status)
+            VALUES($1,$2,$3,'email',$4,'pending')
+            """,
+            organizationId,
+            deliveryId,
+            notificationId,
+            manager);
 
         using var managerClient = fixture.Factory.CreateClient();
         managerClient.DefaultRequestHeaders.Authorization =
