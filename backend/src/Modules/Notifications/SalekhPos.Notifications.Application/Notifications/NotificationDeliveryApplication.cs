@@ -25,4 +25,12 @@ public interface INotificationDeliveryStore
         Guid deliveryId,
         RecordNotificationDeliveryAttemptRequest request,
         CancellationToken cancellationToken);
+
+    Task<NotificationDeliveryActivityResponse> RetryDeadLetterAsync(
+        NotificationIdentity identity,
+        Guid organizationId,
+        Guid deliveryId,
+        Guid operationId,
+        string reason,
+        CancellationToken cancellationToken);
 }
