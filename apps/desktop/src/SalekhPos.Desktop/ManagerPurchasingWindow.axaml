@@ -15,16 +15,21 @@
     <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
       <StackPanel Spacing="10">
         <TextBlock Text="Purchase orders" FontSize="18" FontWeight="SemiBold"/>
-        <ListBox Name="OrderList" Height="520"/>
+        <ListBox Name="OrderList" Height="480"/>
         <Button Content="Load receiving state" Click="LoadReceivingClick"/>
+        <Button Content="Load receipt history" Click="LoadReceiptHistoryClick"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Spacing="10">
         <TextBlock Text="Goods receiving" FontSize="18" FontWeight="SemiBold"/>
         <TextBlock Name="StateText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
-        <ListBox Name="ReceivingList" Height="300" SelectionChanged="ReceivingSelectionChanged"/>
+        <ListBox Name="ReceivingList" Height="180" SelectionChanged="ReceivingSelectionChanged"/>
         <TextBox Name="QuantityBox" PlaceholderText="Quantity received now"/>
         <TextBox Name="ReferenceBox" MaxLength="120" PlaceholderText="Receipt reference (optional)"/>
         <Button Content="Record selected line receipt" Click="ReceiveClick"/>
+        <TextBlock Text="Receipt history" FontSize="18" FontWeight="SemiBold"/>
+        <TextBlock Name="ReceiptStateText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
+        <ListBox Name="ReceiptList" Height="180"/>
+        <Button Content="Load more receipts" Click="LoadMoreReceiptsClick"/>
         <TextBlock Name="MessageText" Foreground="{DynamicResource AppDangerTextBrush}" TextWrapping="Wrap"/>
       </StackPanel>
     </Grid>
