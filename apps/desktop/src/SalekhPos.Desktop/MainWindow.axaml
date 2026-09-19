@@ -6,7 +6,7 @@
         Title="SalekhPos" Width="1180" Height="760" MinWidth="900" MinHeight="600">
   <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppBackgroundBrush}">
     <Border Background="{DynamicResource AppHeaderBrush}" Padding="20,14">
-      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="18">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="18">
         <StackPanel>
           <TextBlock Text="SalekhPos" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource AppHeaderTextBrush}" />
           <TextBlock Text="{Binding SessionStatus}" Foreground="{DynamicResource AppHeaderMutedBrush}" />
@@ -20,8 +20,9 @@
         <Button Grid.Column="7" Content="Support" Click="SupportClick" />
         <Button Grid.Column="8" Content="Platform" Click="PlatformClick" />
         <Button Grid.Column="9" Content="Audit" Click="AuditClick" />
-        <Button Grid.Column="10" Content="Notifications" Click="NotificationsClick" />
-        <Button Grid.Column="11" Content="Sign out" Click="SignOutClick" />
+        <Button Grid.Column="10" Content="Purchasing" Click="PurchasingClick" />
+        <Button Grid.Column="11" Content="Notifications" Click="NotificationsClick" />
+        <Button Grid.Column="12" Content="Sign out" Click="SignOutClick" />
       </Grid>
     </Border>
     <Grid Grid.Row="1" ColumnDefinitions="2*,*" Margin="20" ColumnSpacing="20">
