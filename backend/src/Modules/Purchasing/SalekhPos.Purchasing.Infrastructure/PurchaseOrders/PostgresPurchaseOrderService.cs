@@ -230,6 +230,8 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         await Prepare(connection, transaction, organizationId, identity, cancellationToken);
         await Demand(connection, transaction, organizationId, branchId, identity,
             "purchase_orders.view", cancellationToken);
+        _ = await ReadHeaderById(connection, transaction, organizationId, branchId, orderId,
+            cancellationToken) ?? throw new PurchaseOrderNotFoundException();
 
         await using var query = new NpgsqlCommand("""
             SELECT receipt_id,order_id,branch_id,expected_order_version,reference,received_at,
