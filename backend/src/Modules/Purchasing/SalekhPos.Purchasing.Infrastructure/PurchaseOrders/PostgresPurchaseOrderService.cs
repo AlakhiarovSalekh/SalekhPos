@@ -221,7 +221,7 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         CancellationToken cancellationToken)
     {
         ValidateQuery(identity, organizationId, branchId, pageSize, after);
-        if (orderId == Guid.Empty)
+        if (orderId == Guid.Empty || pageSize > 25)
             throw new ArgumentException("Purchase receipt history query is invalid.");
 
         var dataSource = source ?? throw new PurchasingUnavailableException();
