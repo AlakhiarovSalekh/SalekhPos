@@ -93,6 +93,16 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts/{firstReceiptId:D}");
         Assert.Equal(HttpStatusCode.NotFound, wrongOrderReceipt.StatusCode);
 
+        var wrongBranchOrdersPath =
+            $"/api/v1/organizations/{fixture.OrganizationA:D}/branches/{fixture.BranchA2:D}/purchase-orders";
+        using var wrongBranchHistory = await client.GetAsync(
+            $"{wrongBranchOrdersPath}/{orderId:D}/receipts?pageSize=25");
+        Assert.Equal(HttpStatusCode.NotFound, wrongBranchHistory.StatusCode);
+
+        using var wrongBranchReceipt = await client.GetAsync(
+            $"{wrongBranchOrdersPath}/{orderId:D}/receipts/{firstReceiptId:D}");
+        Assert.Equal(HttpStatusCode.NotFound, wrongBranchReceipt.StatusCode);
+
         using var replay = await SendIdempotent(
             client,
             HttpMethod.Post,
