@@ -185,7 +185,6 @@ export function PurchasingScreen() {
       setReceiptQuantities({});
       setReceiptReference("");
       setMessage("Goods receipt recorded and inventory updated.");
-      await load();
     } catch (error) {
       if (generation === scopeGeneration.current)
         setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
