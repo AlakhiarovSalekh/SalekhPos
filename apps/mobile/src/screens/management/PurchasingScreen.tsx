@@ -89,7 +89,7 @@ export function PurchasingScreen() {
     setHistoryNextCursor(null);
     const controller = new AbortController();
     void load(controller.signal);
-    return () => controller.abort();
+    return () => { scopeGeneration.current += 1; controller.abort(); };
   }, [load]);
 
   async function createOrder() {
