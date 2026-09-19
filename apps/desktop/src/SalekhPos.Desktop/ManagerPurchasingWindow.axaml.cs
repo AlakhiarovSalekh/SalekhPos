@@ -69,6 +69,11 @@ public sealed partial class ManagerPurchasingWindow : Window
         object? sender,
         Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (receiptHistoryBusy)
+        {
+            MessageText.Text = "Receipt history is already loading.";
+            return;
+        }
         if (OrderList.SelectedItem is not OrderDisplay selected)
         {
             MessageText.Text = "Select a purchase order first.";
@@ -110,10 +115,12 @@ public sealed partial class ManagerPurchasingWindow : Window
             await Execute(async () =>
             {
                 if (receiptHistoryOrderId is null) return;
+                var orderId = receiptHistoryOrderId.Value;
                 var previousCursor = reset ? null : receiptHistoryCursor;
                 var page = await manager.ListPurchaseReceiptsAsync(
-                    organizationId, branchId, receiptHistoryOrderId.Value, 25,
+                    organizationId, branchId, orderId, 25,
                     previousCursor, default);
+                if (receiptHistoryOrderId != orderId) return;
                 if (!reset && page.NextCursor == previousCursor)
                     throw new InvalidOperationException(
                         "Purchase receipt pagination repeated its cursor.");
