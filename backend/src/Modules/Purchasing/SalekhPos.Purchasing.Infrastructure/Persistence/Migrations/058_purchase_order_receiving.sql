@@ -3,6 +3,8 @@ BEGIN;
 ALTER TABLE purchasing.purchase_orders
   DROP CONSTRAINT purchase_orders_status_check;
 ALTER TABLE purchasing.purchase_orders
+  ALTER COLUMN status TYPE varchar(24);
+ALTER TABLE purchasing.purchase_orders
   ADD CONSTRAINT purchase_orders_status_check
   CHECK(status IN ('draft','submitted','approved','partially_received','received','cancelled'));
 
