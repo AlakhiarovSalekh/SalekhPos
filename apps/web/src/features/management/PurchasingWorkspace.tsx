@@ -75,7 +75,7 @@ export function PurchasingWorkspace() {
       setSupplierId(current => data.suppliers.some(item => item.id === current) ? current : (data.suppliers[0]?.id ?? ""));
       setProductId(current => data.products.some(item => item.id === current) ? current : (data.products[0]?.id ?? ""));
     }).catch(() => { if (!controller.signal.aborted) setError("Purchasing data could not be loaded."); });
-    return () => controller.abort();
+    return () => { scopeGeneration.current += 1; controller.abort(); };
   }, [scope.branchId, scope.organizationId]);
   async function refresh() {
     if (!scope.organizationId || !scope.branchId) return;
