@@ -136,6 +136,13 @@ export function PurchasingScreen() {
       );
       setOrders(current => current.map(item =>
         item.id === result.order.id ? result.order : item));
+      if (historyOrder?.id === result.order.id) {
+        setHistoryOrder(result.order);
+        setReceiptHistory(current => [
+          result.receipt,
+          ...current.filter(item => item.id !== result.receipt.id),
+        ]);
+      }
       setReceivingOrder(null);
       setReceivingState(null);
       setReceiptQuantities({});
