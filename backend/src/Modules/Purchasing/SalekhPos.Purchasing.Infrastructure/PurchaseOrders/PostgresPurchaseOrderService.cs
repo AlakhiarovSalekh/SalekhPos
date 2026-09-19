@@ -233,18 +233,41 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         _ = await ReadHeaderById(connection, transaction, organizationId, branchId, orderId,
             cancellationToken) ?? throw new PurchaseOrderNotFoundException();
 
+        DateTimeOffset? cursorCreatedAt = null;
+        if (after.HasValue)
+        {
+            await using var cursorQuery = new NpgsqlCommand("""
+                SELECT created_at
+                FROM purchasing.purchase_receipts
+                WHERE organization_id=$1 AND branch_id=$2 AND order_id=$3 AND receipt_id=$4
+                """, connection, transaction);
+            cursorQuery.Parameters.AddWithValue(organizationId);
+            cursorQuery.Parameters.AddWithValue(branchId);
+            cursorQuery.Parameters.AddWithValue(orderId);
+            cursorQuery.Parameters.AddWithValue(after.Value);
+            await using var cursorReader = await cursorQuery.ExecuteReaderAsync(cancellationToken);
+            if (!await cursorReader.ReadAsync(cancellationToken))
+                throw new ArgumentException("Purchase receipt history cursor is invalid.");
+            cursorCreatedAt = cursorReader.GetFieldValue<DateTimeOffset>(0);
+        }
+
         await using var query = new NpgsqlCommand("""
             SELECT receipt_id,order_id,branch_id,expected_order_version,reference,received_at,
               created_at,received_by_issuer,received_by_subject
             FROM purchasing.purchase_receipts
             WHERE organization_id=$1 AND branch_id=$2 AND order_id=$3
-              AND ($4::uuid IS NULL OR receipt_id>$4)
-            ORDER BY receipt_id
-            LIMIT $5
+              AND ($4::timestamptz IS NULL OR (created_at,receipt_id)<($4,$5::uuid))
+            ORDER BY created_at DESC,receipt_id DESC
+            LIMIT $6
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
         query.Parameters.AddWithValue(branchId);
         query.Parameters.AddWithValue(orderId);
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.TimestampTz,
+            Value = (object?)cursorCreatedAt ?? DBNull.Value
+        });
         query.Parameters.Add(new NpgsqlParameter
         {
             NpgsqlDbType = NpgsqlDbType.Uuid,
