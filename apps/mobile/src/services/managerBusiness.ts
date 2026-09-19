@@ -34,7 +34,7 @@ export function createManagerBusiness(client:ApiClient){return Object.freeze({
   const r=parsePurchaseReceivingState(required(await client.get<unknown>(branchPath(o,b,"purchase-orders",id,"receiving"),signal?{signal}:{})));
   if(r.orderId!==id)throw new ManagementContractError("receiving");return r;
  },
- async listPurchaseReceipts(organizationId:string,branchId:string,orderId:string,size=100,after?:string|null,signal?:AbortSignal){
+ async listPurchaseReceipts(organizationId:string,branchId:string,orderId:string,size=25,after?:string|null,signal?:AbortSignal){
   const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(orderId,"orderId");
   const query={pageSize:pageSize(size),...(after?{after:assertUuid(after,"receiptCursor")}:{})};
   const v=await client.get<unknown>(branchPath(o,b,"purchase-orders",id,"receipts"),{query,...(signal?{signal}:{})});
