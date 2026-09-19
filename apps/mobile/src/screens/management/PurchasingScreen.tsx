@@ -162,7 +162,7 @@ export function PurchasingScreen() {
     setHistoryNextCursor(null);
     try {
       const page = await manager.listPurchaseReceipts(
-        workspace.organizationId, workspace.branch.id, order.id, 100);
+        workspace.organizationId, workspace.branch.id, order.id, 25);
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch (error) {
@@ -176,7 +176,7 @@ export function PurchasingScreen() {
     try {
       const previousCursor = historyNextCursor;
       const page = await manager.listPurchaseReceipts(
-        workspace.organizationId, workspace.branch.id, historyOrder.id, 100, previousCursor);
+        workspace.organizationId, workspace.branch.id, historyOrder.id, 25, previousCursor);
       if (page.nextCursor === previousCursor) throw new Error("Repeated receipt cursor");
       setReceiptHistory(current => {
         const seen = new Set(current.map(item => item.id));
