@@ -20,7 +20,7 @@ export function createManagerBusiness(client:ApiClient){return Object.freeze({
   if(!/^[A-Z]{3}$/u.test(input.currency)||input.lines.length<1||input.lines.length>500)throw new TypeError("Purchase order is invalid.");
   const lines=input.lines.map(x=>({productId:assertUuid(x.productId,"productId"),quantity:x.quantity,unitCost:x.unitCost}));
   if(lines.some(x=>!Number.isFinite(x.quantity)||x.quantity<=0||!Number.isFinite(x.unitCost)||x.unitCost<0))throw new TypeError("Purchase order line is invalid.");
-  const body={supplierId,currency:input.currency,reference:input.reference?.trim()||null,lines};
+  const reference=input.reference?.trim()||null;if(reference!==null&&(reference.length>100||/[\u0000-\u001f\u007f]/u.test(reference)))throw new TypeError("Purchase order reference is invalid.");const body={supplierId,currency:input.currency,reference,lines};
   const r=parsePurchaseOrder(required(await client.post<unknown>(branchPath(o,b,"purchase-orders"),{body,idempotencyKey:randomUUID(),...(signal?{signal}:{})})));
   if(r.branchId!==b||r.supplierId!==supplierId)throw new ManagementContractError("purchaseOrder");return r;
  },
