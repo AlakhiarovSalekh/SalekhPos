@@ -54,6 +54,8 @@ public interface IPurchaseOrderService
         ChangePurchaseOrderStatusCommand command, CancellationToken cancellationToken);
     Task<PurchaseOrderReceivingStateResponse> ReadReceivingStateAsync(PurchasingIdentity identity,
         Guid organizationId, Guid branchId, Guid orderId, CancellationToken cancellationToken);
+    Task<PurchaseReceiptResponse?> ReadReceiptAsync(PurchasingIdentity identity, Guid organizationId,
+        Guid branchId, Guid orderId, Guid receiptId, CancellationToken cancellationToken);
     Task<PurchaseReceiptWriteResult> ReceiveAsync(PurchasingIdentity identity,
         ReceivePurchaseOrderCommand command, CancellationToken cancellationToken);
 }
