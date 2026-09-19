@@ -213,7 +213,7 @@ export function PurchasingWorkspace() {
         </div>
       </div>
       {receiptHistory.length === 0 ? <p>No receipts have been recorded for this purchase order.</p> :
-        <div className="data-list">{[...receiptHistory].sort((a,b)=>b.receivedAt.localeCompare(a.receivedAt)).map(receipt =>
+        <div className="data-list">{[...receiptHistory].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(receipt =>
           <article key={receipt.id}>
             <strong>{receipt.reference || receipt.id.slice(0, 8).toUpperCase()}</strong>
             <span>{new Date(receipt.receivedAt).toLocaleString()} · {receipt.lines.length} line(s) · received by {receipt.receivedBySubject}</span>
