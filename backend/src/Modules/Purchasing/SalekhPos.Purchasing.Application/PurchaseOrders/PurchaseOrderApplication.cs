@@ -34,7 +34,13 @@ public sealed record CreatePurchaseOrderCommand(Guid OrganizationId, Guid OrderI
 
 public sealed record ChangePurchaseOrderStatusCommand(Guid OrganizationId, Guid BranchId,
     Guid OrderId, string TargetStatus, long ExpectedVersion);
+public sealed record ReceivePurchaseOrderLine(Guid ProductId, decimal Quantity);
+public sealed record ReceivePurchaseOrderCommand(Guid OrganizationId, Guid BranchId, Guid OrderId,
+    Guid ReceiptId, Guid OperationId, long ExpectedVersion, string? Reference,
+    DateTimeOffset ReceivedAt, IReadOnlyList<ReceivePurchaseOrderLine> Lines);
 public sealed record PurchaseOrderWriteResult(PurchaseOrderResponse Order, bool Created);
+public sealed record PurchaseReceiptWriteResult(PurchaseReceiptResponse Receipt,
+    PurchaseOrderResponse Order, bool Created);
 
 public interface IPurchaseOrderService
 {
@@ -46,6 +52,10 @@ public interface IPurchaseOrderService
         Guid branchId, Guid orderId, CancellationToken cancellationToken);
     Task<PurchaseOrderResponse> ChangeStatusAsync(PurchasingIdentity identity,
         ChangePurchaseOrderStatusCommand command, CancellationToken cancellationToken);
+    Task<PurchaseOrderReceivingStateResponse> ReadReceivingStateAsync(PurchasingIdentity identity,
+        Guid organizationId, Guid branchId, Guid orderId, CancellationToken cancellationToken);
+    Task<PurchaseReceiptWriteResult> ReceiveAsync(PurchasingIdentity identity,
+        ReceivePurchaseOrderCommand command, CancellationToken cancellationToken);
 }
 
 public sealed class PurchasingDeniedException : Exception;
