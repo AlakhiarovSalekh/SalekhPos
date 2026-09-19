@@ -221,6 +221,18 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.NewGuid():D}");
         Assert.Equal(HttpStatusCode.BadRequest, invalidCursorHistory.StatusCode);
 
+        using var zeroPageHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=0");
+        Assert.Equal(HttpStatusCode.BadRequest, zeroPageHistory.StatusCode);
+
+        using var oversizedPageHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, oversizedPageHistory.StatusCode);
+
+        using var emptyCursorHistory = await client.GetAsync(
+            $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.Empty:D}");
+        Assert.Equal(HttpStatusCode.BadRequest, emptyCursorHistory.StatusCode);
+
         using var missingOrderHistory = await client.GetAsync(
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts?pageSize=1");
         Assert.Equal(HttpStatusCode.NotFound, missingOrderHistory.StatusCode);
