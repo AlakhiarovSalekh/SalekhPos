@@ -74,6 +74,5 @@ export function InventoryMovementScreen({ mode }: Readonly<{ mode: "receipt" | "
       {completed ? <Text accessibilityRole="alert" style={operationStyles.strong}>{t("movement.completed")}</Text> : null}
       <AppButton disabled={submitting} onPress={() => void submit()}>{submitting ? t("common.saving") : t("common.save")}</AppButton>
     </>}
-    }
   </Screen>;
 }
