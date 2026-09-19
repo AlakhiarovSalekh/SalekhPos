@@ -162,7 +162,7 @@ export function PurchasingScreen() {
       </View>
       <View style={managerStyles.row}>
         <View style={[managerStyles.field,{flex:1}]}><Text style={managerStyles.label}>Currency</Text><TextInput value={currency} onChangeText={value=>setCurrency(value.toUpperCase())} maxLength={3} style={managerStyles.input} /></View>
-        <View style={[managerStyles.field,{flex:2}]}><Text style={managerStyles.label}>Reference</Text><TextInput value={reference} onChangeText={setReference} maxLength={120} style={managerStyles.input} /></View>
+        <View style={[managerStyles.field,{flex:2}]}><Text style={managerStyles.label}>Reference</Text><TextInput value={reference} onChangeText={setReference} maxLength={100} style={managerStyles.input} /></View>
       </View>
       <AppButton disabled={saving || !supplierId || !productId || !unitCost} onPress={() => void createOrder()}>{saving ? "Saving…" : "Create draft"}</AppButton>
     </View> : null}
