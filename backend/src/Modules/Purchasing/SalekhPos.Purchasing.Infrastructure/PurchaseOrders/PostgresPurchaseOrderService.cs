@@ -211,6 +211,68 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         return ToReceivingState(header, lines);
     }
 
+    public async Task<PurchaseReceiptPage> ListReceiptsAsync(
+        PurchasingIdentity identity,
+        Guid organizationId,
+        Guid branchId,
+        Guid orderId,
+        int pageSize,
+        Guid? after,
+        CancellationToken cancellationToken)
+    {
+        ValidateQuery(identity, organizationId, branchId, pageSize, after);
+        if (orderId == Guid.Empty)
+            throw new ArgumentException("Purchase receipt history query is invalid.");
+
+        var dataSource = source ?? throw new PurchasingUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, branchId, identity,
+            "purchase_orders.view", cancellationToken);
+
+        await using var query = new NpgsqlCommand("""
+            SELECT receipt_id,order_id,branch_id,expected_order_version,reference,received_at,
+              created_at,received_by_issuer,received_by_subject
+            FROM purchasing.purchase_receipts
+            WHERE organization_id=$1 AND branch_id=$2 AND order_id=$3
+              AND ($4::uuid IS NULL OR receipt_id>$4)
+            ORDER BY receipt_id
+            LIMIT $5
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(branchId);
+        query.Parameters.AddWithValue(orderId);
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = (object?)after ?? DBNull.Value
+        });
+        query.Parameters.AddWithValue(pageSize + 1);
+
+        var headers = new List<ReceiptHeader>(pageSize + 1);
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken))
+                headers.Add(new(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2),
+                    reader.GetInt64(3), reader.IsDBNull(4) ? null : reader.GetString(4),
+                    reader.GetFieldValue<DateTimeOffset>(5), reader.GetFieldValue<DateTimeOffset>(6),
+                    reader.GetString(7), reader.GetString(8)));
+
+        Guid? next = null;
+        if (headers.Count > pageSize)
+        {
+            headers.RemoveAt(pageSize);
+            next = headers[^1].Id;
+        }
+
+        var lines = await LoadReceiptLines(connection, transaction, organizationId,
+            [.. headers.Select(item => item.Id)], cancellationToken);
+        var items = headers.Select(header => ToReceiptResponse(
+            header, lines.GetValueOrDefault(header.Id, []))).ToArray();
+        await transaction.CommitAsync(cancellationToken);
+        return new(items, next);
+    }
+
     public async Task<PurchaseReceiptResponse?> ReadReceiptAsync(
         PurchasingIdentity identity,
         Guid organizationId,
@@ -590,6 +652,36 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         while (await reader.ReadAsync(cancellationToken))
             result.Add(new(reader.GetGuid(0), reader.GetDecimal(1), reader.GetGuid(2)));
         return result.AsReadOnly();
+    }
+
+    private static async Task<Dictionary<Guid, IReadOnlyList<ReceiptLine>>> LoadReceiptLines(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        Guid organizationId,
+        Guid[] receiptIds,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<Guid, List<ReceiptLine>>();
+        if (receiptIds.Length == 0) return [];
+
+        await using var query = new NpgsqlCommand("""
+            SELECT receipt_id,product_id,quantity,movement_id
+            FROM purchasing.purchase_receipt_lines
+            WHERE organization_id=$1 AND receipt_id=ANY($2::uuid[])
+            ORDER BY receipt_id,line_number
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(NpgsqlDbType.Array | NpgsqlDbType.Uuid, receiptIds);
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var receiptId = reader.GetGuid(0);
+            if (!result.TryGetValue(receiptId, out var items)) result[receiptId] = items = [];
+            items.Add(new(reader.GetGuid(1), reader.GetDecimal(2), reader.GetGuid(3)));
+        }
+
+        return result.ToDictionary(pair => pair.Key,
+            pair => (IReadOnlyList<ReceiptLine>)pair.Value.AsReadOnly());
     }
 
     private static PurchaseOrderReceivingStateResponse ToReceivingState(
