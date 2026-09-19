@@ -1,6 +1,6 @@
 import { randomUUID } from "expo-crypto";
 import { assertUuid, branchPath, organizationPath, type ApiClient } from "@salekhpos/packages-api-client";
-import { ManagementContractError, parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parsePurchaseReceivingState, parseReceivePurchaseOrderResult, parseSupplier, parseSupplierPage, type PurchaseOrderSummary } from "@/api/managementContracts";
+import { ManagementContractError, parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parsePurchaseReceivingState, parsePurchaseReceiptPage, parseReceivePurchaseOrderResult, parseSupplier, parseSupplierPage, type PurchaseOrderSummary } from "@/api/managementContracts";
 
 function required<T>(value:T|undefined):T{if(value===undefined)throw new ManagementContractError("response");return value}
 function pageSize(value:number){if(!Number.isInteger(value)||value<1||value>100)throw new TypeError("Page size is invalid.");return value}
@@ -33,6 +33,14 @@ export function createManagerBusiness(client:ApiClient){return Object.freeze({
   const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(orderId,"orderId");
   const r=parsePurchaseReceivingState(required(await client.get<unknown>(branchPath(o,b,"purchase-orders",id,"receiving"),signal?{signal}:{})));
   if(r.orderId!==id)throw new ManagementContractError("receiving");return r;
+ },
+ async listPurchaseReceipts(organizationId:string,branchId:string,orderId:string,size=100,after?:string|null,signal?:AbortSignal){
+  const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(orderId,"orderId");
+  const query={pageSize:pageSize(size),...(after?{after:assertUuid(after,"receiptCursor")}:{})};
+  const v=await client.get<unknown>(branchPath(o,b,"purchase-orders",id,"receipts"),{query,...(signal?{signal}:{})});
+  const r=parsePurchaseReceiptPage(required(v));
+  if(r.items.some(x=>x.orderId!==id||x.branchId!==b))throw new ManagementContractError("purchaseReceipts");
+  return r;
  },
  async receivePurchaseOrder(organizationId:string,branchId:string,order:PurchaseOrderSummary,input:{reference?:string;receivedAt:string;lines:readonly {productId:string;quantity:number}[]},signal?:AbortSignal){
   const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(order.id,"orderId");
