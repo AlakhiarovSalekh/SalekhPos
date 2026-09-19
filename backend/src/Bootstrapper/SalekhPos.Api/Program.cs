@@ -179,6 +179,8 @@ builder.Services.AddSingleton<IPromotionService>(provider => new PostgresPromoti
 builder.Services.AddSingleton<ILoyaltyAccountService>(provider => new PostgresLoyaltyAccountService(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IAuditTrail>(provider => new PostgresAuditTrail(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<INotificationCenter>(provider => new PostgresNotificationCenter(provider.GetRequiredService<AccessDatabase>().DataSource));
+builder.Services.AddSingleton<INotificationDeliveryStore>(provider => new PostgresNotificationDeliveryStore(
+    provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ITaxConfiguration>(provider => new PostgresTaxConfiguration(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<ILocalizationSettings>(provider => new PostgresLocalizationSettings(provider.GetRequiredService<AccessDatabase>().DataSource));
 builder.Services.AddSingleton<IAnalyticsReader>(provider => new PostgresAnalyticsReader(provider.GetRequiredService<AccessDatabase>().DataSource));

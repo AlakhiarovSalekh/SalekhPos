@@ -30,6 +30,7 @@ export const permissions = Object.freeze({
   loyaltyManage: "loyalty.manage",
   auditView: "audit.view",
   notificationsView: "notifications.view",
+  notificationsManage: "notifications.manage",
   taxationView: "taxation.view",
   taxationManage: "taxation.manage",
   localizationView: "localization.view",

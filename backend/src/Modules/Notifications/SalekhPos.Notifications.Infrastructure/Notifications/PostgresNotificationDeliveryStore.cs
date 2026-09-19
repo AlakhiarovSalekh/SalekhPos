@@ -1,4 +1,5 @@
 using Npgsql;
+using NpgsqlTypes;
 using SalekhPos.Notifications.Application.Notifications;
 using SalekhPos.Notifications.Contracts.Notifications;
 
@@ -6,6 +7,91 @@ namespace SalekhPos.Notifications.Infrastructure.Notifications;
 
 public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) : INotificationDeliveryStore
 {
+
+    public async Task<NotificationDeliveryPage> ListAsync(
+        NotificationIdentity identity,
+        Guid organizationId,
+        int pageSize,
+        Guid? after,
+        string? status,
+        string? channel,
+        CancellationToken cancellationToken)
+    {
+        identity.Validate();
+        status = OptionalStatus(status);
+        channel = OptionalChannel(channel);
+        if (organizationId == Guid.Empty || pageSize is < 1 or > 100 || after == Guid.Empty)
+        {
+            throw new ArgumentException("Notification delivery query is invalid.");
+        }
+
+        var data = source ?? throw new NotificationUnavailableException();
+        await using var connection = await data.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(
+            connection,
+            transaction,
+            organizationId,
+            identity,
+            "notifications.manage",
+            cancellationToken);
+
+        await using var query = new NpgsqlCommand("""
+            SELECT d.delivery_id,d.notification_id,d.channel,d.recipient_subject,d.status,
+              d.attempt_count,d.next_attempt_at,d.last_error_code,d.created_at,d.updated_at,
+              n.title,n.severity
+            FROM notifications.external_deliveries d
+            JOIN notifications.inbox n
+              ON n.organization_id=d.organization_id AND n.notification_id=d.notification_id
+            WHERE d.organization_id=$1
+              AND ($2::uuid IS NULL OR EXISTS(
+                SELECT 1 FROM notifications.external_deliveries cursor
+                WHERE cursor.organization_id=$1 AND cursor.delivery_id=$2
+                  AND (d.created_at,d.delivery_id)<(cursor.created_at,cursor.delivery_id)))
+              AND ($3::text IS NULL OR d.status=$3)
+              AND ($4::text IS NULL OR d.channel=$4)
+            ORDER BY d.created_at DESC,d.delivery_id DESC
+            LIMIT $5
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Uuid,
+            Value = after.HasValue ? after.Value : DBNull.Value
+        });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = status is null ? DBNull.Value : status
+        });
+        query.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlDbType.Text,
+            Value = channel is null ? DBNull.Value : channel
+        });
+        query.Parameters.AddWithValue(pageSize + 1);
+
+        var rows = new List<NotificationDeliveryActivityResponse>(pageSize + 1);
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                rows.Add(ReadActivity(reader));
+            }
+        }
+
+        Guid? nextCursor = null;
+        if (rows.Count > pageSize)
+        {
+            rows.RemoveAt(pageSize);
+            nextCursor = rows[^1].Id;
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(rows.AsReadOnly(), nextCursor);
+    }
+
     public async Task<LeasedNotificationDeliveryResponse?> LeaseNextAsync(
         NotificationIdentity identity,
         Guid organizationId,
@@ -22,7 +108,13 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         await using var connection = await data.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         await Prepare(connection, transaction, organizationId, identity, cancellationToken);
-        await Demand(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(
+            connection,
+            transaction,
+            organizationId,
+            identity,
+            "notifications.dispatch",
+            cancellationToken);
 
         var leaseId = Guid.NewGuid();
         await using var command = new NpgsqlCommand("""
@@ -95,7 +187,13 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         await using var connection = await data.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         await Prepare(connection, transaction, organizationId, identity, cancellationToken);
-        await Demand(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(
+            connection,
+            transaction,
+            organizationId,
+            identity,
+            "notifications.dispatch",
+            cancellationToken);
 
         await using var update = new NpgsqlCommand("""
             UPDATE notifications.external_deliveries SET
@@ -140,6 +238,39 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
     }
 
     private NpgsqlDataSource Data() => source ?? throw new NotificationUnavailableException();
+
+
+    private static NotificationDeliveryActivityResponse ReadActivity(NpgsqlDataReader reader) => new(
+        reader.GetGuid(0),
+        reader.GetGuid(1),
+        reader.GetString(2),
+        reader.GetString(3),
+        reader.GetString(4),
+        reader.GetInt32(5),
+        reader.IsDBNull(6) ? null : reader.GetFieldValue<DateTimeOffset>(6),
+        reader.IsDBNull(7) ? null : reader.GetString(7),
+        reader.GetFieldValue<DateTimeOffset>(8),
+        reader.GetFieldValue<DateTimeOffset>(9),
+        reader.GetString(10),
+        reader.GetString(11));
+
+    private static string? OptionalStatus(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        value = value.Trim().ToLowerInvariant();
+        return value is "pending" or "delivering" or "failed" or "delivered" or "dead_lettered"
+            ? value
+            : throw new ArgumentException("Notification delivery status is invalid.");
+    }
+
+    private static string? OptionalChannel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        value = value.Trim().ToLowerInvariant();
+        return value is "email" or "push"
+            ? value
+            : throw new ArgumentException("Notification delivery channel is invalid.");
+    }
 
     private static NotificationDeliveryResponse ReadDelivery(NpgsqlDataReader reader) => new(
         reader.GetGuid(0),
@@ -200,6 +331,7 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
         NpgsqlTransaction transaction,
         Guid organizationId,
         NotificationIdentity identity,
+        string permission,
         CancellationToken cancellationToken)
     {
         await using var query = new NpgsqlCommand("""
@@ -210,11 +342,12 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
               WHERE m.organization_id=$1 AND m.issuer=$2 AND m.subject=$3
                 AND m.is_active AND m.valid_from<=statement_timestamp()
                 AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp())
-                AND g.permission='notifications.dispatch' AND g.scope_kind='organization')
+                AND g.permission=$4 AND g.scope_kind='organization')
             """, connection, transaction);
         query.Parameters.AddWithValue(organizationId);
         query.Parameters.AddWithValue(identity.Issuer);
         query.Parameters.AddWithValue(identity.Subject);
+        query.Parameters.AddWithValue(permission);
         if (await query.ExecuteScalarAsync(cancellationToken) is not true)
         {
             throw new NotificationDeniedException();

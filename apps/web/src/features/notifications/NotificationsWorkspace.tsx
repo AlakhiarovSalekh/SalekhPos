@@ -2,13 +2,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { OperationsScopeSelector } from "@/features/operations/OperationsScopeSelector";
 import { useOperationsScope } from "@/features/operations/useOperationsScope";
-import { createNotification, getNotifications, getNotificationPreferences, markNotificationRead, updateNotificationPreferences } from "./api";
-import type { NotificationItem, NotificationPreferences } from "./types";
+import { createNotification, getNotificationDeliveries, getNotifications, getNotificationPreferences, markNotificationRead, updateNotificationPreferences } from "./api";
+import type { NotificationDeliveryActivity, NotificationDeliveryStatus, NotificationItem, NotificationPreferences } from "./types";
 
 export function NotificationsWorkspace() {
   const scope = useOperationsScope();
   const [items, setItems] = useState<readonly NotificationItem[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [deliveries, setDeliveries] = useState<readonly NotificationDeliveryActivity[]>([]);
+  const [deliveryStatus, setDeliveryStatus] = useState<NotificationDeliveryStatus | "">("");
+  const [deliveryChannel, setDeliveryChannel] = useState<"" | "email" | "push">("");
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,37 @@ export function NotificationsWorkspace() {
     queueMicrotask(() => { if (!controller.signal.aborted) void load(controller.signal).catch(() => setError("Notifications could not be loaded.")); });
     return () => controller.abort();
   }, [load, scope.organizationId]);
+
+
+  const loadDeliveries = useCallback(async (signal?: AbortSignal) => {
+    if (!scope.organizationId) return;
+    try {
+      const page = await getNotificationDeliveries(
+        scope.organizationId,
+        {
+          ...(deliveryStatus ? { status: deliveryStatus } : {}),
+          ...(deliveryChannel ? { channel: deliveryChannel } : {}),
+        },
+        signal
+      );
+      if (signal?.aborted) return;
+      setDeliveries(page.items);
+      setDeliveryError(null);
+    } catch {
+      if (signal?.aborted) return;
+      setDeliveries([]);
+      setDeliveryError("Delivery activity is unavailable or you do not have notification management permission.");
+    }
+  }, [deliveryChannel, deliveryStatus, scope.organizationId]);
+
+  useEffect(() => {
+    if (!scope.organizationId) return;
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void loadDeliveries(controller.signal);
+    });
+    return () => controller.abort();
+  }, [loadDeliveries, scope.organizationId]);
 
   async function create() {
     if (!scope.organizationId || !title.trim() || !body.trim()) return;
@@ -76,5 +111,51 @@ export function NotificationsWorkspace() {
       <label>Body<textarea maxLength={2000} value={body} onChange={event => setBody(event.target.value)}/></label>
       <button disabled={busy || !scope.organizationId || !title.trim() || !body.trim()} onClick={() => void create()}>Create self-test alert</button>
     </div></div>
+
+    <div className="panel">
+      <div className="manager-title">
+        <div>
+          <span className="eyebrow">EXTERNAL DELIVERY</span>
+          <h2>Email & push activity</h2>
+          <p>Inspect provider delivery state without exposing raw destination addresses or provider credentials.</p>
+        </div>
+        <div className="metric-card">
+          <strong>{deliveries.filter(item => item.status === "dead_lettered").length}</strong>
+          <span>Dead-lettered loaded</span>
+        </div>
+      </div>
+      <div className="filter-row">
+        <label>Status
+          <select value={deliveryStatus} onChange={event => setDeliveryStatus(event.target.value as NotificationDeliveryStatus | "")}>
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="delivering">Delivering</option>
+            <option value="failed">Retry scheduled</option>
+            <option value="delivered">Delivered</option>
+            <option value="dead_lettered">Dead-lettered</option>
+          </select>
+        </label>
+        <label>Channel
+          <select value={deliveryChannel} onChange={event => setDeliveryChannel(event.target.value as "" | "email" | "push")}>
+            <option value="">All channels</option>
+            <option value="email">Email</option>
+            <option value="push">Push</option>
+          </select>
+        </label>
+        <button disabled={busy || !scope.organizationId} onClick={() => void loadDeliveries()}>Refresh delivery activity</button>
+      </div>
+      {deliveryError && <p className="error-banner">{deliveryError}</p>}
+      <div className="data-list">
+        {deliveries.map(item => <article key={item.id}>
+          <strong>{item.title}</strong>
+          <span>{item.channel} · {item.status} · attempts {item.attemptCount}</span>
+          <p>Recipient reference: {item.recipientSubject}</p>
+          <p>Updated {new Date(item.updatedAt).toLocaleString()}</p>
+          {item.nextAttemptAt && <p>Retry {new Date(item.nextAttemptAt).toLocaleString()}</p>}
+          {item.lastErrorCode && <p>Error code: {item.lastErrorCode}</p>}
+        </article>)}
+        {!deliveryError && deliveries.length === 0 && <p>No external delivery activity matched the current filters.</p>}
+      </div>
+    </div>
   </section>;
 }

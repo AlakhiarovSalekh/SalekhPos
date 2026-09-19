@@ -4,6 +4,15 @@ namespace SalekhPos.Notifications.Application.Notifications;
 
 public interface INotificationDeliveryStore
 {
+    Task<NotificationDeliveryPage> ListAsync(
+        NotificationIdentity identity,
+        Guid organizationId,
+        int pageSize,
+        Guid? after,
+        string? status,
+        string? channel,
+        CancellationToken cancellationToken);
+
     Task<LeasedNotificationDeliveryResponse?> LeaseNextAsync(
         NotificationIdentity identity,
         Guid organizationId,

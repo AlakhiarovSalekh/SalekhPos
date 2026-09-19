@@ -259,6 +259,19 @@ public sealed class NotificationDispatchWorkerTests
 
         public List<RecordNotificationDeliveryAttemptRequest> Attempts { get; } = [];
 
+        public Task<NotificationDeliveryPage> ListAsync(
+            NotificationIdentity identity,
+            Guid organizationId,
+            int pageSize,
+            Guid? after,
+            string? status,
+            string? channel,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new NotificationDeliveryPage([], null));
+        }
+
         public Task<LeasedNotificationDeliveryResponse?> LeaseNextAsync(
             NotificationIdentity identity,
             Guid organizationId,

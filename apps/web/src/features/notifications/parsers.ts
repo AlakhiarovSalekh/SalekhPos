@@ -1,5 +1,5 @@
 import { boundedArray, exactKeys, isoDate, object, optionalUuid, text, uuid } from "@/lib/boundedJson";
-import type { NotificationItem, NotificationPage, NotificationPreferences } from "./types";
+import type { NotificationDeliveryActivity, NotificationDeliveryPage, NotificationItem, NotificationPage, NotificationPreferences } from "./types";
 
 function nullableDate(value: unknown, label: string): string | null {
   return value === null ? null : isoDate(value, label);
@@ -37,5 +37,57 @@ export function parseNotificationPreferences(value: unknown): NotificationPrefer
     emailEnabled: bool(x.emailEnabled, "email preference"),
     pushEnabled: bool(x.pushEnabled, "push preference"),
     updatedAt: isoDate(x.updatedAt, "preference update")
+  };
+}
+
+function optionalText(value: unknown, label: string, maximum: number): string | null {
+  return value === null ? null : text(value, label, maximum, 1);
+}
+
+function nonNegativeInteger(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0 || value > 10) {
+    throw new Error(`Invalid ${label}`);
+  }
+  return value;
+}
+
+export function parseNotificationDelivery(value: unknown): NotificationDeliveryActivity {
+  const x = object(value, "notification delivery");
+  exactKeys(x, [
+    "id", "notificationId", "channel", "recipientSubject", "status", "attemptCount",
+    "nextAttemptAt", "lastErrorCode", "createdAt", "updatedAt", "title", "severity"
+  ]);
+  const channel = text(x.channel, "delivery channel", 16, 1);
+  if (channel !== "email" && channel !== "push") throw new Error("Invalid delivery channel");
+  const status = text(x.status, "delivery status", 32, 1);
+  if (!["pending", "delivering", "failed", "delivered", "dead_lettered"].includes(status)) {
+    throw new Error("Invalid delivery status");
+  }
+  const severity = text(x.severity, "delivery severity", 16, 1);
+  if (severity !== "info" && severity !== "warning" && severity !== "critical") {
+    throw new Error("Invalid delivery severity");
+  }
+  return {
+    id: uuid(x.id, "delivery id"),
+    notificationId: uuid(x.notificationId, "delivery notification id"),
+    channel,
+    recipientSubject: text(x.recipientSubject, "delivery recipient", 256, 1),
+    status: status as NotificationDeliveryActivity["status"],
+    attemptCount: nonNegativeInteger(x.attemptCount, "delivery attempt count"),
+    nextAttemptAt: nullableDate(x.nextAttemptAt, "delivery retry at"),
+    lastErrorCode: optionalText(x.lastErrorCode, "delivery error code", 100),
+    createdAt: isoDate(x.createdAt, "delivery created at"),
+    updatedAt: isoDate(x.updatedAt, "delivery updated at"),
+    title: text(x.title, "delivery title", 160, 1),
+    severity,
+  };
+}
+
+export function parseNotificationDeliveryPage(value: unknown): NotificationDeliveryPage {
+  const x = object(value, "notification delivery page");
+  exactKeys(x, ["items", "nextCursor"]);
+  return {
+    items: boundedArray(x.items, "notification delivery items", 100).map(parseNotificationDelivery),
+    nextCursor: x.nextCursor === null ? null : uuid(x.nextCursor, "notification delivery cursor"),
   };
 }

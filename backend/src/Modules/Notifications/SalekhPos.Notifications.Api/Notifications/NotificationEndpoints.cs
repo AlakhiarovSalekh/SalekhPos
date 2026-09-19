@@ -16,6 +16,7 @@ public static class NotificationEndpoints
         group.MapGet("", List);
         group.MapPost("", Create);
         group.MapPost("/{notificationId:guid}/read", MarkRead);
+        group.MapGet("/deliveries", ListDeliveries);
         group.MapGet("/preferences", ReadPreferences);
         group.MapPut("/preferences", UpdatePreferences);
     }
@@ -50,6 +51,35 @@ public static class NotificationEndpoints
         catch (ArgumentException) { return Invalid(); }
     }
 
+
+    private static async Task<IResult> ListDeliveries(
+        Guid organizationId,
+        HttpContext context,
+        INotificationDeliveryStore deliveries,
+        CancellationToken cancellationToken)
+    {
+        if (!TryDeliveryQuery(context, out var pageSize, out var after, out var status, out var channel))
+        {
+            return Invalid();
+        }
+
+        try
+        {
+            return Results.Ok(await deliveries.ListAsync(
+                Identity(context),
+                organizationId,
+                pageSize,
+                after,
+                status,
+                channel,
+                cancellationToken));
+        }
+        catch (ArgumentException)
+        {
+            return Invalid();
+        }
+    }
+
     private static async Task<IResult> ReadPreferences(Guid organizationId, HttpContext c, INotificationCenter center, CancellationToken ct)
         => Results.Ok(await center.ReadPreferencesAsync(Identity(c), organizationId, ct));
 
@@ -58,6 +88,55 @@ public static class NotificationEndpoints
     {
         if (!await Mutation(c, antiforgery)) return Invalid();
         return Results.Ok(await center.UpdatePreferencesAsync(Identity(c), organizationId, request, ct));
+    }
+
+
+    private static bool TryDeliveryQuery(
+        HttpContext context,
+        out int pageSize,
+        out Guid? after,
+        out string? status,
+        out string? channel)
+    {
+        pageSize = 25;
+        after = null;
+        status = null;
+        channel = null;
+        if (context.Request.Query.Keys.Any(key =>
+                key is not "pageSize" and not "after" and not "status" and not "channel"))
+        {
+            return false;
+        }
+
+        if (context.Request.Query.TryGetValue("pageSize", out var sizes)
+            && (sizes.Count != 1 || !int.TryParse(sizes[0], out pageSize) || pageSize is < 1 or > 100))
+        {
+            return false;
+        }
+
+        if (context.Request.Query.TryGetValue("after", out var cursors))
+        {
+            if (cursors.Count != 1 || !Guid.TryParseExact(cursors[0], "D", out var cursor)
+                || cursor == Guid.Empty)
+            {
+                return false;
+            }
+            after = cursor;
+        }
+
+        if (context.Request.Query.TryGetValue("status", out var statuses))
+        {
+            if (statuses.Count != 1) return false;
+            status = statuses[0];
+        }
+
+        if (context.Request.Query.TryGetValue("channel", out var channels))
+        {
+            if (channels.Count != 1) return false;
+            channel = channels[0];
+        }
+
+        return true;
     }
 
     private static async Task<bool> Mutation(HttpContext c, IAntiforgery antiforgery)

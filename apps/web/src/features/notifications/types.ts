@@ -21,3 +21,30 @@ export type NotificationPreferences = {
   pushEnabled: boolean;
   updatedAt: string;
 };
+
+export type NotificationDeliveryStatus =
+  | "pending"
+  | "delivering"
+  | "failed"
+  | "delivered"
+  | "dead_lettered";
+
+export type NotificationDeliveryActivity = {
+  id: string;
+  notificationId: string;
+  channel: "email" | "push";
+  recipientSubject: string;
+  status: NotificationDeliveryStatus;
+  attemptCount: number;
+  nextAttemptAt: string | null;
+  lastErrorCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  severity: "info" | "warning" | "critical";
+};
+
+export type NotificationDeliveryPage = {
+  items: NotificationDeliveryActivity[];
+  nextCursor: string | null;
+};
