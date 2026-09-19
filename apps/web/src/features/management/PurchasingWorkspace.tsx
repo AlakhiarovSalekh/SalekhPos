@@ -128,9 +128,11 @@ export function PurchasingWorkspace() {
   async function openReceiptHistory(order: PurchaseOrder) {
     if (!scope.organizationId || !scope.branchId) return;
     setHistoryBusy(true); setError(null);
+    setHistoryOrder(order);
+    setReceiptHistory([]);
+    setHistoryNextCursor(null);
     try {
       const page = await getPurchaseReceipts(scope.organizationId, scope.branchId, order.id, 100);
-      setHistoryOrder(order);
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch {
