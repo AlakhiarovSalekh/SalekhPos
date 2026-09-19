@@ -70,6 +70,9 @@ export function PurchasingWorkspace() {
       setHistoryOrder(null);
       setReceiptHistory([]);
       setHistoryNextCursor(null);
+      setBusy(false);
+      setReceivingBusy(false);
+      setHistoryBusy(false);
       setOrders(data.orders); setSuppliers(data.suppliers); setProducts(data.products); setError(null);
       setLoadedScopeKey(`${scope.organizationId}:${scope.branchId}`);
       setSupplierId(current => data.suppliers.some(item => item.id === current) ? current : (data.suppliers[0]?.id ?? ""));
