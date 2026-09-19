@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 import { useApiClient } from "@/api/ApiContext";
 import type {
@@ -70,6 +70,8 @@ export function NotificationsScreen() {
   const [deliveryBusy, setDeliveryBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [deliveryMessage, setDeliveryMessage] = useState("");
+  const [retryReasons, setRetryReasons] = useState<Record<string, string>>({});
+  const [retryingDeliveryId, setRetryingDeliveryId] = useState<string | null>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -148,6 +150,35 @@ export function NotificationsScreen() {
     void loadDeliveries(controller.signal);
     return () => controller.abort();
   }, [loadDeliveries]);
+
+  async function retryDelivery(item: NotificationDeliveryActivity) {
+    if (!canManageDeliveries || item.status !== "dead_lettered") return;
+    const reason = retryReasons[item.id]?.trim() ?? "";
+    if (!reason) {
+      setDeliveryMessage("A retry reason is required for audit.");
+      return;
+    }
+
+    setRetryingDeliveryId(item.id);
+    setDeliveryMessage("");
+    try {
+      await service.retryNotificationDelivery(
+        workspace.organizationId,
+        item.id,
+        reason,
+      );
+      setRetryReasons((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      await loadDeliveries();
+    } catch {
+      setDeliveryMessage("The dead-lettered delivery could not be retried.");
+    } finally {
+      setRetryingDeliveryId(null);
+    }
+  }
 
   async function markRead(item: NotificationItem) {
     setBusy(true);
@@ -293,6 +324,30 @@ export function NotificationsScreen() {
               ) : null}
               {item.lastErrorCode ? (
                 <Text style={managerStyles.danger}>Error code: {item.lastErrorCode}</Text>
+              ) : null}
+              {item.status === "dead_lettered" ? (
+                <>
+                  <TextInput
+                    value={retryReasons[item.id] ?? ""}
+                    onChangeText={(value) =>
+                      setRetryReasons((current) => ({ ...current, [item.id]: value }))
+                    }
+                    maxLength={500}
+                    placeholder="Retry reason"
+                    style={managerStyles.input}
+                  />
+                  <AppButton
+                    disabled={
+                      retryingDeliveryId !== null ||
+                      !(retryReasons[item.id]?.trim())
+                    }
+                    onPress={() => void retryDelivery(item)}
+                  >
+                    {retryingDeliveryId === item.id
+                      ? "Retrying…"
+                      : "Retry dead-lettered delivery"}
+                  </AppButton>
+                </>
               ) : null}
             </View>
           ))}
