@@ -117,6 +117,54 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
         if (result.Id != order.Id) throw new InvalidOperationException("Purchase order identity changed.");
         return result;
     }
+    public async Task<PurchaseReceivingStateSummary> ReadPurchaseReceivingStateAsync(
+        Guid organizationId, Guid branchId, Guid orderId, CancellationToken cancellationToken)
+    {
+        ValidateScope(organizationId, branchId);
+        if (orderId == Guid.Empty) throw new ArgumentException("Purchase order is required.");
+        var path = $"api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{orderId:D}/receiving";
+        var result = await GetAsync<PurchaseReceivingStateSummary>(path, cancellationToken);
+        ValidateReceivingState(result, orderId);
+        return result;
+    }
+
+    public async Task<ReceivePurchaseOrderResultSummary> ReceivePurchaseOrderAsync(
+        Guid organizationId, Guid branchId, PurchaseOrderSummary order, ReceivePurchaseOrderInput input,
+        Guid operationId, CancellationToken cancellationToken)
+    {
+        ValidateScope(organizationId, branchId);
+        ValidateOperation(operationId);
+        ValidatePurchaseOrder(order, branchId);
+        ValidateReceiveInput(input);
+        if (order.Status is not ("approved" or "partially_received"))
+            throw new ArgumentException("Purchase order is not receivable.");
+
+        var path = $"api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{order.Id:D}/receipts";
+        var body = new
+        {
+            ExpectedVersion = order.Version,
+            input.Reference,
+            input.ReceivedAt,
+            Lines = input.Lines.Select(line => new { line.ProductId, line.Quantity }).ToArray()
+        };
+        var result = await PostAsync<ReceivePurchaseOrderResultSummary>(
+            path, body, operationId, cancellationToken);
+        ValidatePurchaseOrder(result.Order, branchId);
+        ValidateReceipt(result.Receipt, order.Id, branchId);
+        if (result.Order.Id != order.Id || result.Receipt.OrderId != order.Id)
+            throw new InvalidOperationException("Purchase receipt response identity is invalid.");
+
+        var expected = input.Lines.OrderBy(line => line.ProductId).ToArray();
+        var actual = result.Receipt.Lines.OrderBy(line => line.ProductId).ToArray();
+        if (expected.Length != actual.Length)
+            throw new InvalidOperationException("Purchase receipt response lines are invalid.");
+        for (var index = 0; index < expected.Length; index++)
+            if (expected[index].ProductId != actual[index].ProductId
+                || expected[index].Quantity != actual[index].Quantity)
+                throw new InvalidOperationException("Purchase receipt response lines are invalid.");
+        return result;
+    }
+
     public async Task<OperationalReportSummary> ReadOperationalReportAsync(Guid organizationId, Guid branchId,
         DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
     {
@@ -205,7 +253,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
     private static void ValidatePurchaseOrder(PurchaseOrderSummary item, Guid branchId)
     {
         if (item.Id == Guid.Empty || item.BranchId != branchId || item.SupplierId == Guid.Empty
-            || item.Status is not ("draft" or "submitted" or "approved" or "cancelled")
+            || item.Status is not ("draft" or "submitted" or "approved" or "partially_received" or "received" or "cancelled")
             || InvalidCurrency(item.Currency) || InvalidOptionalText(item.Reference, 120) || item.Total < 0
             || InvalidAmount(item.Total) || item.Version < 1 || item.CreatedAt.Offset != TimeSpan.Zero
             || item.UpdatedAt.Offset != TimeSpan.Zero || item.UpdatedAt < item.CreatedAt
@@ -219,6 +267,35 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
         }
         if (item.Total != item.Lines.Sum(line => line.LineTotal))
             throw new InvalidOperationException("Purchase order total is invalid.");
+    }
+
+    private static void ValidateReceivingState(PurchaseReceivingStateSummary item, Guid orderId)
+    {
+        if (item.OrderId != orderId || item.Status is not ("approved" or "partially_received" or "received")
+            || item.Version < 1 || item.Lines.Count is < 1 or > 500)
+            throw new InvalidOperationException("Purchase receiving response is invalid.");
+        foreach (var line in item.Lines)
+        {
+            if (line.ProductId == Guid.Empty || line.OrderedQuantity <= 0 || line.ReceivedQuantity < 0
+                || line.RemainingQuantity < 0 || InvalidAmount(line.OrderedQuantity)
+                || InvalidAmount(line.ReceivedQuantity) || InvalidAmount(line.RemainingQuantity)
+                || line.ReceivedQuantity + line.RemainingQuantity != line.OrderedQuantity)
+                throw new InvalidOperationException("Purchase receiving line is invalid.");
+        }
+    }
+
+    private static void ValidateReceipt(PurchaseReceiptSummary item, Guid orderId, Guid branchId)
+    {
+        if (item.Id == Guid.Empty || item.OrderId != orderId || item.BranchId != branchId
+            || InvalidOptionalText(item.Reference, 120) || item.ReceivedAt == default
+            || item.CreatedAt == default || item.ReceivedAt.Offset != TimeSpan.Zero
+            || item.CreatedAt.Offset != TimeSpan.Zero || InvalidText(item.ReceivedBySubject, 256)
+            || item.Lines.Count is < 1 or > 500)
+            throw new InvalidOperationException("Purchase receipt response is invalid.");
+        foreach (var line in item.Lines)
+            if (line.ProductId == Guid.Empty || line.MovementId == Guid.Empty || line.Quantity <= 0
+                || InvalidAmount(line.Quantity))
+                throw new InvalidOperationException("Purchase receipt line response is invalid.");
     }
 
     private static void ValidateReport(OperationalReportSummary item, Guid organizationId, Guid branchId,
@@ -245,6 +322,19 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
                 || InvalidAmount(line.Quantity) || InvalidAmount(line.UnitCost))
                 throw new ArgumentException("Purchase order line is invalid.");
         }
+    }
+
+    private static void ValidateReceiveInput(ReceivePurchaseOrderInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        if (InvalidOptionalText(input.Reference, 120) || input.ReceivedAt == default
+            || input.ReceivedAt.Offset != TimeSpan.Zero || input.Lines is null
+            || input.Lines.Count is < 1 or > 500
+            || input.Lines.Select(line => line.ProductId).Distinct().Count() != input.Lines.Count)
+            throw new ArgumentException("Purchase receipt input is invalid.");
+        foreach (var line in input.Lines)
+            if (line.ProductId == Guid.Empty || line.Quantity <= 0 || InvalidAmount(line.Quantity))
+                throw new ArgumentException("Purchase receipt line input is invalid.");
     }
 
     private static void ValidateScope(Guid organizationId, Guid branchId)
