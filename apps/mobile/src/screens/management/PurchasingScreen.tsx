@@ -240,7 +240,7 @@ export function PurchasingScreen() {
       </Text>
       {receiptHistory.length === 0
         ? <Text style={managerStyles.muted}>No receipts have been recorded for this purchase order.</Text>
-        : [...receiptHistory].sort((a,b)=>b.receivedAt.localeCompare(a.receivedAt)).map(receipt =>
+        : [...receiptHistory].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(receipt =>
           <View key={receipt.id} style={managerStyles.field}>
             <Text style={managerStyles.strong}>{receipt.reference ?? `Receipt ${receipt.id.slice(0,8).toUpperCase()}`}</Text>
             <Text style={managerStyles.muted}>{new Date(receipt.receivedAt).toLocaleString()} · {receipt.lines.length} line(s)</Text>
