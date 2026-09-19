@@ -110,6 +110,7 @@ public sealed partial class ManagerPurchasingWindow : Window
     {
         if (receiptHistoryBusy) return;
         receiptHistoryBusy = true;
+        var completed = false;
         try
         {
             await Execute(async () =>
@@ -130,7 +131,10 @@ public sealed partial class ManagerPurchasingWindow : Window
                         receiptHistory.Add(new(receipt));
                 receiptHistoryCursor = page.NextCursor;
                 UpdateReceiptList();
+                completed = true;
             });
+            if (reset && !completed)
+                ReceiptStateText.Text = "Receipt history could not be loaded.";
         }
         finally
         {
