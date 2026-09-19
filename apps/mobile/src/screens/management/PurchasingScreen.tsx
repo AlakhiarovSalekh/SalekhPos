@@ -2,12 +2,12 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import { useApiClient } from "@/api/ApiContext";
-import type { PurchaseOrderSummary, SupplierSummary } from "@/api/managementContracts";
+import type { PurchaseOrderSummary, PurchaseReceivingStateSummary, SupplierSummary } from "@/api/managementContracts";
 import { managerStyles } from "@/components/managerStyles";
 import { AppButton, LoadingSurface, Screen, textStyles } from "@/components/primitives";
 import { EmptyState, ScreenHeader } from "@/components/operations";
 import { useLocalization } from "@/localization/LocalizationProvider";
-import { hasPermission } from "@/permissions/policy";
+import { hasPermission, permissions } from "@/permissions/policy";
 import { createManagerBusiness } from "@/services/managerBusiness";
 import { mapSafeError, safeErrorTranslationKey } from "@/services/safeError";
 import { useSession } from "@/state/SessionContext";
@@ -31,6 +31,10 @@ export function PurchasingScreen() {
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unitCost, setUnitCost] = useState("");
+  const [receivingOrder, setReceivingOrder] = useState<PurchaseOrderSummary | null>(null);
+  const [receivingState, setReceivingState] = useState<PurchaseReceivingStateSummary | null>(null);
+  const [receiptQuantities, setReceiptQuantities] = useState<Record<string, string>>({});
+  const [receiptReference, setReceiptReference] = useState("");
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!workspace.branch) { setOrders([]); return; }
@@ -72,6 +76,65 @@ export function PurchasingScreen() {
     finally { setSaving(false); }
   }
 
+  async function openReceiving(order: PurchaseOrderSummary) {
+    if (!workspace.branch || session === null
+      || !hasPermission(session.authorization, permissions.inventoryReceive)
+      || (order.status !== "approved" && order.status !== "partially_received")) return;
+    setSaving(true); setMessage("");
+    try {
+      const state = await manager.readPurchaseReceivingState(
+        workspace.organizationId,
+        workspace.branch.id,
+        order.id,
+      );
+      setReceivingState(state);
+      setReceivingOrder({ ...order, status: state.status, version: state.version });
+      setReceiptQuantities(Object.fromEntries(
+        state.lines.filter(line => line.remainingQuantity > 0)
+          .map(line => [line.productId, String(line.remainingQuantity)]),
+      ));
+      setReceiptReference("");
+    } catch (error) {
+      setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
+    } finally { setSaving(false); }
+  }
+
+  async function receiveGoods() {
+    if (!workspace.branch || !receivingOrder || !receivingState) return;
+    const lines = receivingState.lines.map(line => ({
+      productId: line.productId,
+      quantity: Number(receiptQuantities[line.productId] ?? "0"),
+    })).filter(line => Number.isFinite(line.quantity) && line.quantity > 0);
+    if (lines.length === 0) {
+      setMessage("Enter at least one positive receipt quantity.");
+      return;
+    }
+
+    setSaving(true); setMessage("");
+    try {
+      const result = await manager.receivePurchaseOrder(
+        workspace.organizationId,
+        workspace.branch.id,
+        receivingOrder,
+        {
+          reference: receiptReference.trim() || undefined,
+          receivedAt: new Date().toISOString(),
+          lines,
+        },
+      );
+      setOrders(current => current.map(item =>
+        item.id === result.order.id ? result.order : item));
+      setReceivingOrder(null);
+      setReceivingState(null);
+      setReceiptQuantities({});
+      setReceiptReference("");
+      setMessage("Goods receipt recorded and inventory updated.");
+      await load();
+    } catch (error) {
+      setMessage(t(safeErrorTranslationKey(mapSafeError(error))));
+    } finally { setSaving(false); }
+  }
+
   async function changeStatus(order: PurchaseOrderSummary, action: "submit" | "approve" | "cancel") {
     if (!workspace.branch) return;
     setSaving(true); setMessage("");
@@ -82,6 +145,7 @@ export function PurchasingScreen() {
     finally { setSaving(false); }
   }
   const canCreate = session !== null && hasPermission(session.authorization, "purchase_orders.create");
+  const canReceive = session !== null && hasPermission(session.authorization, permissions.inventoryReceive);
   return <Screen>
     <ScreenHeader title={t("management.purchasing")} onBack={() => router.back()} />
     <Text style={textStyles.body}>Create and review branch purchase orders with controlled lifecycle transitions.</Text>
@@ -111,8 +175,32 @@ export function PurchasingScreen() {
       <View style={managerStyles.row}>
         {order.status === "draft" && session && hasPermission(session.authorization,"purchase_orders.submit") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"submit")}>Submit</AppButton> : null}
         {order.status === "submitted" && session && hasPermission(session.authorization,"purchase_orders.approve") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"approve")}>Approve</AppButton> : null}
-        {order.status !== "approved" && order.status !== "cancelled" && session && hasPermission(session.authorization,"purchase_orders.cancel") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"cancel")}>Cancel</AppButton> : null}
+        {order.status !== "approved" && order.status !== "received" && order.status !== "partially_received" && order.status !== "cancelled" && session && hasPermission(session.authorization,"purchase_orders.cancel") ? <AppButton disabled={saving} onPress={() => void changeStatus(order,"cancel")}>Cancel</AppButton> : null}
+        {canReceive && (order.status === "approved" || order.status === "partially_received") ? <AppButton disabled={saving} onPress={() => void openReceiving(order)}>Receive goods</AppButton> : null}
       </View>
     </View>)}
+    {receivingOrder && receivingState ? <View style={managerStyles.card}>
+      <Text style={textStyles.heading}>Receive purchase order</Text>
+      <Text style={managerStyles.muted}>Record only goods physically received. Inventory updates in the same server transaction.</Text>
+      {receivingState.lines.map(line => <View key={line.productId} style={managerStyles.field}>
+        <Text style={managerStyles.label}>Product {line.productId.slice(0,8).toUpperCase()}</Text>
+        <Text style={managerStyles.muted}>Ordered {line.orderedQuantity} · received {line.receivedQuantity} · remaining {line.remainingQuantity}</Text>
+        <TextInput
+          value={receiptQuantities[line.productId] ?? ""}
+          onChangeText={value => setReceiptQuantities(current => ({ ...current, [line.productId]: value }))}
+          editable={!saving && line.remainingQuantity > 0}
+          keyboardType="decimal-pad"
+          placeholder="Receive now"
+          style={managerStyles.input}
+        />
+      </View>)}
+      <View style={managerStyles.field}><Text style={managerStyles.label}>Receipt reference</Text>
+        <TextInput value={receiptReference} onChangeText={setReceiptReference} maxLength={120} style={managerStyles.input} />
+      </View>
+      <View style={managerStyles.row}>
+        <AppButton disabled={saving} onPress={() => void receiveGoods()}>{saving ? "Receiving…" : "Record receipt"}</AppButton>
+        <AppButton disabled={saving} onPress={() => { setReceivingOrder(null); setReceivingState(null); }}>Cancel</AppButton>
+      </View>
+    </View> : null}
   </Screen>;
 }
