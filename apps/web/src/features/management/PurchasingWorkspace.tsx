@@ -178,8 +178,12 @@ export function PurchasingWorkspace() {
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch {
-      if (generation === scopeGeneration.current)
+      if (generation === scopeGeneration.current) {
+        setHistoryOrder(null);
+        setReceiptHistory([]);
+        setHistoryNextCursor(null);
         setError("Purchase receipt history could not be loaded.");
+      }
     } finally {
       if (generation === scopeGeneration.current) setHistoryBusy(false);
     }
