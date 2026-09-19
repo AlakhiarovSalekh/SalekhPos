@@ -39,9 +39,17 @@ export function PurchasingScreen() {
   const [receiptHistory, setReceiptHistory] = useState<readonly PurchaseReceiptSummary[]>([]);
   const [historyNextCursor, setHistoryNextCursor] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [loadedScopeKey, setLoadedScopeKey] = useState("");
+
+  const currentScopeKey = workspace.branch
+    ? `${workspace.organizationId}:${workspace.branch.id}`
+    : "";
+  const scopeReady = currentScopeKey !== "" && loadedScopeKey === currentScopeKey;
+  const scopedOrders = scopeReady ? orders : [];
+  const scopedSuppliers = scopeReady ? suppliers : [];
 
   const load = useCallback(async (signal?: AbortSignal) => {
-    if (!workspace.branch) { setOrders([]); return; }
+    if (!workspace.branch) { setOrders([]); setLoadedScopeKey(""); return; }
     setLoading(true); setMessage("");
     try {
       const [orderPage, supplierPage] = await Promise.all([
@@ -50,6 +58,7 @@ export function PurchasingScreen() {
       ]);
       setOrders(orderPage.items);
       setSuppliers(supplierPage.items.filter(item => item.isActive));
+      setLoadedScopeKey(`${workspace.organizationId}:${workspace.branch.id}`);
       setSupplierId(current => supplierPage.items.some(item => item.id === current)
         ? current : (supplierPage.items.find(item => item.isActive)?.id ?? ""));
     } catch (error) {
@@ -71,7 +80,7 @@ export function PurchasingScreen() {
   }, [load]);
 
   async function createOrder() {
-    if (!workspace.branch || session === null || !hasPermission(session.authorization, "purchase_orders.create")) return;
+    if (!scopeReady || !workspace.branch || session === null || !hasPermission(session.authorization, "purchase_orders.create")) return;
     setSaving(true); setMessage("");
     try {
       const order = await manager.createPurchaseOrder(workspace.organizationId, workspace.branch.id, {
@@ -88,7 +97,7 @@ export function PurchasingScreen() {
   }
 
   async function openReceiving(order: PurchaseOrderSummary) {
-    if (!workspace.branch || session === null
+    if (!scopeReady || !workspace.branch || session === null
       || !hasPermission(session.authorization, permissions.inventoryReceive)
       || (order.status !== "approved" && order.status !== "partially_received")) return;
     setSaving(true); setMessage("");
@@ -111,7 +120,7 @@ export function PurchasingScreen() {
   }
 
   async function receiveGoods() {
-    if (!workspace.branch || !receivingOrder || !receivingState) return;
+    if (!scopeReady || !workspace.branch || !receivingOrder || !receivingState) return;
     const lines = receivingState.lines.map(line => ({
       productId: line.productId,
       quantity: Number(receiptQuantities[line.productId] ?? "0"),
@@ -155,7 +164,7 @@ export function PurchasingScreen() {
   }
 
   async function openReceiptHistory(order: PurchaseOrderSummary) {
-    if (!workspace.branch) return;
+    if (!scopeReady || !workspace.branch) return;
     setHistoryLoading(true); setMessage("");
     setHistoryOrder(order);
     setReceiptHistory([]);
@@ -171,7 +180,7 @@ export function PurchasingScreen() {
   }
 
   async function loadMoreReceipts() {
-    if (!workspace.branch || !historyOrder || !historyNextCursor) return;
+    if (!scopeReady || !workspace.branch || !historyOrder || !historyNextCursor) return;
     setHistoryLoading(true); setMessage("");
     try {
       const previousCursor = historyNextCursor;
@@ -189,7 +198,7 @@ export function PurchasingScreen() {
   }
 
   async function changeStatus(order: PurchaseOrderSummary, action: "submit" | "approve" | "cancel") {
-    if (!workspace.branch) return;
+    if (!scopeReady || !workspace.branch) return;
     setSaving(true); setMessage("");
     try {
       const changed = await manager.changePurchaseOrderStatus(workspace.organizationId, workspace.branch.id, order, action);
@@ -197,8 +206,8 @@ export function PurchasingScreen() {
     } catch (error) { setMessage(t(safeErrorTranslationKey(mapSafeError(error)))); }
     finally { setSaving(false); }
   }
-  const canCreate = session !== null && hasPermission(session.authorization, "purchase_orders.create");
-  const canReceive = session !== null && hasPermission(session.authorization, permissions.inventoryReceive);
+  const canCreate = scopeReady && session !== null && hasPermission(session.authorization, "purchase_orders.create");
+  const canReceive = scopeReady && session !== null && hasPermission(session.authorization, permissions.inventoryReceive);
   return <Screen>
     <ScreenHeader title={t("management.purchasing")} onBack={() => router.back()} />
     <Text style={textStyles.body}>Create and review branch purchase orders with controlled lifecycle transitions.</Text>
@@ -207,7 +216,7 @@ export function PurchasingScreen() {
     {workspace.branch && canCreate ? <View style={managerStyles.card}>
       <Text style={textStyles.heading}>New purchase order</Text>
       <View style={managerStyles.field}><Text style={managerStyles.label}>Supplier UUID</Text><TextInput value={supplierId} onChangeText={setSupplierId} style={managerStyles.input} /></View>
-      <Text style={managerStyles.muted}>{suppliers.find(item => item.id === supplierId)?.name ?? "Choose an active supplier ID."}</Text>
+      <Text style={managerStyles.muted}>{scopedSuppliers.find(item => item.id === supplierId)?.name ?? "Choose an active supplier ID."}</Text>
       <View style={managerStyles.field}><Text style={managerStyles.label}>Product UUID</Text><TextInput value={productId} onChangeText={setProductId} style={managerStyles.input} /></View>
       <View style={managerStyles.row}>
         <View style={[managerStyles.field,{flex:1}]}><Text style={managerStyles.label}>Quantity</Text><TextInput value={quantity} onChangeText={setQuantity} keyboardType="decimal-pad" style={managerStyles.input} /></View>
@@ -220,8 +229,8 @@ export function PurchasingScreen() {
       <AppButton disabled={saving || !supplierId || !productId || !unitCost} onPress={() => void createOrder()}>{saving ? "Saving…" : "Create draft"}</AppButton>
     </View> : null}
     {workspace.branch && loading ? <LoadingSurface /> : null}
-    {workspace.branch && !loading && orders.length === 0 ? <EmptyState message="No purchase orders were returned." /> : null}
-    {orders.map(order => <View key={order.id} style={managerStyles.card}>
+    {workspace.branch && !loading && scopeReady && scopedOrders.length === 0 ? <EmptyState message="No purchase orders were returned." /> : null}
+    {scopedOrders.map(order => <View key={order.id} style={managerStyles.card}>
       <Text style={managerStyles.strong}>{order.reference ?? `Order ${order.id.slice(0,8).toUpperCase()}`}</Text>
       <Text style={managerStyles.mono}>{order.status.toUpperCase()} · {order.currency} {order.total.toFixed(2)} · v{order.version}</Text>
       <Text style={managerStyles.muted}>Supplier {order.supplierId.slice(0,8).toUpperCase()} · {order.lines.length} line(s)</Text>
@@ -233,7 +242,7 @@ export function PurchasingScreen() {
         <AppButton disabled={saving || historyLoading} onPress={() => void openReceiptHistory(order)}>Receipts</AppButton>
       </View>
     </View>)}
-    {historyOrder ? <View style={managerStyles.card}>
+    {scopeReady && historyOrder ? <View style={managerStyles.card}>
       <Text style={textStyles.heading}>Receipt history</Text>
       <Text style={managerStyles.muted}>
         {historyOrder.reference ?? `Order ${historyOrder.id.slice(0,8).toUpperCase()}`} · {receiptHistory.length} receipt(s) loaded
@@ -254,7 +263,7 @@ export function PurchasingScreen() {
         <AppButton disabled={historyLoading} onPress={() => { setHistoryOrder(null); setReceiptHistory([]); setHistoryNextCursor(null); }}>Close</AppButton>
       </View>
     </View> : null}
-    {receivingOrder && receivingState ? <View style={managerStyles.card}>
+    {scopeReady && receivingOrder && receivingState ? <View style={managerStyles.card}>
       <Text style={textStyles.heading}>Receive purchase order</Text>
       <Text style={managerStyles.muted}>Record only goods physically received. Inventory updates in the same server transaction.</Text>
       {receivingState.lines.map(line => <View key={line.productId} style={managerStyles.field}>
