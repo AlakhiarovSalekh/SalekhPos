@@ -59,7 +59,7 @@ export function InventoryMovementScreen({ mode }: Readonly<{ mode: "receipt" | "
   return <Screen>
     <ScreenHeader title={mode === "receipt" ? t("movement.receiptTitle") : t("movement.adjustmentTitle")} onBack={() => router.back()} />
     {!permitted ? <EmptyState message="You do not have permission for this inventory operation." /> :
-    {workspace.branch === null ? <><EmptyState message={t("workspace.branchRequired")} /><AppButton onPress={() => router.replace("/stores")}>{t("workspace.chooseBranch")}</AppButton></> : <>
+    workspace.branch === null ? <><EmptyState message={t("workspace.branchRequired")} /><AppButton onPress={() => router.replace("/stores")}>{t("workspace.chooseBranch")}</AppButton></> : <>
       <Text style={operationStyles.muted}>{t("workspace.branch", { name: workspace.branch.name })}</Text>
       {mode === "adjustment" ? <View style={operationStyles.row}>
         <AppButton disabled={direction === "adjustment_in"} onPress={() => { setDirection("adjustment_in"); pending.current = null; }}>{t("movement.increase")}</AppButton>
