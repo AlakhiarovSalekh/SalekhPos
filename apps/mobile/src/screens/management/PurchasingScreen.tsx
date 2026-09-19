@@ -58,6 +58,13 @@ export function PurchasingScreen() {
     } finally { setLoading(false); }
   }, [manager, t, workspace.branch, workspace.organizationId]);
   useEffect(() => {
+    setReceivingOrder(null);
+    setReceivingState(null);
+    setReceiptQuantities({});
+    setReceiptReference("");
+    setHistoryOrder(null);
+    setReceiptHistory([]);
+    setHistoryNextCursor(null);
     const controller = new AbortController();
     void load(controller.signal);
     return () => controller.abort();
