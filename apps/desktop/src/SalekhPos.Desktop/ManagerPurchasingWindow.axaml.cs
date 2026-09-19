@@ -217,12 +217,21 @@ public sealed partial class ManagerPurchasingWindow : Window
             MessageText.Text = $"Receipt {result.Receipt.Id:D} recorded. Order is {result.Order.Status}.";
             ReferenceBox.Clear();
             QuantityBox.Clear();
+            ReplaceOrderInList(result.Order);
             receivingOrder = null;
             receivingState = null;
             ReceivingList.ItemsSource = Array.Empty<ReceivingDisplay>();
             StateText.Text = "";
-            await Refresh();
         }, clearMessage: false);
+    }
+
+    private void ReplaceOrderInList(PurchaseOrderSummary changed)
+    {
+        var current = OrderList.ItemsSource?.OfType<OrderDisplay>().ToArray()
+            ?? Array.Empty<OrderDisplay>();
+        OrderList.ItemsSource = current
+            .Select(item => item.Value.Id == changed.Id ? new OrderDisplay(changed) : item)
+            .ToArray();
     }
 
     private async Task Refresh() => await Execute(async () =>
