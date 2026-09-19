@@ -80,6 +80,8 @@ export function PurchasingScreen() {
   }, [manager, t, workspace.branch, workspace.organizationId]);
   useEffect(() => {
     scopeGeneration.current += 1;
+    setSaving(false);
+    setHistoryLoading(false);
     setReceivingOrder(null);
     setReceivingState(null);
     setReceiptQuantities({});
