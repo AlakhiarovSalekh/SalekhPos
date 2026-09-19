@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createMovement, SafeApiError } from "./api";
 import { isUncertainFailure, resolveMovementIntent, type MovementIntent } from "./idempotency";
 import type { InventoryBranch, MovementKind, StockItem } from "./types";
@@ -18,19 +18,17 @@ export function MovementForm({ organizationId, branch, products, csrfToken, onCr
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: "error" | "success" | "uncertain"; text: string }>();
   const update = <K extends keyof MovementDraft>(key: K, value: MovementDraft[K]) => setDraft(current => ({ ...current, [key]: value }));
-  useEffect(() => {
-    if (draft.kind === "receipt" && !branch.canReceive && branch.canAdjust)
-      setDraft(current => ({ ...current, kind: "adjustment_in" }));
-    else if (draft.kind !== "receipt" && !branch.canAdjust && branch.canReceive)
-      setDraft(current => ({ ...current, kind: "receipt" }));
-  }, [branch.canAdjust, branch.canReceive, draft.kind]);
+  const allowedKinds = (["receipt", "adjustment_in", "adjustment_out"] as MovementKind[])
+    .filter(kind => kind === "receipt" ? branch.canReceive : branch.canAdjust);
+  const effectiveKind = allowedKinds.includes(draft.kind) ? draft.kind : (allowedKinds[0] ?? draft.kind);
+  const effectiveDraft = effectiveKind === draft.kind ? draft : { ...draft, kind: effectiveKind };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if ((draft.kind === "receipt" && !branch.canReceive) || (draft.kind !== "receipt" && !branch.canAdjust)) {
+    if (!allowedKinds.includes(effectiveKind)) {
       setMessage({ kind: "error", text: "You do not have permission for this inventory movement." });
       return;
     }
-    const validated = validateMovement(draft); setErrors(validated.errors); if (!validated.value) return;
+    const validated = validateMovement(effectiveDraft); setErrors(validated.errors); if (!validated.value) return;
     const nextIntent = resolveMovementIntent(validated.value, intent); setIntent(nextIntent); setSubmitting(true); setMessage(undefined);
     try {
       await createMovement(organizationId, branch.branchId, validated.value, nextIntent.key, csrfToken);
@@ -43,10 +41,10 @@ export function MovementForm({ organizationId, branch, products, csrfToken, onCr
   };
   if (!branch.canReceive && !branch.canAdjust) return <div className="state-card"><strong>View-only access</strong><p>You can review stock for this branch, but receiving and adjustment permissions are not assigned to your account.</p></div>;
   return <form className="movement-form" onSubmit={submit} noValidate>
-    <div className="section-heading"><div><p className="eyebrow">NEW MOVEMENT</p><h2>Update stock</h2></div><span className="permission-chip">{draft.kind === "receipt" ? "inventory.receive" : "inventory.adjust"}</span></div>
+    <div className="section-heading"><div><p className="eyebrow">NEW MOVEMENT</p><h2>Update stock</h2></div><span className="permission-chip">{effectiveKind === "receipt" ? "inventory.receive" : "inventory.adjust"}</span></div>
     <fieldset disabled={submitting}>
       <legend className="sr-only">Movement type</legend>
-      <div className="segmented" aria-label="Movement type">{(["receipt", "adjustment_in", "adjustment_out"] as MovementKind[]).filter(kind => kind === "receipt" ? branch.canReceive : branch.canAdjust).map(kind => <button key={kind} type="button" aria-pressed={draft.kind === kind} onClick={() => update("kind", kind)}>{kind === "receipt" ? "Receipt" : kind === "adjustment_in" ? "Adjust in" : "Adjust out"}</button>)}</div>
+      <div className="segmented" aria-label="Movement type">{allowedKinds.map(kind => <button key={kind} type="button" aria-pressed={effectiveKind === kind} onClick={() => update("kind", kind)}>{kind === "receipt" ? "Receipt" : kind === "adjustment_in" ? "Adjust in" : "Adjust out"}</button>)}</div>
       <label>Product<select value={draft.productId} onChange={e => update("productId", e.target.value)} aria-invalid={Boolean(errors.productId)}><option value="">Select a loaded product</option>{products.map(item => <option key={item.productId} value={item.productId}>{item.sku} — {item.name}</option>)}</select>{errors.productId && <span className="field-error">{errors.productId}</span>}</label>
       <div className="form-grid"><label>Quantity<input inputMode="decimal" value={draft.quantity} onChange={e => update("quantity", e.target.value)} placeholder="0.000000" aria-invalid={Boolean(errors.quantity)} />{errors.quantity && <span className="field-error">{errors.quantity}</span>}</label><label>Occurred at<input type="datetime-local" step="1" value={draft.occurredAt} onChange={e => update("occurredAt", e.target.value)} aria-invalid={Boolean(errors.occurredAt)} />{errors.occurredAt && <span className="field-error">{errors.occurredAt}</span>}</label></div>
       <label>Reason <span className="label-note">optional, 200 characters</span><textarea value={draft.reason} maxLength={200} onChange={e => update("reason", e.target.value)} aria-invalid={Boolean(errors.reason)} />{errors.reason && <span className="field-error">{errors.reason}</span>}</label>
