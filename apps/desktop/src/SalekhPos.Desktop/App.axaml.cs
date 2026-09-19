@@ -77,7 +77,7 @@ public sealed partial class App : Avalonia.Application
     private void CompleteReadiness(IClassicDesktopStyleApplicationLifetime desktop,
         DesktopAuthenticatedRuntime runtime)
     {
-        var cashier = new MainWindow(runtime.Workspace, runtime.CommerceExtensions, runtime.AuditViewer, runtime.GlobalConfiguration, runtime.AnalyticsViewer, runtime.AccountingViewer, runtime.SupportManager, runtime.FeatureManager, runtime.FiscalizationManager, runtime.IntegrationManager, runtime.BillingManager, runtime.SubscriptionManager, () => SignOut(desktop));
+        var cashier = new MainWindow(runtime.Workspace, runtime.CommerceExtensions, runtime.AuditViewer, runtime.GlobalConfiguration, runtime.AnalyticsViewer, runtime.AccountingViewer, runtime.SupportManager, runtime.FeatureManager, runtime.FiscalizationManager, runtime.IntegrationManager, runtime.NotificationDeliveryManager, runtime.BillingManager, runtime.SubscriptionManager, () => SignOut(desktop));
         authenticatedFlow = runtime;
         var previous = desktop.MainWindow;
         desktop.MainWindow = cashier;
