@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { OperationsScopeSelector } from "@/features/operations/OperationsScopeSelector";
 import { useOperationsScope } from "@/features/operations/useOperationsScope";
 import { listProducts, type Product } from "@/features/products/api";
-import { changePurchaseStatus, createPurchaseOrder, getPurchaseOrders, getPurchaseReceivingState, getSuppliers, receivePurchaseOrder } from "./api";
-import type { PurchaseOrder, PurchaseReceivingState, Supplier } from "./types";
+import { changePurchaseStatus, createPurchaseOrder, getPurchaseOrders, getPurchaseReceipts, getPurchaseReceivingState, getSuppliers, receivePurchaseOrder } from "./api";
+import type { PurchaseOrder, PurchaseReceipt, PurchaseReceivingState, Supplier } from "./types";
 
 type PurchasingData = { orders: PurchaseOrder[]; suppliers: Supplier[]; products: Product[] };
 
@@ -42,6 +42,10 @@ export function PurchasingWorkspace() {
   const [receiptQuantities, setReceiptQuantities] = useState<Record<string, string>>({});
   const [receiptReference, setReceiptReference] = useState("");
   const [receivingBusy, setReceivingBusy] = useState(false);
+  const [historyOrder, setHistoryOrder] = useState<PurchaseOrder | null>(null);
+  const [receiptHistory, setReceiptHistory] = useState<PurchaseReceipt[]>([]);
+  const [historyNextCursor, setHistoryNextCursor] = useState<string | null>(null);
+  const [historyBusy, setHistoryBusy] = useState(false);
 
   useEffect(() => {
     if (!scope.organizationId || !scope.branchId) return;
@@ -114,6 +118,32 @@ export function PurchasingWorkspace() {
     } finally { setReceivingBusy(false); }
   }
 
+  async function openReceiptHistory(order: PurchaseOrder) {
+    if (!scope.organizationId || !scope.branchId) return;
+    setHistoryBusy(true); setError(null);
+    try {
+      const page = await getPurchaseReceipts(scope.organizationId, scope.branchId, order.id, 100);
+      setHistoryOrder(order);
+      setReceiptHistory(page.items);
+      setHistoryNextCursor(page.nextCursor);
+    } catch {
+      setError("Purchase receipt history could not be loaded.");
+    } finally { setHistoryBusy(false); }
+  }
+
+  async function loadMoreReceipts() {
+    if (!scope.organizationId || !scope.branchId || !historyOrder || !historyNextCursor) return;
+    setHistoryBusy(true); setError(null);
+    try {
+      const page = await getPurchaseReceipts(
+        scope.organizationId, scope.branchId, historyOrder.id, 100, historyNextCursor);
+      setReceiptHistory(current => [...current, ...page.items]);
+      setHistoryNextCursor(page.nextCursor);
+    } catch {
+      setError("More purchase receipts could not be loaded.");
+    } finally { setHistoryBusy(false); }
+  }
+
   async function transition(order: PurchaseOrder, action: "submit" | "approve" | "cancel") {
     if (!scope.organizationId || !scope.branchId) return;
     setBusy(true); setError(null);
@@ -149,8 +179,29 @@ export function PurchasingWorkspace() {
               ? <button disabled={busy} onClick={() => void transition(order, "cancel")}>Cancel</button> : null}
             {order.status === "approved" || order.status === "partially_received"
               ? <button disabled={busy || receivingBusy} onClick={() => void openReceiving(order)}>Receive goods</button> : null}
+            <button disabled={busy || historyBusy} onClick={() => void openReceiptHistory(order)}>Receipts</button>
           </div></article>)}</div></div>
     </div>
+    {historyOrder ? <div className="panel">
+      <div className="manager-title"><div><span className="eyebrow">GOODS RECEIPTS</span>
+        <h2>Receipt history</h2>
+        <p>{historyOrder.reference || historyOrder.id.slice(0, 8).toUpperCase()} · {receiptHistory.length} receipt(s) loaded</p></div>
+        <div className="inline-actions">
+          {historyNextCursor ? <button disabled={historyBusy} onClick={() => void loadMoreReceipts()}>{historyBusy ? "Loading…" : "Load more"}</button> : null}
+          <button disabled={historyBusy} onClick={() => { setHistoryOrder(null); setReceiptHistory([]); setHistoryNextCursor(null); }}>Close</button>
+        </div>
+      </div>
+      {receiptHistory.length === 0 ? <p>No receipts have been recorded for this purchase order.</p> :
+        <div className="data-list">{[...receiptHistory].sort((a,b)=>b.receivedAt.localeCompare(a.receivedAt)).map(receipt =>
+          <article key={receipt.id}>
+            <strong>{receipt.reference || receipt.id.slice(0, 8).toUpperCase()}</strong>
+            <span>{new Date(receipt.receivedAt).toLocaleString()} · {receipt.lines.length} line(s) · received by {receipt.receivedBySubject}</span>
+            {receipt.lines.map(line => {
+              const product = products.find(item => item.id === line.productId);
+              return <span key={line.movementId}>{product ? `${product.sku} · ${product.name}` : line.productId} · {line.quantity}</span>;
+            })}
+          </article>)}</div>}
+    </div> : null}
     {receivingOrder && receivingState ? <div className="panel">
       <div className="manager-title"><div><span className="eyebrow">GOODS RECEIVING</span>
         <h2>Receive purchase order</h2>
