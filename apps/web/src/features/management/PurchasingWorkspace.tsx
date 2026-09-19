@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { OperationsScopeSelector } from "@/features/operations/OperationsScopeSelector";
 import { useOperationsScope } from "@/features/operations/useOperationsScope";
 import { listProducts, type Product } from "@/features/products/api";
@@ -47,6 +47,7 @@ export function PurchasingWorkspace() {
   const [historyNextCursor, setHistoryNextCursor] = useState<string | null>(null);
   const [historyBusy, setHistoryBusy] = useState(false);
   const [loadedScopeKey, setLoadedScopeKey] = useState("");
+  const scopeGeneration = useRef(0);
 
   const currentScopeKey = scope.organizationId && scope.branchId
     ? `${scope.organizationId}:${scope.branchId}`
@@ -57,6 +58,7 @@ export function PurchasingWorkspace() {
   const scopedProducts = scopeReady ? products : [];
 
   useEffect(() => {
+    scopeGeneration.current += 1;
     if (!scope.organizationId || !scope.branchId) return;
     const controller = new AbortController();
     loadPurchasingData(scope.organizationId, scope.branchId, controller.signal).then(data => {
@@ -77,7 +79,9 @@ export function PurchasingWorkspace() {
   }, [scope.branchId, scope.organizationId]);
   async function refresh() {
     if (!scope.organizationId || !scope.branchId) return;
+    const generation = scopeGeneration.current;
     const data = await loadPurchasingData(scope.organizationId, scope.branchId, new AbortController().signal);
+    if (generation !== scopeGeneration.current) return;
     setOrders(data.orders); setSuppliers(data.suppliers); setProducts(data.products);
     setLoadedScopeKey(currentScopeKey);
   }
@@ -85,24 +89,31 @@ export function PurchasingWorkspace() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!scopeReady || !supplierId || !productId || !scope.organizationId || !scope.branchId) return;
+    const generation = scopeGeneration.current;
     setBusy(true); setError(null);
     try {
       await createPurchaseOrder(scope.organizationId, scope.branchId, {
         supplierId, currency: currency.trim().toUpperCase(), reference: reference.trim() || undefined,
         lines: [{ productId, quantity: Number(quantity), unitCost: Number(unitCost) }],
       });
+      if (generation !== scopeGeneration.current) return;
       setReference("");
       await refresh();
-    } catch { setError("Purchase order could not be created."); }
-    finally { setBusy(false); }
+    } catch {
+      if (generation === scopeGeneration.current) setError("Purchase order could not be created.");
+    } finally {
+      if (generation === scopeGeneration.current) setBusy(false);
+    }
   }
 
   async function openReceiving(order: PurchaseOrder) {
     if (!scopeReady || !scope.organizationId || !scope.branchId
         || (order.status !== "approved" && order.status !== "partially_received")) return;
+    const generation = scopeGeneration.current;
     setReceivingBusy(true); setError(null);
     try {
       const state = await getPurchaseReceivingState(scope.organizationId, scope.branchId, order.id);
+      if (generation !== scopeGeneration.current) return;
       setReceivingState(state);
       setReceivingOrder({ ...order, status: state.status, version: state.version });
       setReceiptQuantities(Object.fromEntries(state.lines
@@ -110,8 +121,11 @@ export function PurchasingWorkspace() {
         .map(line => [line.productId, String(line.remainingQuantity)])));
       setReceiptReference("");
     } catch {
-      setError("Purchase receiving state could not be loaded.");
-    } finally { setReceivingBusy(false); }
+      if (generation === scopeGeneration.current)
+        setError("Purchase receiving state could not be loaded.");
+    } finally {
+      if (generation === scopeGeneration.current) setReceivingBusy(false);
+    }
   }
 
   async function submitReceipt() {
@@ -145,26 +159,33 @@ export function PurchasingWorkspace() {
 
   async function openReceiptHistory(order: PurchaseOrder) {
     if (!scopeReady || !scope.organizationId || !scope.branchId) return;
+    const generation = scopeGeneration.current;
     setHistoryBusy(true); setError(null);
     setHistoryOrder(order);
     setReceiptHistory([]);
     setHistoryNextCursor(null);
     try {
       const page = await getPurchaseReceipts(scope.organizationId, scope.branchId, order.id, 25);
+      if (generation !== scopeGeneration.current) return;
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch {
-      setError("Purchase receipt history could not be loaded.");
-    } finally { setHistoryBusy(false); }
+      if (generation === scopeGeneration.current)
+        setError("Purchase receipt history could not be loaded.");
+    } finally {
+      if (generation === scopeGeneration.current) setHistoryBusy(false);
+    }
   }
 
   async function loadMoreReceipts() {
     if (!scopeReady || !scope.organizationId || !scope.branchId || !historyOrder || !historyNextCursor) return;
+    const generation = scopeGeneration.current;
     setHistoryBusy(true); setError(null);
     try {
       const previousCursor = historyNextCursor;
       const page = await getPurchaseReceipts(
         scope.organizationId, scope.branchId, historyOrder.id, 25, previousCursor);
+      if (generation !== scopeGeneration.current) return;
       if (page.nextCursor === previousCursor) throw new Error("Repeated receipt cursor");
       setReceiptHistory(current => {
         const seen = new Set(current.map(item => item.id));
@@ -172,16 +193,27 @@ export function PurchasingWorkspace() {
       });
       setHistoryNextCursor(page.nextCursor);
     } catch {
-      setError("More purchase receipts could not be loaded.");
-    } finally { setHistoryBusy(false); }
+      if (generation === scopeGeneration.current)
+        setError("More purchase receipts could not be loaded.");
+    } finally {
+      if (generation === scopeGeneration.current) setHistoryBusy(false);
+    }
   }
 
   async function transition(order: PurchaseOrder, action: "submit" | "approve" | "cancel") {
     if (!scopeReady || !scope.organizationId || !scope.branchId) return;
+    const generation = scopeGeneration.current;
     setBusy(true); setError(null);
-    try { await changePurchaseStatus(scope.organizationId, scope.branchId, order, action); await refresh(); }
-    catch { setError(`Purchase order could not be ${action}ed.`); }
-    finally { setBusy(false); }
+    try {
+      await changePurchaseStatus(scope.organizationId, scope.branchId, order, action);
+      if (generation !== scopeGeneration.current) return;
+      await refresh();
+    } catch {
+      if (generation === scopeGeneration.current)
+        setError(`Purchase order could not be ${action}ed.`);
+    } finally {
+      if (generation === scopeGeneration.current) setBusy(false);
+    }
   }
   return <section className="manager-content">
     <div className="manager-title"><div><span className="eyebrow">PURCHASING</span><h1>Purchase orders</h1>
