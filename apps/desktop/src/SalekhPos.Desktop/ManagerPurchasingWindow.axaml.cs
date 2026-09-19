@@ -84,6 +84,7 @@ public sealed partial class ManagerPurchasingWindow : Window
         receiptHistoryCursor = null;
         receiptHistory.Clear();
         ReceiptList.ItemsSource = Array.Empty<ReceiptDisplay>();
+        ReceiptDetailText.Text = "";
         ReceiptStateText.Text = "Loading receipt history…";
         await LoadReceiptPage(reset: true);
     }
@@ -151,6 +152,23 @@ public sealed partial class ManagerPurchasingWindow : Window
             ? "No receipts have been recorded for this purchase order."
             : $"{receiptHistory.Count} receipt(s) loaded" +
               (receiptHistoryCursor.HasValue ? " · more available" : "");
+    }
+
+    private void ReceiptSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        if (ReceiptList.SelectedItem is not ReceiptDisplay selected)
+        {
+            ReceiptDetailText.Text = "";
+            return;
+        }
+
+        var lines = string.Join(Environment.NewLine, selected.Value.Lines.Select(line =>
+            $"{line.ProductId:D} · {line.Quantity.ToString("0.######", CultureInfo.InvariantCulture)}"));
+        ReceiptDetailText.Text =
+            $"Received {selected.Value.ReceivedAt.LocalDateTime:g} by {selected.Value.ReceivedBySubject}" +
+            (string.IsNullOrEmpty(lines) ? "" : Environment.NewLine + lines);
     }
 
     private void ReceivingSelectionChanged(
