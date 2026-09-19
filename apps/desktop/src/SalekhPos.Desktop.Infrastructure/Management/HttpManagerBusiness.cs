@@ -133,7 +133,7 @@ public sealed class HttpManagerBusiness(HttpClient client) : IManagerBusiness
         CancellationToken cancellationToken)
     {
         ValidateScope(organizationId, branchId); ValidatePage(pageSize);
-        if (orderId == Guid.Empty || after == Guid.Empty)
+        if (orderId == Guid.Empty || after == Guid.Empty || pageSize > 25)
             throw new ArgumentException("Purchase receipt history query is invalid.");
         var path = $"api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{orderId:D}/receipts?pageSize={pageSize}";
         if (after.HasValue) path += $"&after={after.Value:D}";
