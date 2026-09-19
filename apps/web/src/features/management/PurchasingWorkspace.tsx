@@ -144,7 +144,7 @@ export function PurchasingWorkspace() {
   }
 
   async function openReceiptHistory(order: PurchaseOrder) {
-    if (!scope.organizationId || !scope.branchId) return;
+    if (!scopeReady || !scope.organizationId || !scope.branchId) return;
     setHistoryBusy(true); setError(null);
     setHistoryOrder(order);
     setReceiptHistory([]);
@@ -159,7 +159,7 @@ export function PurchasingWorkspace() {
   }
 
   async function loadMoreReceipts() {
-    if (!scope.organizationId || !scope.branchId || !historyOrder || !historyNextCursor) return;
+    if (!scopeReady || !scope.organizationId || !scope.branchId || !historyOrder || !historyNextCursor) return;
     setHistoryBusy(true); setError(null);
     try {
       const previousCursor = historyNextCursor;
@@ -214,7 +214,7 @@ export function PurchasingWorkspace() {
             <button disabled={busy || historyBusy} onClick={() => void openReceiptHistory(order)}>Receipts</button>
           </div></article>)}</div></div>
     </div>
-    {historyOrder ? <div className="panel">
+    {scopeReady && historyOrder ? <div className="panel">
       <div className="manager-title"><div><span className="eyebrow">GOODS RECEIPTS</span>
         <h2>Receipt history</h2>
         <p>{historyOrder.reference || historyOrder.id.slice(0, 8).toUpperCase()} · {receiptHistory.length} receipt(s) loaded</p></div>
@@ -234,7 +234,7 @@ export function PurchasingWorkspace() {
             })}
           </article>)}</div>}
     </div> : null}
-    {receivingOrder && receivingState ? <div className="panel">
+    {scopeReady && receivingOrder && receivingState ? <div className="panel">
       <div className="manager-title"><div><span className="eyebrow">GOODS RECEIVING</span>
         <h2>Receive purchase order</h2>
         <p>Record only quantities physically received. Inventory is updated atomically with this receipt.</p></div>
