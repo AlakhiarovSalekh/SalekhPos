@@ -1,7 +1,7 @@
 import { getCsrfToken, requestJson } from "@/features/sales/api";
 import { uuid } from "@/lib/boundedJson";
-import { parseNotification, parseNotificationDeliveryPage, parseNotificationPage, parseNotificationPreferences } from "./parsers";
-import type { NotificationDeliveryPage, NotificationDeliveryStatus, NotificationItem, NotificationPage, NotificationPreferences } from "./types";
+import { parseNotification, parseNotificationDelivery, parseNotificationDeliveryPage, parseNotificationPage, parseNotificationPreferences } from "./parsers";
+import type { NotificationDeliveryActivity, NotificationDeliveryPage, NotificationDeliveryStatus, NotificationItem, NotificationPage, NotificationPreferences } from "./types";
 
 const root = (organizationId: string) =>
   `/bff/api/v1/organizations/${uuid(organizationId, "organization")}`;
@@ -36,6 +36,24 @@ export function getNotificationDeliveries(
     `${root(organizationId)}/notification-deliveries?${query}`,
     parseNotificationDeliveryPage,
     signal ? { signal } : undefined
+  );
+}
+
+
+export function retryNotificationDelivery(
+  organizationId: string,
+  deliveryId: string,
+  reason: string
+): Promise<NotificationDeliveryActivity> {
+  const normalized = reason.trim();
+  if (!normalized || normalized.length > 500 || /[\u0000-\u001f\u007f]/u.test(normalized)) {
+    throw new TypeError("Retry reason is invalid.");
+  }
+  return mutation(
+    `${root(organizationId)}/notification-deliveries/${uuid(deliveryId, "delivery")}/retry`,
+    { reason: normalized },
+    parseNotificationDelivery,
+    true
   );
 }
 
