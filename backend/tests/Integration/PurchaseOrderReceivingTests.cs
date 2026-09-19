@@ -76,6 +76,10 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(productId, receiptLine.GetProperty("productId").GetGuid());
         Assert.Equal(4m, receiptLine.GetProperty("quantity").GetDecimal());
 
+        using var wrongOrderReceipt = await client.GetAsync(
+            $"{OrdersPath}/{Guid.NewGuid():D}/receipts/{firstReceiptId:D}");
+        Assert.Equal(HttpStatusCode.NotFound, wrongOrderReceipt.StatusCode);
+
         using var replay = await SendIdempotent(
             client,
             HttpMethod.Post,
@@ -86,6 +90,20 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         var replayResult = await Root(replay);
         Assert.Equal(firstReceiptId,
             replayResult.GetProperty("receipt").GetProperty("id").GetGuid());
+
+        using var payloadConflict = await SendIdempotent(
+            client,
+            HttpMethod.Post,
+            $"{OrdersPath}/{orderId:D}/receipts",
+            firstOperation,
+            new
+            {
+                expectedVersion = 3,
+                reference = "DOCK-A",
+                receivedAt = firstReceivedAt,
+                lines = new[] { new { productId, quantity = 5m } }
+            });
+        Assert.Equal(HttpStatusCode.Conflict, payloadConflict.StatusCode);
 
         using var receiving = await client.GetAsync($"{OrdersPath}/{orderId:D}/receiving");
         Assert.Equal(HttpStatusCode.OK, receiving.StatusCode);
