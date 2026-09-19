@@ -135,6 +135,7 @@ export function PurchasingWorkspace() {
       quantity: Number(receiptQuantities[line.productId] ?? "0"),
     })).filter(line => Number.isFinite(line.quantity) && line.quantity > 0);
     if (!lines.length) { setError("Enter at least one positive receipt quantity."); return; }
+    const generation = scopeGeneration.current;
     setReceivingBusy(true); setError(null);
     try {
       const result = await receivePurchaseOrder(scope.organizationId, scope.branchId, receivingOrder, {
@@ -142,6 +143,7 @@ export function PurchasingWorkspace() {
         receivedAt: new Date().toISOString(),
         lines,
       });
+      if (generation !== scopeGeneration.current) return;
       setOrders(current => current.map(order => order.id === result.order.id ? result.order : order));
       if (historyOrder?.id === result.order.id) {
         setHistoryOrder(result.order);
@@ -153,8 +155,11 @@ export function PurchasingWorkspace() {
       setReceivingOrder(null); setReceivingState(null); setReceiptQuantities({}); setReceiptReference("");
       await refresh();
     } catch {
-      setError("Purchase receipt could not be recorded. Check remaining quantities and order state.");
-    } finally { setReceivingBusy(false); }
+      if (generation === scopeGeneration.current)
+        setError("Purchase receipt could not be recorded. Check remaining quantities and order state.");
+    } finally {
+      if (generation === scopeGeneration.current) setReceivingBusy(false);
+    }
   }
 
   async function openReceiptHistory(order: PurchaseOrder) {
