@@ -150,10 +150,12 @@ export function PurchasingScreen() {
   async function openReceiptHistory(order: PurchaseOrderSummary) {
     if (!workspace.branch) return;
     setHistoryLoading(true); setMessage("");
+    setHistoryOrder(order);
+    setReceiptHistory([]);
+    setHistoryNextCursor(null);
     try {
       const page = await manager.listPurchaseReceipts(
         workspace.organizationId, workspace.branch.id, order.id, 100);
-      setHistoryOrder(order);
       setReceiptHistory(page.items);
       setHistoryNextCursor(page.nextCursor);
     } catch (error) {
