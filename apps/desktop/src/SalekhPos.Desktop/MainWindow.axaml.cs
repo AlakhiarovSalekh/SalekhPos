@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly IFiscalizationManager? fiscalization;
     private readonly IIntegrationManager? integrations;
     private readonly INotificationDeliveryManager? notificationDeliveries;
+    private readonly IManagerBusiness? managerBusiness;
     private readonly IBillingManager? billing;
     private readonly ISubscriptionManager? subscriptions;
     private int signOutStarted;
@@ -53,10 +54,21 @@ public sealed partial class MainWindow : Window
         ISupportManager? support, IFeatureManager? features, IFiscalizationManager? fiscalization,
         IIntegrationManager? integrations, INotificationDeliveryManager? notificationDeliveries,
         IBillingManager? billing, ISubscriptionManager? subscriptions, Action signOut)
+        : this(workspace, commerce, audit, globalConfiguration, analytics, accounting, support, features,
+            fiscalization, integrations, notificationDeliveries, null, billing, subscriptions, signOut)
+    {
+    }
+
+    public MainWindow(IPosWorkspace workspace, ICommerceExtensions? commerce, IAuditViewer? audit,
+        IGlobalConfiguration? globalConfiguration, IAnalyticsViewer? analytics, IAccountingViewer? accounting,
+        ISupportManager? support, IFeatureManager? features, IFiscalizationManager? fiscalization,
+        IIntegrationManager? integrations, INotificationDeliveryManager? notificationDeliveries,
+        IManagerBusiness? managerBusiness, IBillingManager? billing, ISubscriptionManager? subscriptions,
+        Action signOut)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(signOut);
-        this.signOut = signOut; this.commerce = commerce; this.audit = audit; this.globalConfiguration = globalConfiguration; this.analytics = analytics; this.accounting = accounting; this.support = support; this.features = features; this.fiscalization = fiscalization; this.integrations = integrations; this.notificationDeliveries = notificationDeliveries; this.billing = billing; this.subscriptions = subscriptions;
+        this.signOut = signOut; this.commerce = commerce; this.audit = audit; this.globalConfiguration = globalConfiguration; this.analytics = analytics; this.accounting = accounting; this.support = support; this.features = features; this.fiscalization = fiscalization; this.integrations = integrations; this.notificationDeliveries = notificationDeliveries; this.managerBusiness = managerBusiness; this.billing = billing; this.subscriptions = subscriptions;
         InitializeComponent(); DataContext = viewModel = new(workspace);
         Opened += (_, _) => viewModel.InitializeFromPreparedState();
     }
@@ -106,6 +118,13 @@ public sealed partial class MainWindow : Window
         new ManagerPlatformWindow(features, fiscalization, integrations, billing, subscriptions,
             scope.OrganizationId, scope.BranchId).Show(this);
     }
+    private void PurchasingClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (managerBusiness is null) return;
+        var scope = viewModel.CurrentScope;
+        new ManagerPurchasingWindow(managerBusiness, scope.OrganizationId, scope.BranchId).Show(this);
+    }
+
     private void NotificationsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (notificationDeliveries is null) return;
