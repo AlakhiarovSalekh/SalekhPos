@@ -211,6 +211,58 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
         return ToReceivingState(header, lines);
     }
 
+    public async Task<PurchaseReceiptResponse?> ReadReceiptAsync(
+        PurchasingIdentity identity,
+        Guid organizationId,
+        Guid branchId,
+        Guid orderId,
+        Guid receiptId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(identity);
+        if (organizationId == Guid.Empty || branchId == Guid.Empty || orderId == Guid.Empty
+            || receiptId == Guid.Empty)
+            throw new ArgumentException("Purchase receipt query is invalid.");
+
+        var dataSource = source ?? throw new PurchasingUnavailableException();
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await Prepare(connection, transaction, organizationId, identity, cancellationToken);
+        await Demand(connection, transaction, organizationId, branchId, identity,
+            "purchase_orders.view", cancellationToken);
+
+        await using var query = new NpgsqlCommand("""
+            SELECT receipt_id,order_id,branch_id,expected_order_version,reference,received_at,
+              created_at,received_by_issuer,received_by_subject
+            FROM purchasing.purchase_receipts
+            WHERE organization_id=$1 AND branch_id=$2 AND order_id=$3 AND receipt_id=$4
+            """, connection, transaction);
+        query.Parameters.AddWithValue(organizationId);
+        query.Parameters.AddWithValue(branchId);
+        query.Parameters.AddWithValue(orderId);
+        query.Parameters.AddWithValue(receiptId);
+
+        ReceiptHeader? header;
+        await using (var reader = await query.ExecuteReaderAsync(cancellationToken))
+            header = await reader.ReadAsync(cancellationToken)
+                ? new(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetInt64(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4),
+                    reader.GetFieldValue<DateTimeOffset>(5), reader.GetFieldValue<DateTimeOffset>(6),
+                    reader.GetString(7), reader.GetString(8))
+                : null;
+
+        if (header is null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return null;
+        }
+
+        var lines = await LoadReceiptLines(connection, transaction, organizationId, receiptId,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return ToReceiptResponse(header, lines);
+    }
+
     public async Task<PurchaseReceiptWriteResult> ReceiveAsync(
         PurchasingIdentity identity,
         ReceivePurchaseOrderCommand command,
