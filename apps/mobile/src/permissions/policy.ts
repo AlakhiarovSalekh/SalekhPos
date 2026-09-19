@@ -4,6 +4,7 @@ export const permissions = Object.freeze({
   branchesView: "branches.view",
   productsView: "products.view",
   inventoryView: "inventory.view",
+  inventoryReceive: "inventory.receive",
   inventoryAdjust: "inventory.adjust",
   pricingView: "pricing.view",
   pricingManage: "pricing.manage",
