@@ -25,7 +25,7 @@ describe("management purchase-receipt contracts", () => {
     const page = parsePurchaseReceiptPage({ items: [receipt], nextCursor: cursor });
     expect(page.items).toHaveLength(1);
     expect(page.items[0]?.id).toBe(receipt.id);
-    expect(page.items[0]?.lines[0]?.movementId).toBe(receipt.lines[0].movementId);
+    expect(page.items[0]?.lines[0]?.movementId).toBe("66666666-6666-4666-8666-666666666666");
     expect(page.nextCursor).toBe(cursor);
   });
 
