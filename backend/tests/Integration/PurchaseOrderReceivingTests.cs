@@ -63,6 +63,8 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         var firstResult = await Root(first);
         var firstReceiptId = firstResult.GetProperty("receipt").GetProperty("id").GetGuid();
+        var firstReceiptCreatedAt = firstResult.GetProperty("receipt").GetProperty("createdAt")
+            .GetDateTimeOffset();
         Assert.Equal("partially_received",
             firstResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(4L, firstResult.GetProperty("order").GetProperty("version").GetInt64());
@@ -143,6 +145,8 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(HttpStatusCode.Created, final.StatusCode);
         var finalResult = await Root(final);
         var finalReceiptId = finalResult.GetProperty("receipt").GetProperty("id").GetGuid();
+        var finalReceiptCreatedAt = finalResult.GetProperty("receipt").GetProperty("createdAt")
+            .GetDateTimeOffset();
         Assert.Equal("received",
             finalResult.GetProperty("order").GetProperty("status").GetString());
         Assert.Equal(5L, finalResult.GetProperty("order").GetProperty("version").GetInt64());
@@ -166,21 +170,31 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(JsonValueKind.Null,
             secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
 
-        Assert.Equal(finalReceiptId, firstPageItem.GetProperty("id").GetGuid());
+        var finalIsFirst = finalReceiptCreatedAt > firstReceiptCreatedAt
+            || (finalReceiptCreatedAt == firstReceiptCreatedAt
+                && finalReceiptId.CompareTo(firstReceiptId) > 0);
+        var expectedFirstId = finalIsFirst ? finalReceiptId : firstReceiptId;
+        var expectedSecondId = finalIsFirst ? firstReceiptId : finalReceiptId;
+
+        var firstPageId = firstPageItem.GetProperty("id").GetGuid();
+        Assert.Equal(expectedFirstId, firstPageId);
         Assert.Equal(orderId, firstPageItem.GetProperty("orderId").GetGuid());
         Assert.Equal(fixture.BranchA, firstPageItem.GetProperty("branchId").GetGuid());
-        var finalHistoryLine = Assert.Single(
+        var firstHistoryLine = Assert.Single(
             firstPageItem.GetProperty("lines").EnumerateArray());
-        Assert.Equal(productId, finalHistoryLine.GetProperty("productId").GetGuid());
-        Assert.Equal(6m, finalHistoryLine.GetProperty("quantity").GetDecimal());
+        Assert.Equal(productId, firstHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(firstPageId == finalReceiptId ? 6m : 4m,
+            firstHistoryLine.GetProperty("quantity").GetDecimal());
 
-        Assert.Equal(firstReceiptId, secondPageItem.GetProperty("id").GetGuid());
+        var secondPageId = secondPageItem.GetProperty("id").GetGuid();
+        Assert.Equal(expectedSecondId, secondPageId);
         Assert.Equal(orderId, secondPageItem.GetProperty("orderId").GetGuid());
         Assert.Equal(fixture.BranchA, secondPageItem.GetProperty("branchId").GetGuid());
-        var firstHistoryLine = Assert.Single(
+        var secondHistoryLine = Assert.Single(
             secondPageItem.GetProperty("lines").EnumerateArray());
-        Assert.Equal(productId, firstHistoryLine.GetProperty("productId").GetGuid());
-        Assert.Equal(4m, firstHistoryLine.GetProperty("quantity").GetDecimal());
+        Assert.Equal(productId, secondHistoryLine.GetProperty("productId").GetGuid());
+        Assert.Equal(secondPageId == finalReceiptId ? 6m : 4m,
+            secondHistoryLine.GetProperty("quantity").GetDecimal());
 
         using var invalidCursorHistory = await client.GetAsync(
             $"{OrdersPath}/{orderId:D}/receipts?pageSize=1&after={Guid.NewGuid():D}");
