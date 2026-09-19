@@ -48,6 +48,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
         FeatureManager = new HttpFeatureManager(authenticatedClient);
         FiscalizationManager = new HttpFiscalizationManager(authenticatedClient);
         IntegrationManager = new HttpIntegrationManager(authenticatedClient);
+        NotificationDeliveryManager = new HttpNotificationDeliveryManager(authenticatedClient);
         BillingManager = new HttpBillingManager(authenticatedClient);
         SubscriptionManager = new HttpSubscriptionManager(authenticatedClient);
         Subject = subject;
@@ -68,6 +69,7 @@ public sealed class DesktopAuthenticatedRuntime : IDesktopAuthenticatedFlow
     public IFeatureManager FeatureManager { get; }
     public IFiscalizationManager FiscalizationManager { get; }
     public IIntegrationManager IntegrationManager { get; }
+    public INotificationDeliveryManager NotificationDeliveryManager { get; }
     public IBillingManager BillingManager { get; }
     public ISubscriptionManager SubscriptionManager { get; }
     public string Subject { get; }
