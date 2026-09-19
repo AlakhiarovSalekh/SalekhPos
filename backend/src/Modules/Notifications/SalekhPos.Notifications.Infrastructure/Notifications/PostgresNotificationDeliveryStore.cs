@@ -407,8 +407,12 @@ public sealed class PostgresNotificationDeliveryStore(NpgsqlDataSource? source) 
 
     private static string RequiredReason(string value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Notification delivery retry reason is invalid.");
+        }
         value = value.Trim();
-        if (value.Length is < 1 or > 500 || value.Any(char.IsControl))
+        if (value.Length > 500 || value.Any(char.IsControl))
         {
             throw new ArgumentException("Notification delivery retry reason is invalid.");
         }
