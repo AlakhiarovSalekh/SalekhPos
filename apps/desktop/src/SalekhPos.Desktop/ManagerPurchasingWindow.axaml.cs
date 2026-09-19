@@ -14,6 +14,7 @@ public sealed partial class ManagerPurchasingWindow : Window
     private readonly List<ReceiptDisplay> receiptHistory = [];
     private Guid? receiptHistoryOrderId;
     private Guid? receiptHistoryCursor;
+    private bool receiptHistoryBusy;
 
     public ManagerPurchasingWindow() =>
         throw new InvalidOperationException("Purchasing runtime is required.");
@@ -100,22 +101,35 @@ public sealed partial class ManagerPurchasingWindow : Window
         await LoadReceiptPage(reset: false);
     }
 
-    private async Task LoadReceiptPage(bool reset) => await Execute(async () =>
+    private async Task LoadReceiptPage(bool reset)
     {
-        if (receiptHistoryOrderId is null) return;
-        var previousCursor = reset ? null : receiptHistoryCursor;
-        var page = await manager.ListPurchaseReceiptsAsync(
-            organizationId, branchId, receiptHistoryOrderId.Value, 25,
-            previousCursor, default);
-        if (!reset && page.NextCursor == previousCursor)
-            throw new InvalidOperationException("Purchase receipt pagination repeated its cursor.");
-        if (reset) receiptHistory.Clear();
-        foreach (var receipt in page.Items)
-            if (receiptHistory.All(item => item.Value.Id != receipt.Id))
-                receiptHistory.Add(new(receipt));
-        receiptHistoryCursor = page.NextCursor;
-        UpdateReceiptList();
-    });
+        if (receiptHistoryBusy) return;
+        receiptHistoryBusy = true;
+        try
+        {
+            await Execute(async () =>
+            {
+                if (receiptHistoryOrderId is null) return;
+                var previousCursor = reset ? null : receiptHistoryCursor;
+                var page = await manager.ListPurchaseReceiptsAsync(
+                    organizationId, branchId, receiptHistoryOrderId.Value, 25,
+                    previousCursor, default);
+                if (!reset && page.NextCursor == previousCursor)
+                    throw new InvalidOperationException(
+                        "Purchase receipt pagination repeated its cursor.");
+                if (reset) receiptHistory.Clear();
+                foreach (var receipt in page.Items)
+                    if (receiptHistory.All(item => item.Value.Id != receipt.Id))
+                        receiptHistory.Add(new(receipt));
+                receiptHistoryCursor = page.NextCursor;
+                UpdateReceiptList();
+            });
+        }
+        finally
+        {
+            receiptHistoryBusy = false;
+        }
+    }
 
     private void UpdateReceiptList()
     {
