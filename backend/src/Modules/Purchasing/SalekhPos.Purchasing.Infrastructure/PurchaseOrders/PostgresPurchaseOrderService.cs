@@ -543,17 +543,17 @@ public sealed class PostgresPurchaseOrderService(NpgsqlDataSource? source) : IPu
     private static PurchaseOrderReceivingStateResponse ToReceivingState(
         PurchaseOrderHeader header,
         IReadOnlyList<ReceivingLine> lines) =>
-        new(header.Id, header.Status, header.Version, lines.Select(line =>
+        new(header.Id, header.Status, header.Version, [.. lines.Select(line =>
             new PurchaseOrderReceivingLineResponse(line.ProductId, line.OrderedQuantity,
-                line.ReceivedQuantity, line.OrderedQuantity - line.ReceivedQuantity)).ToArray());
+                line.ReceivedQuantity, line.OrderedQuantity - line.ReceivedQuantity))]);
 
     private static PurchaseReceiptResponse ToReceiptResponse(
         ReceiptHeader header,
         IReadOnlyList<ReceiptLine> lines) =>
         new(header.Id, header.OrderId, header.BranchId, header.Reference, header.ReceivedAt,
             header.CreatedAt, header.ReceivedBySubject,
-            lines.Select(line => new PurchaseReceiptLineResponse(
-                line.ProductId, line.Quantity, line.MovementId)).ToArray());
+            [.. lines.Select(line => new PurchaseReceiptLineResponse(
+                line.ProductId, line.Quantity, line.MovementId))]);
 
     private static bool EquivalentReceipt(
         ReceiptHeader replay,
