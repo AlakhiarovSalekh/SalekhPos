@@ -167,12 +167,16 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             secondReceiptPageRoot.GetProperty("nextCursor").ValueKind);
 
         Assert.Equal(finalReceiptId, firstPageItem.GetProperty("id").GetGuid());
+        Assert.Equal(orderId, firstPageItem.GetProperty("orderId").GetGuid());
+        Assert.Equal(fixture.BranchA, firstPageItem.GetProperty("branchId").GetGuid());
         var finalHistoryLine = Assert.Single(
             firstPageItem.GetProperty("lines").EnumerateArray());
         Assert.Equal(productId, finalHistoryLine.GetProperty("productId").GetGuid());
         Assert.Equal(6m, finalHistoryLine.GetProperty("quantity").GetDecimal());
 
         Assert.Equal(firstReceiptId, secondPageItem.GetProperty("id").GetGuid());
+        Assert.Equal(orderId, secondPageItem.GetProperty("orderId").GetGuid());
+        Assert.Equal(fixture.BranchA, secondPageItem.GetProperty("branchId").GetGuid());
         var firstHistoryLine = Assert.Single(
             secondPageItem.GetProperty("lines").EnumerateArray());
         Assert.Equal(productId, firstHistoryLine.GetProperty("productId").GetGuid());
