@@ -28,7 +28,8 @@
         <Button Content="Record selected line receipt" Click="ReceiveClick"/>
         <TextBlock Text="Receipt history" FontSize="18" FontWeight="SemiBold"/>
         <TextBlock Name="ReceiptStateText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
-        <ListBox Name="ReceiptList" Height="180"/>
+        <ListBox Name="ReceiptList" Height="150" SelectionChanged="ReceiptSelectionChanged"/>
+        <TextBlock Name="ReceiptDetailText" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"/>
         <Button Content="Load more receipts" Click="LoadMoreReceiptsClick"/>
         <TextBlock Name="MessageText" Foreground="{DynamicResource AppDangerTextBrush}" TextWrapping="Wrap"/>
       </StackPanel>
