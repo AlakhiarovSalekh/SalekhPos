@@ -78,6 +78,17 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
         Assert.Equal(productId, receiptLine.GetProperty("productId").GetGuid());
         Assert.Equal(4m, receiptLine.GetProperty("quantity").GetDecimal());
 
+        using (var forbiddenClient = Client("none"))
+        {
+            using var forbiddenHistory = await forbiddenClient.GetAsync(
+                $"{OrdersPath}/{orderId:D}/receipts?pageSize=25");
+            Assert.Equal(HttpStatusCode.Forbidden, forbiddenHistory.StatusCode);
+
+            using var forbiddenReceipt = await forbiddenClient.GetAsync(
+                $"{OrdersPath}/{orderId:D}/receipts/{firstReceiptId:D}");
+            Assert.Equal(HttpStatusCode.Forbidden, forbiddenReceipt.StatusCode);
+        }
+
         using var wrongOrderReceipt = await client.GetAsync(
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts/{firstReceiptId:D}");
         Assert.Equal(HttpStatusCode.NotFound, wrongOrderReceipt.StatusCode);
@@ -228,11 +239,11 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             orderId));
     }
 
-    private HttpClient Client()
+    private HttpClient Client(string subject = "owner")
     {
         var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", fixture.Token("owner"));
+            new AuthenticationHeaderValue("Bearer", fixture.Token(subject));
         return client;
     }
 
