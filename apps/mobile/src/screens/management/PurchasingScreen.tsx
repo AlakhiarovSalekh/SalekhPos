@@ -112,12 +112,13 @@ export function PurchasingScreen() {
 
     setSaving(true); setMessage("");
     try {
+      const normalizedReceiptReference = receiptReference.trim();
       const result = await manager.receivePurchaseOrder(
         workspace.organizationId,
         workspace.branch.id,
         receivingOrder,
         {
-          reference: receiptReference.trim() || undefined,
+          ...(normalizedReceiptReference ? { reference: normalizedReceiptReference } : {}),
           receivedAt: new Date().toISOString(),
           lines,
         },
