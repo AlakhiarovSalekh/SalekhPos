@@ -170,7 +170,7 @@ public sealed class PurchaseOrderReceivingTests(AccessFixture fixture)
             firstPageItem.GetProperty("id").GetGuid(),
             secondPageItem.GetProperty("id").GetGuid()
         };
-        Assert.Equal(new HashSet<Guid> { firstReceiptId, finalReceiptId }, historyIds);
+        Assert.True(historyIds.SetEquals([firstReceiptId, finalReceiptId]));
 
         using var missingOrderHistory = await client.GetAsync(
             $"{OrdersPath}/{Guid.NewGuid():D}/receipts?pageSize=1");
