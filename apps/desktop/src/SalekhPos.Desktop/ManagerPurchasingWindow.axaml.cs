@@ -227,11 +227,12 @@ public sealed partial class ManagerPurchasingWindow : Window
 
     private void ReplaceOrderInList(PurchaseOrderSummary changed)
     {
-        var current = OrderList.ItemsSource?.OfType<OrderDisplay>().ToArray()
-            ?? Array.Empty<OrderDisplay>();
-        OrderList.ItemsSource = current
-            .Select(item => item.Value.Id == changed.Id ? new OrderDisplay(changed) : item)
-            .ToArray();
+        var current = OrderList.ItemsSource?.OfType<OrderDisplay>().ToList()
+            ?? [];
+        var index = current.FindIndex(item => item.Value.Id == changed.Id);
+        if (index >= 0) current[index] = new(changed);
+        else current.Insert(0, new(changed));
+        OrderList.ItemsSource = current.ToArray();
     }
 
     private async Task Refresh() => await Execute(async () =>
