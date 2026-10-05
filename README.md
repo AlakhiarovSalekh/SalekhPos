@@ -1,6 +1,11 @@
 # SalekhPos
 
-A retail operating platform being developed for real stores.
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License](https://img.shields.io/github/license/AlakhiarovSalekh/SalekhPos)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/AlakhiarovSalekh/SalekhPos?style=social)](https://github.com/AlakhiarovSalekh/SalekhPos/stargazers)
+
+**A security-focused retail operating platform being built for real stores, multiple branches, and multi-surface POS workflows.**
 
 **Current status:** a verified backend foundation, not a production-ready POS.
 Organization/business/region/branch models, PostgreSQL RLS, JWT-protected branch
@@ -9,6 +14,12 @@ with an immutable audit record are implemented. Protected original-root bootstra
 and root-only Super Admin registration/revocation are implemented; provider login
 and MFA enrollment, tenant onboarding, sales, inventory, offline operation and
 hardware integrations remain open.
+
+## Why SalekhPos
+
+SalekhPos is being designed around foundations that are difficult to retrofit later: tenant and branch isolation, financial correctness, immutable auditability, explicit permissions, database-level access controls, durable credential revocation, and reproducible verification.
+
+The repository is useful to developers interested in secure multi-tenant SaaS/POS architecture, PostgreSQL row-level security, .NET backend design, identity boundaries, and financial-domain correctness.
 
 ## Technical foundation
 
@@ -87,3 +98,21 @@ different ArtifactsPath values to avoid sharing build output.
 All project documentation, code comments and commit messages use English.
 User conversation may be Azerbaijani. Multilingual test fixtures remain intentional
 localization test data.
+
+
+## Contributing and security
+
+- [Contribution guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Architecture overview](ARCHITECTURE.md)
+
+If you find the architecture or implementation useful, starring the repository helps other developers discover it.
+
+## Author
+
+**Salekh Alakhiarov** · [GitHub](https://github.com/AlakhiarovSalekh)
+
+## License
+
+See [LICENSE](LICENSE).
