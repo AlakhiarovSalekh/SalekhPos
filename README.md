@@ -109,6 +109,8 @@ localization test data.
 
 If you find the architecture or implementation useful, starring the repository helps other developers discover it.
 
+> If this project is useful to you, consider starring the repository. It helps you find it again and helps other developers discover the project.
+
 ## More Projects by Salekh
 
 - [UPos Web](https://github.com/AlakhiarovSalekh/UPos-Web) — Astro/TypeScript commerce and marketing website.
