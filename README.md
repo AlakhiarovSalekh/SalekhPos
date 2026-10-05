@@ -109,6 +109,12 @@ localization test data.
 
 If you find the architecture or implementation useful, starring the repository helps other developers discover it.
 
+## More Projects by Salekh
+
+- [UPos Web](https://github.com/AlakhiarovSalekh/UPos-Web) — Astro/TypeScript commerce and marketing website.
+- [Inventory Management Desktop App](https://github.com/AlakhiarovSalekh/Inventory-App) — Python/PyQt inventory and business workflows.
+- [Hotel Booking Management System](https://github.com/AlakhiarovSalekh/Hotel-Managment-System) — PHP/MySQL booking management application.
+
 ## Author
 
 **Salekh Alakhiarov** · [GitHub](https://github.com/AlakhiarovSalekh)
