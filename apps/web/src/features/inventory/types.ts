@@ -1,5 +1,5 @@
 export type Session = { configured: boolean; authenticated: boolean; name: string | null; csrfToken: string | null };
-export type InventoryBranch = { branchId: string; code: string; name: string; timeZoneId: string; canView: boolean; canAdjust: boolean };
+export type InventoryBranch = { branchId: string; code: string; name: string; timeZoneId: string; canView: boolean; canReceive: boolean; canAdjust: boolean };
 export type InventoryAccess = { organizationId: string; branches: InventoryBranch[] };
 export type StockItem = { productId: string; sku: string; name: string; quantity: string };
 export type StockPage = { items: StockItem[]; nextCursor: string | null };
@@ -23,7 +23,7 @@ export function parseSession(value: unknown): Session {
 export function parseAccess(value: unknown): InventoryAccess {
   const v = object(value);
   if (!Array.isArray(v.branches)) throw new Error("Invalid server response");
-  return { organizationId: uuid(v.organizationId), branches: v.branches.map(entry => { const b = object(entry); return { branchId: uuid(b.branchId), code: string(b.code), name: string(b.name), timeZoneId: string(b.timeZoneId), canView: bool(b.canView), canAdjust: bool(b.canAdjust) }; }) };
+  return { organizationId: uuid(v.organizationId), branches: v.branches.map(entry => { const b = object(entry); return { branchId: uuid(b.branchId), code: string(b.code), name: string(b.name), timeZoneId: string(b.timeZoneId), canView: bool(b.canView), canReceive: bool(b.canReceive), canAdjust: bool(b.canAdjust) }; }) };
 }
 export function parseStockPage(value: unknown): StockPage {
   const v = object(value);

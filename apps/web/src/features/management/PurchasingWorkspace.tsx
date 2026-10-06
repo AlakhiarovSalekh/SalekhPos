@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { OperationsScopeSelector } from "@/features/operations/OperationsScopeSelector";
 import { useOperationsScope } from "@/features/operations/useOperationsScope";
 import { listProducts, type Product } from "@/features/products/api";
-import { changePurchaseStatus, createPurchaseOrder, getPurchaseOrders, getSuppliers } from "./api";
-import type { PurchaseOrder, Supplier } from "./types";
+import { changePurchaseStatus, createPurchaseOrder, getPurchaseOrders, getPurchaseReceivingState, getSuppliers, receivePurchaseOrder } from "./api";
+import type { PurchaseOrder, PurchaseReceivingState, Supplier } from "./types";
 
 type PurchasingData = { orders: PurchaseOrder[]; suppliers: Supplier[]; products: Product[] };
 
@@ -37,6 +37,11 @@ export function PurchasingWorkspace() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receivingOrder, setReceivingOrder] = useState<PurchaseOrder | null>(null);
+  const [receivingState, setReceivingState] = useState<PurchaseReceivingState | null>(null);
+  const [receiptQuantities, setReceiptQuantities] = useState<Record<string, string>>({});
+  const [receiptReference, setReceiptReference] = useState("");
+  const [receivingBusy, setReceivingBusy] = useState(false);
 
   useEffect(() => {
     if (!scope.organizationId || !scope.branchId) return;
@@ -70,6 +75,45 @@ export function PurchasingWorkspace() {
     finally { setBusy(false); }
   }
 
+  async function openReceiving(order: PurchaseOrder) {
+    if (!scope.organizationId || !scope.branchId
+        || (order.status !== "approved" && order.status !== "partially_received")) return;
+    setReceivingBusy(true); setError(null);
+    try {
+      const state = await getPurchaseReceivingState(scope.organizationId, scope.branchId, order.id);
+      setReceivingState(state);
+      setReceivingOrder({ ...order, status: state.status, version: state.version });
+      setReceiptQuantities(Object.fromEntries(state.lines
+        .filter(line => line.remainingQuantity > 0)
+        .map(line => [line.productId, String(line.remainingQuantity)])));
+      setReceiptReference("");
+    } catch {
+      setError("Purchase receiving state could not be loaded.");
+    } finally { setReceivingBusy(false); }
+  }
+
+  async function submitReceipt() {
+    if (!scope.organizationId || !scope.branchId || !receivingOrder || !receivingState) return;
+    const lines = receivingState.lines.map(line => ({
+      productId: line.productId,
+      quantity: Number(receiptQuantities[line.productId] ?? "0"),
+    })).filter(line => Number.isFinite(line.quantity) && line.quantity > 0);
+    if (!lines.length) { setError("Enter at least one positive receipt quantity."); return; }
+    setReceivingBusy(true); setError(null);
+    try {
+      const result = await receivePurchaseOrder(scope.organizationId, scope.branchId, receivingOrder, {
+        reference: receiptReference.trim() || undefined,
+        receivedAt: new Date().toISOString(),
+        lines,
+      });
+      setOrders(current => current.map(order => order.id === result.order.id ? result.order : order));
+      setReceivingOrder(null); setReceivingState(null); setReceiptQuantities({}); setReceiptReference("");
+      await refresh();
+    } catch {
+      setError("Purchase receipt could not be recorded. Check remaining quantities and order state.");
+    } finally { setReceivingBusy(false); }
+  }
+
   async function transition(order: PurchaseOrder, action: "submit" | "approve" | "cancel") {
     if (!scope.organizationId || !scope.branchId) return;
     setBusy(true); setError(null);
@@ -92,7 +136,7 @@ export function PurchasingWorkspace() {
         <label>Quantity<input inputMode="decimal" value={quantity} onChange={event => setQuantity(event.target.value)} /></label>
         <label>Unit cost<input inputMode="decimal" value={unitCost} onChange={event => setUnitCost(event.target.value)} /></label>
         <label>Currency<input maxLength={3} value={currency} onChange={event => setCurrency(event.target.value.toUpperCase())} /></label>
-        <label>Reference<input maxLength={120} value={reference} onChange={event => setReference(event.target.value)} /></label>
+        <label>Reference<input maxLength={100} value={reference} onChange={event => setReference(event.target.value)} /></label>
         <button disabled={busy || !scope.branchId || !supplierId || !productId}>{busy ? "Working…" : "Create draft"}</button>
       </form>
       <div className="panel"><h2>Orders</h2><div className="data-list">{orders.map(order =>
@@ -103,7 +147,33 @@ export function PurchasingWorkspace() {
             {order.status === "submitted" ? <button disabled={busy} onClick={() => void transition(order, "approve")}>Approve</button> : null}
             {order.status === "draft" || order.status === "submitted"
               ? <button disabled={busy} onClick={() => void transition(order, "cancel")}>Cancel</button> : null}
+            {order.status === "approved" || order.status === "partially_received"
+              ? <button disabled={busy || receivingBusy} onClick={() => void openReceiving(order)}>Receive goods</button> : null}
           </div></article>)}</div></div>
     </div>
+    {receivingOrder && receivingState ? <div className="panel">
+      <div className="manager-title"><div><span className="eyebrow">GOODS RECEIVING</span>
+        <h2>Receive purchase order</h2>
+        <p>Record only quantities physically received. Inventory is updated atomically with this receipt.</p></div>
+        <div className="metric-card"><strong>{receivingState.lines.filter(line => line.remainingQuantity > 0).length}</strong><span>Open lines</span></div>
+      </div>
+      <div className="data-list">{receivingState.lines.map(line => {
+        const product = products.find(item => item.id === line.productId);
+        return <article key={line.productId}>
+          <strong>{product ? `${product.sku} · ${product.name}` : line.productId}</strong>
+          <span>Ordered {line.orderedQuantity} · received {line.receivedQuantity} · remaining {line.remainingQuantity}</span>
+          <label>Receive now<input inputMode="decimal" disabled={line.remainingQuantity <= 0 || receivingBusy}
+            value={receiptQuantities[line.productId] ?? ""}
+            onChange={event => setReceiptQuantities(current => ({ ...current, [line.productId]: event.target.value }))}/></label>
+        </article>;
+      })}</div>
+      <label>Receipt reference <span className="label-note">optional</span>
+        <input maxLength={120} value={receiptReference} onChange={event => setReceiptReference(event.target.value)}/>
+      </label>
+      <div className="inline-actions">
+        <button disabled={receivingBusy} onClick={() => void submitReceipt()}>{receivingBusy ? "Receiving…" : "Record receipt"}</button>
+        <button disabled={receivingBusy} onClick={() => { setReceivingOrder(null); setReceivingState(null); }}>Cancel</button>
+      </div>
+    </div> : null}
   </section>;
 }

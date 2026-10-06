@@ -11,6 +11,15 @@ public sealed record PurchaseOrderLineSummary(Guid ProductId, decimal Quantity, 
 public sealed record PurchaseOrderSummary(Guid Id, Guid BranchId, Guid SupplierId, string Status,
     string Currency, string? Reference, decimal Total, long Version, DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt, IReadOnlyList<PurchaseOrderLineSummary> Lines);
+public sealed record PurchaseReceivingLineSummary(Guid ProductId, decimal OrderedQuantity,
+    decimal ReceivedQuantity, decimal RemainingQuantity);
+public sealed record PurchaseReceivingStateSummary(Guid OrderId, string Status, long Version,
+    IReadOnlyList<PurchaseReceivingLineSummary> Lines);
+public sealed record PurchaseReceiptLineSummary(Guid ProductId, decimal Quantity, Guid MovementId);
+public sealed record PurchaseReceiptSummary(Guid Id, Guid OrderId, Guid BranchId, string? Reference,
+    DateTimeOffset ReceivedAt, DateTimeOffset CreatedAt, string ReceivedBySubject,
+    IReadOnlyList<PurchaseReceiptLineSummary> Lines);
+public sealed record ReceivePurchaseOrderResultSummary(PurchaseReceiptSummary Receipt, PurchaseOrderSummary Order);
 public sealed record OperationalReportSummary(Guid OrganizationId, Guid BranchId, DateTimeOffset From,
     DateTimeOffset To, string? Currency, int SalesCount, decimal SalesGross, int ReturnCount,
     decimal ReturnsTotal, decimal NetSales, int PurchaseOrderCount, decimal PurchaseOrderTotal,
@@ -22,6 +31,9 @@ public sealed record CreateEmployeeInput(string Code, string DisplayName, string
 public sealed record CreatePurchaseOrderLineInput(Guid ProductId, decimal Quantity, decimal UnitCost);
 public sealed record CreatePurchaseOrderInput(Guid SupplierId, string Currency, string? Reference,
     IReadOnlyList<CreatePurchaseOrderLineInput> Lines);
+public sealed record ReceivePurchaseOrderLineInput(Guid ProductId, decimal Quantity);
+public sealed record ReceivePurchaseOrderInput(string? Reference, DateTimeOffset ReceivedAt,
+    IReadOnlyList<ReceivePurchaseOrderLineInput> Lines);
 
 public interface IManagerBusiness
 {
@@ -34,5 +46,7 @@ public interface IManagerBusiness
     Task<UuidPage<PurchaseOrderSummary>> ListPurchaseOrdersAsync(Guid organizationId, Guid branchId, int pageSize, Guid? after, CancellationToken cancellationToken);
     Task<PurchaseOrderSummary> CreatePurchaseOrderAsync(Guid organizationId, Guid branchId, CreatePurchaseOrderInput input, Guid operationId, CancellationToken cancellationToken);
     Task<PurchaseOrderSummary> ChangePurchaseOrderStatusAsync(Guid organizationId, Guid branchId, PurchaseOrderSummary order, string action, CancellationToken cancellationToken);
+    Task<PurchaseReceivingStateSummary> ReadPurchaseReceivingStateAsync(Guid organizationId, Guid branchId, Guid orderId, CancellationToken cancellationToken);
+    Task<ReceivePurchaseOrderResultSummary> ReceivePurchaseOrderAsync(Guid organizationId, Guid branchId, PurchaseOrderSummary order, ReceivePurchaseOrderInput input, Guid operationId, CancellationToken cancellationToken);
     Task<OperationalReportSummary> ReadOperationalReportAsync(Guid organizationId, Guid branchId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }

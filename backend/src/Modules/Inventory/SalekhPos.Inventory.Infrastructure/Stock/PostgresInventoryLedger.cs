@@ -20,7 +20,7 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
         await Safe(connection, transaction, cancellationToken);
         await Context(connection, transaction, movement.OrganizationId, identity, cancellationToken);
         await Demand(connection, transaction, movement.OrganizationId, movement.BranchId, identity,
-            "inventory.adjust", cancellationToken);
+            PermissionFor(movement.Kind), cancellationToken);
         await using var insert = new NpgsqlCommand("""
             INSERT INTO inventory.stock_movements(organization_id,movement_id,operation_id,branch_id,product_id,
               kind,direction,quantity,reason,occurred_at,issuer,subject)
@@ -95,7 +95,8 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
         await Context(connection, transaction, organizationId, identity, cancellationToken);
         await using var command = new NpgsqlCommand("""
             SELECT b.branch_id,b.code,b.name,b.time_zone_id,
-              bool_or(g.permission='inventory.view'),bool_or(g.permission='inventory.adjust')
+              bool_or(g.permission='inventory.view'),bool_or(g.permission='inventory.receive'),
+              bool_or(g.permission='inventory.adjust')
             FROM organization.branches b
             JOIN organization.organizations o ON o.organization_id=b.organization_id
             JOIN organization.businesses business ON business.organization_id=b.organization_id AND business.business_id=b.business_id
@@ -106,7 +107,7 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
               AND (b.region_id IS NULL OR region.is_active)
               AND m.issuer=$2 AND m.subject=$3 AND m.is_active
               AND m.valid_from<=statement_timestamp() AND (m.valid_until IS NULL OR m.valid_until>statement_timestamp())
-              AND g.permission IN ('inventory.view','inventory.adjust')
+              AND g.permission IN ('inventory.view','inventory.receive','inventory.adjust')
               AND (g.scope_kind='organization' OR (g.scope_kind='business' AND g.business_id=b.business_id)
                 OR (g.scope_kind='region' AND g.business_id=b.business_id AND g.region_id=b.region_id)
                 OR (g.scope_kind='branch' AND g.business_id=b.business_id AND g.branch_id=b.branch_id))
@@ -119,7 +120,7 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             while (await reader.ReadAsync(cancellationToken))
                 branches.Add(new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
-                    reader.GetBoolean(4), reader.GetBoolean(5)));
+                    reader.GetBoolean(4), reader.GetBoolean(5), reader.GetBoolean(6)));
         await transaction.CommitAsync(cancellationToken);
         return new(organizationId, branches.AsReadOnly());
     }
@@ -155,6 +156,14 @@ public sealed class PostgresInventoryLedger(NpgsqlDataSource? source) : IInvento
         q.Parameters.AddWithValue(org); q.Parameters.AddWithValue(branch); q.Parameters.AddWithValue(id.Issuer); q.Parameters.AddWithValue(id.Subject); q.Parameters.AddWithValue(permission);
         if (await q.ExecuteScalarAsync(ct) is not true) throw new InventoryDeniedException();
     }
+    private static string PermissionFor(StockMovementKind kind) => kind switch
+    {
+        StockMovementKind.Receipt => "inventory.receive",
+        StockMovementKind.AdjustmentIn or StockMovementKind.AdjustmentOut => "inventory.adjust",
+        StockMovementKind.Sale or StockMovementKind.Return => "inventory.adjust",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
+
     private static void AddMovement(NpgsqlCommand q, StockMovement m, Guid op, InventoryIdentity id)
     {
         q.Parameters.AddWithValue(m.OrganizationId); q.Parameters.AddWithValue(m.Id); q.Parameters.AddWithValue(op); q.Parameters.AddWithValue(m.BranchId); q.Parameters.AddWithValue(m.ProductId);

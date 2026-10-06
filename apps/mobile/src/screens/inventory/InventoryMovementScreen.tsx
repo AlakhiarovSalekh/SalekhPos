@@ -10,12 +10,15 @@ import { useLocalization } from "@/localization/LocalizationProvider";
 import { mobileReadCache } from "@/offline/cache";
 import { createInventoryMovementIntent, createMobileOperations, type InventoryMovementIntent } from "@/services/mobileOperations";
 import { mapSafeError, type SafeAppError } from "@/services/safeError";
+import { hasPermission, permissions } from "@/permissions/policy";
+import { useSession } from "@/state/SessionContext";
 import { useWorkspace } from "@/state/workspace";
 
 export function InventoryMovementScreen({ mode }: Readonly<{ mode: "receipt" | "adjustment" }>) {
   const router = useRouter();
   const { t } = useLocalization();
   const { workspace } = useWorkspace();
+  const { session } = useSession();
   const client = useApiClient();
   const operations = useMemo(() => createMobileOperations(client, mobileReadCache), [client]);
   const [productId, setProductId] = useState("");
@@ -48,9 +51,15 @@ export function InventoryMovementScreen({ mode }: Readonly<{ mode: "receipt" | "
     finally { setSubmitting(false); }
   };
 
+  const permitted = session !== null && hasPermission(
+    session.authorization,
+    mode === "receipt" ? permissions.inventoryReceive : permissions.inventoryAdjust,
+  );
+
   return <Screen>
     <ScreenHeader title={mode === "receipt" ? t("movement.receiptTitle") : t("movement.adjustmentTitle")} onBack={() => router.back()} />
-    {workspace.branch === null ? <><EmptyState message={t("workspace.branchRequired")} /><AppButton onPress={() => router.replace("/stores")}>{t("workspace.chooseBranch")}</AppButton></> : <>
+    {!permitted ? <EmptyState message="You do not have permission for this inventory operation." /> :
+    workspace.branch === null ? <><EmptyState message={t("workspace.branchRequired")} /><AppButton onPress={() => router.replace("/stores")}>{t("workspace.chooseBranch")}</AppButton></> : <>
       <Text style={operationStyles.muted}>{t("workspace.branch", { name: workspace.branch.name })}</Text>
       {mode === "adjustment" ? <View style={operationStyles.row}>
         <AppButton disabled={direction === "adjustment_in"} onPress={() => { setDirection("adjustment_in"); pending.current = null; }}>{t("movement.increase")}</AppButton>

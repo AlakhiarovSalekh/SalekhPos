@@ -1,7 +1,7 @@
 import { getCsrfToken, requestJson } from "@/features/sales/api";
 import { uuid } from "@/lib/boundedJson";
-import { parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parseSupplier, parseSupplierPage, parseStockTransfer, parseStockTransferPage, parsePromotion, parsePromotionPage, parsePromotionEvaluation, parseLoyaltyAccount, parseLoyaltyAccountPage, parseLoyaltyPointsResult } from "./parsers";
-import type { Customer, Employee, OperationalReport, Page, PurchaseOrder, Supplier, StockTransfer, Promotion, PromotionEvaluation, LoyaltyAccount, LoyaltyPointsResult } from "./types";
+import { parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parsePurchaseReceivingState, parseReceivePurchaseOrderResult, parseSupplier, parseSupplierPage, parseStockTransfer, parseStockTransferPage, parsePromotion, parsePromotionPage, parsePromotionEvaluation, parseLoyaltyAccount, parseLoyaltyAccountPage, parseLoyaltyPointsResult } from "./parsers";
+import type { Customer, Employee, OperationalReport, Page, PurchaseOrder, PurchaseReceivingState, ReceivePurchaseOrderResult, Supplier, StockTransfer, Promotion, PromotionEvaluation, LoyaltyAccount, LoyaltyPointsResult } from "./types";
 
 const org=(id:string)=>`/bff/api/v1/organizations/${uuid(id,"organization")}`;
 const branch=(o:string,b:string)=>`${org(o)}/branches/${uuid(b,"branch")}`;
@@ -15,6 +15,8 @@ export const createEmployee=(o:string,b:string,input:{code:string;displayName:st
 export const getPurchaseOrders=(o:string,b:string):Promise<Page<PurchaseOrder>>=>requestJson(`${branch(o,b)}/purchase-orders?pageSize=100`,parsePurchaseOrderPage);
 export const createPurchaseOrder=(o:string,b:string,input:{supplierId:string;currency:string;reference?:string;lines:{productId:string;quantity:number;unitCost:number}[]})=>mutation(`${branch(o,b)}/purchase-orders`,input,parsePurchaseOrder,true);
 export const changePurchaseStatus=(o:string,b:string,order:PurchaseOrder,action:"submit"|"approve"|"cancel")=>mutation(`${branch(o,b)}/purchase-orders/${uuid(order.id,"order")}/${action}`,{expectedVersion:order.version},parsePurchaseOrder);
+export const getPurchaseReceivingState=(o:string,b:string,orderId:string):Promise<PurchaseReceivingState>=>requestJson(`${branch(o,b)}/purchase-orders/${uuid(orderId,"order")}/receiving`,parsePurchaseReceivingState);
+export const receivePurchaseOrder=(o:string,b:string,order:PurchaseOrder,input:{reference?:string;receivedAt:string;lines:{productId:string;quantity:number}[]}):Promise<ReceivePurchaseOrderResult>=>mutation(`${branch(o,b)}/purchase-orders/${uuid(order.id,"order")}/receipts`,{expectedVersion:order.version,reference:input.reference?.trim()||null,receivedAt:input.receivedAt,lines:input.lines},parseReceivePurchaseOrderResult,true);
 export const getOperationalReport=(o:string,b:string,from:string,to:string):Promise<OperationalReport>=>{ const q=new URLSearchParams({from,to}); return requestJson(`${branch(o,b)}/reports/operational-summary?${q}`,parseOperationalReport); };
 export const getStockTransfers=(o:string,b:string):Promise<Page<StockTransfer>>=>requestJson(`${branch(o,b)}/stock-transfers?pageSize=100`,parseStockTransferPage);
 export const createStockTransfer=(o:string,b:string,input:{destinationBranchId:string;reference?:string;lines:{productId:string;quantity:number}[]})=>mutation(`${branch(o,b)}/stock-transfers`,input,parseStockTransfer,true);

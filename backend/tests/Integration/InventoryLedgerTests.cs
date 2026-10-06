@@ -48,7 +48,8 @@ public sealed class InventoryLedgerTests(AccessFixture fixture)
         await using var source = NpgsqlDataSource.Create(fixture.RuntimeConnection);
         var ledger = new PostgresInventoryLedger(source);
         var owner = await ledger.ReadAccessAsync(new(AccessFixture.Issuer, "owner"), fixture.OrganizationA, default);
-        Assert.Contains(owner.Branches, branch => branch.BranchId == fixture.BranchA && branch.CanView && branch.CanAdjust);
+        Assert.Contains(owner.Branches, branch => branch.BranchId == fixture.BranchA
+            && branch.CanView && branch.CanReceive && branch.CanAdjust);
         Assert.DoesNotContain(owner.Branches, branch => branch.BranchId == fixture.BranchB);
         var unassigned = await ledger.ReadAccessAsync(new(AccessFixture.Issuer, "alice"), fixture.OrganizationA, default);
         Assert.Empty(unassigned.Branches);

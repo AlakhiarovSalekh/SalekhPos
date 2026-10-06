@@ -51,6 +51,59 @@ public static class PurchaseOrderEndpoints
             catch (ArgumentException) { return Invalid(); }
         });
 
+        group.MapGet("/{orderId:guid}/receiving", async (
+            Guid organizationId, Guid branchId, Guid orderId, HttpContext context,
+            IPurchaseOrderService orders, CancellationToken cancellationToken) =>
+        {
+            if (organizationId == Guid.Empty || branchId == Guid.Empty || orderId == Guid.Empty)
+                return Invalid();
+            try
+            {
+                return Results.Ok(await orders.ReadReceivingStateAsync(
+                    Identity(context), organizationId, branchId, orderId, cancellationToken));
+            }
+            catch (ArgumentException) { return Invalid(); }
+        });
+
+        group.MapGet("/{orderId:guid}/receipts/{receiptId:guid}", async (
+            Guid organizationId, Guid branchId, Guid orderId, Guid receiptId,
+            HttpContext context, IPurchaseOrderService orders, CancellationToken cancellationToken) =>
+        {
+            if (organizationId == Guid.Empty || branchId == Guid.Empty
+                || orderId == Guid.Empty || receiptId == Guid.Empty) return Invalid();
+            try
+            {
+                var result = await orders.ReadReceiptAsync(Identity(context), organizationId,
+                    branchId, orderId, receiptId, cancellationToken);
+                return result is null ? Results.NotFound() : Results.Ok(result);
+            }
+            catch (ArgumentException) { return Invalid(); }
+        });
+
+        group.MapPost("/{orderId:guid}/receipts", async (
+            Guid organizationId, Guid branchId, Guid orderId, ReceivePurchaseOrderRequest request,
+            HttpContext context, IPurchaseOrderService orders, IAntiforgery antiforgery,
+            CancellationToken cancellationToken) =>
+        {
+            if (!await ValidateMutation(context, antiforgery)
+                || !Guid.TryParseExact(context.Request.Headers["Idempotency-Key"], "D", out var operationId)
+                || operationId == Guid.Empty || organizationId == Guid.Empty
+                || branchId == Guid.Empty || orderId == Guid.Empty) return Invalid();
+            try
+            {
+                var lines = request.Lines.Select(line =>
+                    new ReceivePurchaseOrderLine(line.ProductId, line.Quantity)).ToArray();
+                var result = await orders.ReceiveAsync(Identity(context),
+                    new(organizationId, branchId, orderId, Guid.NewGuid(), operationId,
+                        request.ExpectedVersion, request.Reference, request.ReceivedAt, lines),
+                    cancellationToken);
+                var response = new ReceivePurchaseOrderResponse(result.Receipt, result.Order);
+                var location = $"/api/v1/organizations/{organizationId:D}/branches/{branchId:D}/purchase-orders/{orderId:D}/receipts/{result.Receipt.Id:D}";
+                return result.Created ? Results.Created(location, response) : Results.Ok(response);
+            }
+            catch (ArgumentException) { return Invalid(); }
+        });
+
         MapStatus(group, "submit", "submitted");
         MapStatus(group, "approve", "approved");
         MapStatus(group, "cancel", "cancelled");

@@ -9,7 +9,7 @@ import { CacheNotice, EmptyState, SafeErrorNotice, ScreenHeader, operationStyles
 import { appendPage, firstPageState, type PaginationState } from "@/features/pagination";
 import { useLocalization } from "@/localization/LocalizationProvider";
 import { mobileReadCache } from "@/offline/cache";
-import { canUseInventoryMovement } from "@/permissions/policy";
+import { hasPermission, permissions } from "@/permissions/policy";
 import { createMobileOperations } from "@/services/mobileOperations";
 import { mapSafeError, type SafeAppError } from "@/services/safeError";
 import { useSession } from "@/state/SessionContext";
@@ -51,9 +51,9 @@ export function InventoryScreen() {
       <AppButton onPress={() => router.push("/stores")}>{t("workspace.chooseBranch")}</AppButton>
     </> : <>
       <Text style={operationStyles.muted}>{t("workspace.branch", { name: workspace.branch.name })}</Text>
-      {session !== null && canUseInventoryMovement(session.authorization) ? <View style={operationStyles.row}>
-        <AppButton onPress={() => router.push("/inventory-receipt")}>{t("inventory.receive")}</AppButton>
-        <AppButton onPress={() => router.push("/inventory-adjustment")}>{t("inventory.adjust")}</AppButton>
+      {session !== null && (hasPermission(session.authorization, permissions.inventoryReceive) || hasPermission(session.authorization, permissions.inventoryAdjust)) ? <View style={operationStyles.row}>
+        {hasPermission(session.authorization, permissions.inventoryReceive) ? <AppButton onPress={() => router.push("/inventory-receipt")}>{t("inventory.receive")}</AppButton> : null}
+        {hasPermission(session.authorization, permissions.inventoryAdjust) ? <AppButton onPress={() => router.push("/inventory-adjustment")}>{t("inventory.adjust")}</AppButton> : null}
       </View> : null}
       {cachedAt === null ? null : <CacheNotice storedAt={cachedAt} />}
       {error === null ? null : <SafeErrorNotice error={error} onRetry={() => void load()} />}

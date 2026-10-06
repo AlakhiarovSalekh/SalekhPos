@@ -1,6 +1,6 @@
 import { randomUUID } from "expo-crypto";
 import { assertUuid, branchPath, organizationPath, type ApiClient } from "@salekhpos/packages-api-client";
-import { ManagementContractError, parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parseSupplier, parseSupplierPage, type PurchaseOrderSummary } from "@/api/managementContracts";
+import { ManagementContractError, parseCustomer, parseCustomerPage, parseEmployee, parseEmployeePage, parseOperationalReport, parsePurchaseOrder, parsePurchaseOrderPage, parsePurchaseReceivingState, parseReceivePurchaseOrderResult, parseSupplier, parseSupplierPage, type PurchaseOrderSummary } from "@/api/managementContracts";
 
 function required<T>(value:T|undefined):T{if(value===undefined)throw new ManagementContractError("response");return value}
 function pageSize(value:number){if(!Number.isInteger(value)||value<1||value>100)throw new TypeError("Page size is invalid.");return value}
@@ -20,7 +20,7 @@ export function createManagerBusiness(client:ApiClient){return Object.freeze({
   if(!/^[A-Z]{3}$/u.test(input.currency)||input.lines.length<1||input.lines.length>500)throw new TypeError("Purchase order is invalid.");
   const lines=input.lines.map(x=>({productId:assertUuid(x.productId,"productId"),quantity:x.quantity,unitCost:x.unitCost}));
   if(lines.some(x=>!Number.isFinite(x.quantity)||x.quantity<=0||!Number.isFinite(x.unitCost)||x.unitCost<0))throw new TypeError("Purchase order line is invalid.");
-  const body={supplierId,currency:input.currency,reference:input.reference?.trim()||null,lines};
+  const reference=input.reference?.trim()||null;if(reference!==null&&(reference.length>100||/[\u0000-\u001f\u007f]/u.test(reference)))throw new TypeError("Purchase order reference is invalid.");const body={supplierId,currency:input.currency,reference,lines};
   const r=parsePurchaseOrder(required(await client.post<unknown>(branchPath(o,b,"purchase-orders"),{body,idempotencyKey:randomUUID(),...(signal?{signal}:{})})));
   if(r.branchId!==b||r.supplierId!==supplierId)throw new ManagementContractError("purchaseOrder");return r;
  },
@@ -28,6 +28,20 @@ export function createManagerBusiness(client:ApiClient){return Object.freeze({
   const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(order.id,"orderId");
   const r=parsePurchaseOrder(required(await client.post<unknown>(branchPath(o,b,"purchase-orders",id,action),{body:{expectedVersion:order.version},...(signal?{signal}:{})})));
   if(r.id!==id||r.branchId!==b)throw new ManagementContractError("purchaseOrder");return r;
+ },
+ async readPurchaseReceivingState(organizationId:string,branchId:string,orderId:string,signal?:AbortSignal){
+  const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(orderId,"orderId");
+  const r=parsePurchaseReceivingState(required(await client.get<unknown>(branchPath(o,b,"purchase-orders",id,"receiving"),signal?{signal}:{})));
+  if(r.orderId!==id)throw new ManagementContractError("receiving");return r;
+ },
+ async receivePurchaseOrder(organizationId:string,branchId:string,order:PurchaseOrderSummary,input:{reference?:string;receivedAt:string;lines:readonly {productId:string;quantity:number}[]},signal?:AbortSignal){
+  const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId"),id=assertUuid(order.id,"orderId");
+  const receivedAt=new Date(input.receivedAt);if(!Number.isFinite(receivedAt.getTime())||input.lines.length<1||input.lines.length>500)throw new TypeError("Purchase receipt is invalid.");
+  const lines=input.lines.map(x=>({productId:assertUuid(x.productId,"productId"),quantity:x.quantity}));
+  if(lines.some(x=>!Number.isFinite(x.quantity)||x.quantity<=0)||new Set(lines.map(x=>x.productId)).size!==lines.length)throw new TypeError("Purchase receipt line is invalid.");
+  const body={expectedVersion:order.version,reference:input.reference?.trim()||null,receivedAt:receivedAt.toISOString(),lines};
+  const r=parseReceivePurchaseOrderResult(required(await client.post<unknown>(branchPath(o,b,"purchase-orders",id,"receipts"),{body,idempotencyKey:randomUUID(),...(signal?{signal}:{})})));
+  if(r.order.id!==id||r.order.branchId!==b||r.receipt.orderId!==id||r.receipt.branchId!==b)throw new ManagementContractError("purchaseReceipt");return r;
  },
  async readOperationalReport(organizationId:string,branchId:string,from:string,to:string,signal?:AbortSignal){
   const o=assertUuid(organizationId,"organizationId"),b=assertUuid(branchId,"branchId");
